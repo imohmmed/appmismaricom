@@ -13,14 +13,14 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Colors from "@/constants/colors";
 
 const TV_APPS = [
-  { id: 1, name: "Netflix", desc: "All content unlocked", icon: "film", tag: "modded" },
-  { id: 2, name: "Disney+", desc: "Disney, Marvel & more", icon: "play-circle", tag: "modded" },
-  { id: 3, name: "HBO Max", desc: "Premium content", icon: "tv", tag: "modded" },
-  { id: 4, name: "Amazon Prime", desc: "Movies & series", icon: "video", tag: "modded" },
-  { id: 5, name: "Shahid VIP", desc: "Arabic content", icon: "film", tag: "tweaked" },
-  { id: 6, name: "OSN+", desc: "Middle East streaming", icon: "play-circle", tag: "tweaked" },
-  { id: 7, name: "IPTV Pro", desc: "Live TV channels", icon: "tv", tag: "hacked" },
-  { id: 8, name: "Starz Play", desc: "Movies & series", icon: "video", tag: "modded" },
+  { id: 1, name: "Netflix", desc: "جميع المحتوى مفتوح", icon: "film", tag: "modded" },
+  { id: 2, name: "Disney+", desc: "ديزني، مارفل والمزيد", icon: "play-circle", tag: "modded" },
+  { id: 3, name: "HBO Max", desc: "محتوى بريميوم", icon: "tv", tag: "modded" },
+  { id: 4, name: "Amazon Prime", desc: "أفلام ومسلسلات", icon: "video", tag: "modded" },
+  { id: 5, name: "Shahid VIP", desc: "محتوى عربي", icon: "film", tag: "tweaked" },
+  { id: 6, name: "OSN+", desc: "بث الشرق الأوسط", icon: "play-circle", tag: "tweaked" },
+  { id: 7, name: "IPTV Pro", desc: "قنوات تلفزيونية مباشرة", icon: "tv", tag: "hacked" },
+  { id: 8, name: "Starz Play", desc: "أفلام ومسلسلات", icon: "video", tag: "modded" },
 ];
 
 function getTagColor(tag: string) {
@@ -44,7 +44,7 @@ export default function TvScreen() {
         data={TV_APPS}
         keyExtractor={(item) => item.id.toString()}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: isWeb ? 34 : 100 }}
+        contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: isWeb ? 34 : 80 }}
         contentInsetAdjustmentBehavior="automatic"
         ItemSeparatorComponent={() => <View style={styles.divider} />}
         renderItem={({ item }) => {
@@ -59,7 +59,7 @@ export default function TvScreen() {
                 <Text style={styles.appDesc}>{item.desc}</Text>
               </View>
               <Pressable style={styles.getButton}>
-                <Text style={styles.getButtonText}>Get</Text>
+                <Text style={styles.getButtonText}>تحميل</Text>
               </Pressable>
             </Pressable>
           );

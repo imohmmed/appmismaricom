@@ -75,7 +75,7 @@ function TapToRate({ onRate }: { onRate: (r: number) => void }) {
   const [hover, setHover] = useState(0);
   return (
     <View style={st.tapToRate}>
-      <Text style={st.tapToRateLabel}>Tap to Rate</Text>
+      <Text style={st.tapToRateLabel}>اضغط للتقييم</Text>
       <View style={st.tapStars}>
         {[1, 2, 3, 4, 5].map((v) => (
           <Pressable key={v} onPress={() => { setHover(v); onRate(v); }}>
@@ -121,7 +121,7 @@ function RelatedAppsRow({ apps, onPress }: { apps: AppData[]; onPress?: (app: Ap
                     <Text style={st.relatedDesc} numberOfLines={1}>{a.desc}</Text>
                   </View>
                   <Pressable style={st.relatedGetBtn}>
-                    <Text style={st.relatedGetText}>Get</Text>
+                    <Text style={st.relatedGetText}>تحميل</Text>
                   </Pressable>
                 </Pressable>
                 {idx < chunk.length - 1 && <View style={st.relatedDivider} />}
@@ -134,12 +134,19 @@ function RelatedAppsRow({ apps, onPress }: { apps: AppData[]; onPress?: (app: Ap
   );
 }
 
+const MOCK_USER = {
+  name: "أحمد المسماري",
+  phone: "+964 770 123 4567",
+};
+
 const MOCK_REVIEWS: Review[] = [
-  { id: 1, name: "Ahmed", phone: "+964 770 123 4567", rating: 5, text: "Amazing app! Works perfectly without any issues.", date: "2 days ago" },
-  { id: 2, name: "Sara", phone: "+964 771 234 5678", rating: 4, text: "Great features, very smooth experience.", date: "1 week ago" },
+  { id: 1, name: "أحمد", phone: "+964 770 123 4567", rating: 5, text: "تطبيق ممتاز! يعمل بشكل مثالي بدون أي مشاكل.", date: "قبل يومين" },
+  { id: 2, name: "سارة", phone: "+964 771 234 5678", rating: 4, text: "ميزات رائعة، تجربة سلسة جداً.", date: "قبل أسبوع" },
 ];
 
 const APP_SIZES: Record<string, string> = {
+  "تواصل اجتماعي": "85", "ذكاء اصطناعي": "142", "تعديل": "210",
+  "ألعاب": "320", "تطبيقات بلس": "95", "تلفزيون": "130", "تطوير": "65",
   "Social Media": "85", "Ai": "142", "Edit": "210",
   "Games": "320", "Tweaked Apps": "95", "TV , LIVE": "130", "Develop": "65",
 };
@@ -150,14 +157,14 @@ function GlassGetButton({ small }: { small?: boolean }) {
     if (isWeb) {
       return (
         <Pressable style={st.glassGetSmallWeb}>
-          <Text style={st.glassGetSmallText}>GET</Text>
+          <Text style={st.glassGetSmallText}>تحميل</Text>
         </Pressable>
       );
     }
     return (
       <Pressable style={st.glassGetSmallWrap}>
         <View style={st.glassGetSmallInner}>
-          <Text style={st.glassGetSmallText}>GET</Text>
+          <Text style={st.glassGetSmallText}>تحميل</Text>
         </View>
       </Pressable>
     );
@@ -175,22 +182,20 @@ export default function AppDetailPanel({ app, onClose, onCategoryPress, relatedA
   const [reviews, setReviews] = useState<Review[]>(MOCK_REVIEWS);
   const [reviewText, setReviewText] = useState("");
   const [reviewRating, setReviewRating] = useState(0);
-  const [reviewName, setReviewName] = useState("");
-  const [reviewPhone, setReviewPhone] = useState("");
 
-  const fullDesc = `${app.desc}. This is a ${app.tag} version of ${app.name} with premium features unlocked. Install directly without jailbreak. Regular updates and support included with your subscription. Compatible with the latest iOS versions. No revokes - we keep certificates fresh. Features include all premium content, ad removal, and exclusive tweaks not available in the original app.`;
+  const fullDesc = `${app.desc}. هذا إصدار ${app.tag === "tweaked" ? "بلس" : app.tag === "modded" ? "معدّل" : "مهكر"} من ${app.name} مع ميزات بريميوم مفعّلة. التثبيت مباشر بدون جيلبريك. تحديثات مستمرة ودعم فني مع اشتراكك. متوافق مع أحدث إصدارات iOS. بدون إلغاء - نحافظ على الشهادات محدّثة. الميزات تشمل جميع المحتوى المميز، إزالة الإعلانات، وتعديلات حصرية غير متوفرة في التطبيق الأصلي.`;
 
   const avgRating = reviews.length > 0
     ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
     : "0.0";
 
   const submitReview = () => {
-    if (!reviewText.trim() || reviewRating === 0 || !reviewName.trim() || !reviewPhone.trim()) return;
+    if (!reviewText.trim() || reviewRating === 0) return;
     setReviews([{
-      id: Date.now(), name: reviewName, phone: reviewPhone,
-      rating: reviewRating, text: reviewText, date: "Just now",
+      id: Date.now(), name: MOCK_USER.name, phone: MOCK_USER.phone,
+      rating: reviewRating, text: reviewText, date: "الآن",
     }, ...reviews]);
-    setReviewText(""); setReviewRating(0); setReviewName(""); setReviewPhone("");
+    setReviewText(""); setReviewRating(0);
   };
 
   const appSize = APP_SIZES[app.category] || "100";
@@ -217,14 +222,14 @@ export default function AppDetailPanel({ app, onClose, onCategoryPress, relatedA
         </Animated.View>
         <Animated.View style={{ opacity: stickyOpacity }}>
           <Pressable style={st.stickyGetBtn}>
-            <Text style={st.stickyGetText}>GET</Text>
+            <Text style={st.stickyGetText}>تحميل</Text>
           </Pressable>
         </Animated.View>
       </View>
 
       <Animated.ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: isWeb ? 34 : 120 }}
+        contentContainerStyle={{ paddingBottom: isWeb ? 34 : 80 }}
         contentInsetAdjustmentBehavior="automatic"
         onScroll={Animated.event(
           [{ nativeEvent: { contentOffset: { y: scrollY } } }],
@@ -242,10 +247,10 @@ export default function AppDetailPanel({ app, onClose, onCategoryPress, relatedA
             <View style={st.heroButtons}>
               <Pressable style={st.repeatBtn}>
                 <Feather name="repeat" size={14} color={Colors.light.tint} />
-                <Text style={st.repeatText}>REPEAT</Text>
+                <Text style={st.repeatText}>إعادة</Text>
               </Pressable>
               <Pressable style={st.getBtn}>
-                <Text style={st.getBtnText}>GET</Text>
+                <Text style={st.getBtnText}>تحميل</Text>
               </Pressable>
             </View>
           </View>
@@ -253,52 +258,52 @@ export default function AppDetailPanel({ app, onClose, onCategoryPress, relatedA
 
         <View style={st.infoBoxRow}>
           <View style={st.infoBox}>
-            <Text style={st.infoBoxLabel}>RATINGS</Text>
+            <Text style={st.infoBoxLabel}>التقييم</Text>
             <Text style={st.infoBoxValue}>{avgRating}</Text>
             <StarRow rating={Math.round(Number(avgRating))} size={10} />
           </View>
           <View style={st.infoBoxDivider} />
           <View style={st.infoBox}>
-            <Text style={st.infoBoxLabel}>SIZE</Text>
+            <Text style={st.infoBoxLabel}>الحجم</Text>
             <Text style={st.infoBoxValue}>{appSize}</Text>
-            <Text style={st.infoBoxSub}>MB</Text>
+            <Text style={st.infoBoxSub}>م.ب</Text>
           </View>
           <View style={st.infoBoxDivider} />
           <Pressable
             style={st.infoBox}
             onPress={() => app.catKey && onCategoryPress?.(app.catKey)}
           >
-            <Text style={st.infoBoxLabel}>CATEGORY</Text>
+            <Text style={st.infoBoxLabel}>القسم</Text>
             <Feather name="grid" size={18} color={Colors.light.tint} style={{ marginVertical: 2 }} />
             <Text style={[st.infoBoxSub, { color: Colors.light.tint }]}>{app.category}</Text>
           </Pressable>
           <View style={st.infoBoxDivider} />
           <View style={st.infoBox}>
-            <Text style={st.infoBoxLabel}>UPDATED</Text>
-            <Text style={st.infoBoxValue}>3d</Text>
-            <Text style={st.infoBoxSub}>ago</Text>
+            <Text style={st.infoBoxLabel}>التحديث</Text>
+            <Text style={st.infoBoxValue}>3</Text>
+            <Text style={st.infoBoxSub}>أيام</Text>
           </View>
         </View>
 
         <View style={st.section}>
-          <Text style={st.sectionTitle}>Description</Text>
+          <Text style={st.sectionTitle}>الوصف</Text>
           <Text style={st.descText} numberOfLines={descExpanded ? undefined : 3}>
             {fullDesc}
           </Text>
           <Pressable onPress={() => setDescExpanded(!descExpanded)}>
-            <Text style={st.readMore}>{descExpanded ? "Show Less" : "Read More..."}</Text>
+            <Text style={st.readMore}>{descExpanded ? "عرض أقل" : "قراءة المزيد..."}</Text>
           </Pressable>
         </View>
 
         <View style={st.dividerFull} />
 
         <View style={st.section}>
-          <Text style={st.sectionTitle}>Ratings & Reviews</Text>
+          <Text style={st.sectionTitle}>التقييمات والمراجعات</Text>
           <View style={st.ratingOverview}>
             <Text style={st.bigRating}>{avgRating}</Text>
             <View style={{ gap: 4 }}>
               <StarRow rating={Math.round(Number(avgRating))} size={18} />
-              <Text style={st.ratingCount}>{reviews.length} Ratings</Text>
+              <Text style={st.ratingCount}>{reviews.length} تقييم</Text>
             </View>
           </View>
 
@@ -322,12 +327,10 @@ export default function AppDetailPanel({ app, onClose, onCategoryPress, relatedA
           <TapToRate onRate={setReviewRating} />
 
           <View style={st.writeReviewSection}>
-            <Text style={st.writeReviewTitle}>Write a Review</Text>
-            <TextInput style={st.input} placeholder="Your name" placeholderTextColor={Colors.light.textSecondary} value={reviewName} onChangeText={setReviewName} />
-            <TextInput style={st.input} placeholder="+964 770 000 0000" placeholderTextColor={Colors.light.textSecondary} value={reviewPhone} onChangeText={setReviewPhone} keyboardType="phone-pad" />
-            <TextInput style={[st.input, { height: 80, textAlignVertical: "top" }]} placeholder="Write your review..." placeholderTextColor={Colors.light.textSecondary} value={reviewText} onChangeText={setReviewText} multiline />
-            <Pressable style={[st.submitBtn, (!reviewText.trim() || reviewRating === 0 || !reviewName.trim() || !reviewPhone.trim()) && st.submitBtnDisabled]} onPress={submitReview}>
-              <Text style={st.submitBtnText}>Submit Review</Text>
+            <Text style={st.writeReviewTitle}>اكتب مراجعة</Text>
+            <TextInput style={[st.input, { height: 80, textAlignVertical: "top" }]} placeholder="اكتب مراجعتك هنا..." placeholderTextColor={Colors.light.textSecondary} value={reviewText} onChangeText={setReviewText} multiline />
+            <Pressable style={[st.submitBtn, (!reviewText.trim() || reviewRating === 0) && st.submitBtnDisabled]} onPress={submitReview}>
+              <Text style={st.submitBtnText}>إرسال المراجعة</Text>
             </Pressable>
           </View>
         </View>
@@ -337,8 +340,8 @@ export default function AppDetailPanel({ app, onClose, onCategoryPress, relatedA
             <View style={st.dividerFull} />
             <View style={st.section}>
               <View style={st.sectionHeaderRow}>
-                <Text style={st.sectionTitle}>You Might Also Like</Text>
-                <Feather name="chevron-right" size={18} color={Colors.light.textSecondary} />
+                <Text style={st.sectionTitle}>قد يعجبك أيضاً</Text>
+                <Feather name="chevron-left" size={18} color={Colors.light.textSecondary} />
               </View>
             </View>
             <RelatedAppsRow apps={relatedApps} onPress={onRelatedAppPress} />

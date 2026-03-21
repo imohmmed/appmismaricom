@@ -24,19 +24,19 @@ const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const PAGE_WIDTH = SCREEN_WIDTH - 80;
 
 const CATEGORIES = [
-  { key: "social", label: "Social Media", icon: "message-circle" },
-  { key: "ai", label: "Ai", icon: "cpu" },
-  { key: "edit", label: "Edit", icon: "edit-3" },
-  { key: "games", label: "Games", icon: "play" },
-  { key: "tweaked", label: "Tweaked Apps", icon: "settings" },
-  { key: "tv", label: "TV , LIVE", icon: "tv" },
-  { key: "develop", label: "Develop", icon: "terminal" },
+  { key: "social", label: "تواصل اجتماعي", icon: "message-circle" },
+  { key: "ai", label: "ذكاء اصطناعي", icon: "cpu" },
+  { key: "edit", label: "تعديل", icon: "edit-3" },
+  { key: "games", label: "ألعاب", icon: "play" },
+  { key: "tweaked", label: "تطبيقات بلس", icon: "settings" },
+  { key: "tv", label: "تلفزيون", icon: "tv" },
+  { key: "develop", label: "تطوير", icon: "terminal" },
 ] as const;
 
 const FEATURED_APPS = [
-  { id: 1, title: "Black Friday Sale", subtitle: "50% off all premium subscriptions", color: "#007AFF" },
-  { id: 2, title: "New Apps Added", subtitle: "100+ new tweaked apps this week", color: "#5856D6" },
-  { id: 3, title: "Premium Bundle", subtitle: "Get all apps with one subscription", color: "#FF9500" },
+  { id: 1, title: "عروض الجمعة السوداء", subtitle: "خصم 50% على جميع الاشتراكات المميزة", color: "#007AFF" },
+  { id: 2, title: "تطبيقات جديدة", subtitle: "أكثر من 100 تطبيق معدّل هذا الأسبوع", color: "#5856D6" },
+  { id: 3, title: "باقة بريميوم", subtitle: "احصل على جميع التطبيقات باشتراك واحد", color: "#FF9500" },
 ];
 
 type AppItem = {
@@ -53,40 +53,40 @@ type AppItem = {
 };
 
 const ALL_APPS: AppItem[] = [
-  { id: 1, name: "WhatsApp++", desc: "Hidden features unlocked", category: "Social Media", tag: "tweaked", icon: "message-circle", isHot: true, isMostDownloaded: true, catKey: "social" },
-  { id: 2, name: "Snapchat++", desc: "Save snaps & stories", category: "Social Media", tag: "tweaked", icon: "camera", isHot: true, isMostDownloaded: true, catKey: "social" },
-  { id: 3, name: "Instagram++", desc: "Download stories & reels", category: "Social Media", tag: "tweaked", icon: "instagram", isHot: true, isMostDownloaded: true, catKey: "social" },
-  { id: 4, name: "TikTok++", desc: "No ads, download videos", category: "Social Media", tag: "tweaked", icon: "video", isHot: true, catKey: "social" },
-  { id: 5, name: "Telegram++", desc: "Premium features free", category: "Social Media", tag: "tweaked", icon: "send", catKey: "social" },
-  { id: 6, name: "Twitter++", desc: "Download videos & threads", category: "Social Media", tag: "tweaked", icon: "twitter", catKey: "social" },
-  { id: 7, name: "ChatGPT Pro", desc: "GPT-4 access unlocked", category: "Ai", tag: "modded", icon: "cpu", isHot: true, isMostDownloaded: true, catKey: "ai" },
-  { id: 8, name: "Copilot+", desc: "AI coding assistant", category: "Ai", tag: "modded", icon: "zap", isNew: true, catKey: "ai" },
-  { id: 9, name: "Gemini Pro", desc: "Google AI premium", category: "Ai", tag: "modded", icon: "star", isNew: true, catKey: "ai" },
-  { id: 10, name: "CapCut Pro", desc: "Premium editing tools", category: "Edit", tag: "modded", icon: "scissors", isHot: true, isNew: true, catKey: "edit" },
-  { id: 11, name: "Canva Pro", desc: "All templates unlocked", category: "Edit", tag: "modded", icon: "edit", isNew: true, catKey: "edit" },
-  { id: 12, name: "Lightroom++", desc: "Premium presets free", category: "Edit", tag: "tweaked", icon: "aperture", catKey: "edit" },
-  { id: 13, name: "PUBG Hack", desc: "Aim assist & ESP", category: "Games", tag: "hacked", icon: "crosshair", isHot: true, isMostDownloaded: true, catKey: "games" },
-  { id: 14, name: "Minecraft+", desc: "All skins unlocked", category: "Games", tag: "hacked", icon: "box", catKey: "games" },
-  { id: 15, name: "Roblox Mod", desc: "Unlimited Robux", category: "Games", tag: "modded", icon: "play", isNew: true, catKey: "games" },
-  { id: 16, name: "YouTube Premium", desc: "Ad-free, background play", category: "Tweaked Apps", tag: "tweaked", icon: "youtube", isHot: true, isMostDownloaded: true, catKey: "tweaked" },
-  { id: 17, name: "Spotify++", desc: "Premium features free", category: "Tweaked Apps", tag: "tweaked", icon: "music", isHot: true, isMostDownloaded: true, catKey: "tweaked" },
-  { id: 18, name: "SoundCloud++", desc: "Offline downloads", category: "Tweaked Apps", tag: "tweaked", icon: "headphones", catKey: "tweaked" },
-  { id: 19, name: "Netflix", desc: "All content unlocked", category: "TV , LIVE", tag: "modded", icon: "film", isHot: true, isMostDownloaded: true, catKey: "tv" },
-  { id: 20, name: "Disney+", desc: "Stream Disney & Marvel", category: "TV , LIVE", tag: "modded", icon: "play-circle", catKey: "tv" },
-  { id: 21, name: "Shahid VIP", desc: "Arabic content premium", category: "TV , LIVE", tag: "tweaked", icon: "tv", isNew: true, catKey: "tv" },
-  { id: 22, name: "Xcode Helper", desc: "iOS dev tools", category: "Develop", tag: "modded", icon: "terminal", catKey: "develop" },
-  { id: 23, name: "iSH Shell", desc: "Linux shell on iOS", category: "Develop", tag: "tweaked", icon: "code", isNew: true, catKey: "develop" },
-  { id: 24, name: "Pythonista+", desc: "Python IDE premium", category: "Develop", tag: "modded", icon: "file-text", catKey: "develop" },
+  { id: 1, name: "WhatsApp++", desc: "ميزات مخفية مفعّلة", category: "تواصل اجتماعي", tag: "tweaked", icon: "message-circle", isHot: true, isMostDownloaded: true, catKey: "social" },
+  { id: 2, name: "Snapchat++", desc: "حفظ السنابات والقصص", category: "تواصل اجتماعي", tag: "tweaked", icon: "camera", isHot: true, isMostDownloaded: true, catKey: "social" },
+  { id: 3, name: "Instagram++", desc: "تحميل القصص والريلز", category: "تواصل اجتماعي", tag: "tweaked", icon: "instagram", isHot: true, isMostDownloaded: true, catKey: "social" },
+  { id: 4, name: "TikTok++", desc: "بدون إعلانات، تحميل الفيديو", category: "تواصل اجتماعي", tag: "tweaked", icon: "video", isHot: true, catKey: "social" },
+  { id: 5, name: "Telegram++", desc: "ميزات بريميوم مجانية", category: "تواصل اجتماعي", tag: "tweaked", icon: "send", catKey: "social" },
+  { id: 6, name: "Twitter++", desc: "تحميل الفيديوهات والثريدات", category: "تواصل اجتماعي", tag: "tweaked", icon: "twitter", catKey: "social" },
+  { id: 7, name: "ChatGPT Pro", desc: "وصول GPT-4 مفعّل", category: "ذكاء اصطناعي", tag: "modded", icon: "cpu", isHot: true, isMostDownloaded: true, catKey: "ai" },
+  { id: 8, name: "Copilot+", desc: "مساعد برمجة بالذكاء الاصطناعي", category: "ذكاء اصطناعي", tag: "modded", icon: "zap", isNew: true, catKey: "ai" },
+  { id: 9, name: "Gemini Pro", desc: "Google AI بريميوم", category: "ذكاء اصطناعي", tag: "modded", icon: "star", isNew: true, catKey: "ai" },
+  { id: 10, name: "CapCut Pro", desc: "أدوات تعديل متقدمة", category: "تعديل", tag: "modded", icon: "scissors", isHot: true, isNew: true, catKey: "edit" },
+  { id: 11, name: "Canva Pro", desc: "جميع القوالب مفتوحة", category: "تعديل", tag: "modded", icon: "edit", isNew: true, catKey: "edit" },
+  { id: 12, name: "Lightroom++", desc: "فلاتر بريميوم مجانية", category: "تعديل", tag: "tweaked", icon: "aperture", catKey: "edit" },
+  { id: 13, name: "PUBG Hack", desc: "تصويب تلقائي و ESP", category: "ألعاب", tag: "hacked", icon: "crosshair", isHot: true, isMostDownloaded: true, catKey: "games" },
+  { id: 14, name: "Minecraft+", desc: "جميع السكنات مفتوحة", category: "ألعاب", tag: "hacked", icon: "box", catKey: "games" },
+  { id: 15, name: "Roblox Mod", desc: "روبوكس غير محدود", category: "ألعاب", tag: "modded", icon: "play", isNew: true, catKey: "games" },
+  { id: 16, name: "YouTube Premium", desc: "بدون إعلانات، تشغيل بالخلفية", category: "تطبيقات بلس", tag: "tweaked", icon: "youtube", isHot: true, isMostDownloaded: true, catKey: "tweaked" },
+  { id: 17, name: "Spotify++", desc: "ميزات بريميوم مجانية", category: "تطبيقات بلس", tag: "tweaked", icon: "music", isHot: true, isMostDownloaded: true, catKey: "tweaked" },
+  { id: 18, name: "SoundCloud++", desc: "تحميل بدون إنترنت", category: "تطبيقات بلس", tag: "tweaked", icon: "headphones", catKey: "tweaked" },
+  { id: 19, name: "Netflix", desc: "جميع المحتوى مفتوح", category: "تلفزيون", tag: "modded", icon: "film", isHot: true, isMostDownloaded: true, catKey: "tv" },
+  { id: 20, name: "Disney+", desc: "ديزني و مارفل مباشر", category: "تلفزيون", tag: "modded", icon: "play-circle", catKey: "tv" },
+  { id: 21, name: "Shahid VIP", desc: "محتوى عربي بريميوم", category: "تلفزيون", tag: "tweaked", icon: "tv", isNew: true, catKey: "tv" },
+  { id: 22, name: "Xcode Helper", desc: "أدوات تطوير iOS", category: "تطوير", tag: "modded", icon: "terminal", catKey: "develop" },
+  { id: 23, name: "iSH Shell", desc: "طرفية لينكس على iOS", category: "تطوير", tag: "tweaked", icon: "code", isNew: true, catKey: "develop" },
+  { id: 24, name: "Pythonista+", desc: "بايثون IDE بريميوم", category: "تطوير", tag: "modded", icon: "file-text", catKey: "develop" },
 ];
 
 const BROWSE_CATEGORIES = [
-  { key: "social", label: "Social Media", icon: "message-circle", bgColor: "#007AFF" },
-  { key: "ai", label: "Ai", icon: "cpu", bgColor: "#AF52DE" },
-  { key: "edit", label: "Edit", icon: "edit-3", bgColor: "#FF9500" },
-  { key: "games", label: "Games", icon: "play", bgColor: "#34C759" },
-  { key: "tweaked", label: "Tweaked Apps", icon: "settings", bgColor: "#5AC8FA" },
-  { key: "tv", label: "TV , LIVE", icon: "tv", bgColor: "#FF3B30" },
-  { key: "develop", label: "Develop", icon: "terminal", bgColor: "#FF9500" },
+  { key: "social", label: "تواصل اجتماعي", icon: "message-circle", bgColor: "#007AFF" },
+  { key: "ai", label: "ذكاء اصطناعي", icon: "cpu", bgColor: "#AF52DE" },
+  { key: "edit", label: "تعديل", icon: "edit-3", bgColor: "#FF9500" },
+  { key: "games", label: "ألعاب", icon: "play", bgColor: "#34C759" },
+  { key: "tweaked", label: "تطبيقات بلس", icon: "settings", bgColor: "#5AC8FA" },
+  { key: "tv", label: "تلفزيون", icon: "tv", bgColor: "#FF3B30" },
+  { key: "develop", label: "تطوير", icon: "terminal", bgColor: "#FF9500" },
 ];
 
 function getTagColor(tag: string) {
@@ -101,7 +101,7 @@ function getTagColor(tag: string) {
 function CategoryPill({ item, onPress }: { item: typeof CATEGORIES[number]; onPress: () => void }) {
   return (
     <Pressable onPress={onPress} style={styles.categoryPill}>
-      <Feather name={item.icon as any} size={14} color={Colors.light.tint} style={{ marginRight: 5 }} />
+      <Feather name={item.icon as any} size={14} color={Colors.light.tint} style={{ marginLeft: 5 }} />
       <Text style={styles.categoryPillText}>{item.label}</Text>
     </Pressable>
   );
@@ -112,7 +112,7 @@ function FeaturedCard({ item }: { item: typeof FEATURED_APPS[number] }) {
     <View style={[styles.featuredCard, { width: SCREEN_WIDTH - 48 }]}>
       <View style={[styles.featuredGradient, { backgroundColor: item.color }]}>
         <View style={styles.featuredContent}>
-          <Text style={styles.featuredLabel}>FEATURED</Text>
+          <Text style={styles.featuredLabel}>مميز</Text>
           <Text style={styles.featuredTitle}>{item.title}</Text>
           <Text style={styles.featuredSubtitle}>{item.subtitle}</Text>
         </View>
@@ -134,7 +134,7 @@ function AppListRow({ app, showDivider, onPress }: { app: AppItem; showDivider: 
           <Text style={styles.listRowDesc} numberOfLines={1}>{app.desc}</Text>
         </View>
         <Pressable style={styles.listRowGetButton}>
-          <Text style={styles.listRowGetText}>Get</Text>
+          <Text style={styles.listRowGetText}>تحميل</Text>
         </Pressable>
       </Pressable>
       {showDivider && <View style={styles.listRowDivider} />}
@@ -159,7 +159,7 @@ function StackedSection({ title, subtitle, data, onAppPress }: { title: string; 
           <Text style={styles.sectionTitle}>{title}</Text>
           <Text style={styles.sectionSubtitle}>{subtitle}</Text>
         </View>
-        <Feather name="chevron-right" size={18} color={Colors.light.textSecondary} />
+        <Feather name="chevron-left" size={18} color={Colors.light.textSecondary} />
       </View>
       <FlatList
         data={pages}
@@ -194,7 +194,7 @@ function AppRow({ app, onPress }: { app: AppItem; onPress: () => void }) {
         <Text style={styles.appDesc}>{app.desc}</Text>
       </View>
       <Pressable style={styles.getButton}>
-        <Text style={styles.getButtonText}>Get</Text>
+        <Text style={styles.getButtonText}>تحميل</Text>
       </Pressable>
     </Pressable>
   );
@@ -225,7 +225,7 @@ function CategoryPageContent({ catKey, onClose, onAppPress }: { catKey: string; 
       </View>
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: isWeb ? 34 : 100 }}
+        contentContainerStyle={{ paddingBottom: isWeb ? 34 : 80 }}
         contentInsetAdjustmentBehavior="automatic"
       >
         <View style={styles.appList}>
@@ -301,8 +301,8 @@ export default function PlusScreen() {
       >
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionLabel}>FEATURED</Text>
-            <Feather name="chevron-right" size={18} color={Colors.light.textSecondary} />
+            <Text style={styles.sectionLabel}>مميز</Text>
+            <Feather name="chevron-left" size={18} color={Colors.light.textSecondary} />
           </View>
           <FlatList
             ref={featuredRef}
@@ -331,13 +331,13 @@ export default function PlusScreen() {
           </View>
         </View>
 
-        <StackedSection title="What's Hot 🔥" subtitle="Trending right now" data={hotApps} onAppPress={handleAppPress} />
-        <StackedSection title="Most Downloaded" subtitle="Top picks by the community" data={mostDownloaded} onAppPress={handleAppPress} />
-        <StackedSection title="Recently Added" subtitle="Fresh apps just dropped" data={newAdds} onAppPress={handleAppPress} />
+        <StackedSection title="الأكثر رواجاً 🔥" subtitle="التطبيقات الرائجة الآن" data={hotApps} onAppPress={handleAppPress} />
+        <StackedSection title="الأكثر تحميلاً" subtitle="الأفضل حسب اختيار المجتمع" data={mostDownloaded} onAppPress={handleAppPress} />
+        <StackedSection title="أضيف مؤخراً" subtitle="تطبيقات جديدة للتو" data={newAdds} onAppPress={handleAppPress} />
 
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Categories</Text>
+            <Text style={styles.sectionTitle}>الأقسام</Text>
           </View>
           <View style={styles.catGrid}>
             {BROWSE_CATEGORIES.map((cat) => (
@@ -423,7 +423,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   categoryPill: {
-    flexDirection: "row",
+    flexDirection: "row-reverse",
     alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 10,

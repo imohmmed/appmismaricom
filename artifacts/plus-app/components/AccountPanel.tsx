@@ -19,10 +19,11 @@ import Colors from "@/constants/colors";
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
 const MENU_ITEMS = [
-  { key: "profile", label: "My Profile", icon: "user" as const },
-  { key: "purchases", label: "Purchase History", icon: "shopping-bag" as const },
-  { key: "notifications", label: "Notifications", icon: "bell" as const },
-  { key: "settings", label: "Settings", icon: "settings" as const },
+  { key: "profile", label: "حسابي", icon: "user" as const },
+  { key: "purchases", label: "سجل المشتريات", icon: "shopping-bag" as const },
+  { key: "notifications", label: "الإشعارات", icon: "bell" as const },
+  { key: "settings", label: "الإعدادات", icon: "settings" as const },
+  { key: "language", label: "اللغة: العربية", icon: "globe" as const },
 ];
 
 const SOCIAL_LINKS = [
@@ -121,7 +122,7 @@ export default function AccountPanel({ visible, onClose }: AccountPanelProps) {
           styles.panel,
           {
             paddingTop: insets.top + 10,
-            paddingBottom: insets.bottom + 20,
+            paddingBottom: insets.bottom + 10,
             transform: [{ translateY: slideAnim }],
           },
         ]}
@@ -129,7 +130,7 @@ export default function AccountPanel({ visible, onClose }: AccountPanelProps) {
         <View style={styles.handleBar} />
 
         <View style={styles.headerRow}>
-          <Text style={styles.headerTitle}>Account</Text>
+          <Text style={styles.headerTitle}>الحساب</Text>
           <TouchableOpacity onPress={onClose} style={styles.closeButton} activeOpacity={0.6}>
             <Feather name="x" size={16} color={Colors.light.textSecondary} />
           </TouchableOpacity>
@@ -141,13 +142,13 @@ export default function AccountPanel({ visible, onClose }: AccountPanelProps) {
               <Feather name="user" size={32} color={Colors.light.tint} />
             </View>
             <View style={styles.profileInfo}>
-              <Text style={styles.profileName}>Guest User</Text>
-              <Text style={styles.profileEmail}>Sign in</Text>
+              <Text style={styles.profileName}>مستخدم زائر</Text>
+              <Text style={styles.profileEmail}>تسجيل الدخول</Text>
             </View>
           </View>
 
           <View style={styles.balanceCard}>
-            <Text style={styles.balanceLabel}>Credit</Text>
+            <Text style={styles.balanceLabel}>الرصيد</Text>
             <Text style={styles.balanceAmount}>$0.00</Text>
           </View>
 
@@ -158,13 +159,13 @@ export default function AccountPanel({ visible, onClose }: AccountPanelProps) {
                   <Feather name={item.icon} size={18} color={Colors.light.tint} />
                 </View>
                 <Text style={styles.menuLabel}>{item.label}</Text>
-                <Feather name="chevron-right" size={18} color={Colors.light.separator} />
+                <Feather name="chevron-left" size={18} color={Colors.light.separator} />
               </TouchableOpacity>
             ))}
           </View>
 
           <View style={styles.socialSection}>
-            <Text style={styles.socialTitle}>Contact Us</Text>
+            <Text style={styles.socialTitle}>تواصل معنا</Text>
             <View style={styles.socialRow}>
               {SOCIAL_LINKS.map((s) => (
                 <TouchableOpacity
@@ -213,7 +214,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 20,
+    marginBottom: 16,
   },
   headerTitle: {
     fontSize: 22,
@@ -235,7 +236,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 16,
     gap: 14,
-    marginBottom: 16,
+    marginBottom: 12,
   },
   avatarCircle: {
     width: 60,
@@ -264,10 +265,10 @@ const styles = StyleSheet.create({
   balanceCard: {
     backgroundColor: Colors.light.card,
     borderRadius: 16,
-    padding: 20,
+    padding: 16,
     alignItems: "center",
-    marginBottom: 20,
-    gap: 6,
+    marginBottom: 16,
+    gap: 4,
   },
   balanceLabel: {
     fontSize: 14,
@@ -283,12 +284,12 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.light.card,
     borderRadius: 16,
     overflow: "hidden",
-    marginBottom: 24,
+    marginBottom: 16,
   },
   menuRow: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 15,
+    paddingVertical: 14,
     paddingHorizontal: 16,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: Colors.light.cardBorder,
@@ -309,14 +310,14 @@ const styles = StyleSheet.create({
     color: Colors.light.text,
   },
   socialSection: {
-    marginBottom: 20,
+    marginBottom: 10,
   },
   socialTitle: {
     fontSize: 14,
     fontFamily: "Inter_600SemiBold",
     color: Colors.light.textSecondary,
     textAlign: "center",
-    marginBottom: 14,
+    marginBottom: 12,
   },
   socialRow: {
     flexDirection: "row",

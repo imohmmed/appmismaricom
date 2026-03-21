@@ -24,7 +24,7 @@ const TAB_ITEMS = [
   { name: "index", label: "PLUS+", icon: "plus-square" },
   { name: "tv", label: "TV", icon: "tv" },
   { name: "smm", label: "SMM", icon: "message-square" },
-  { name: "numbers", label: "Numbers", icon: "bar-chart-2" },
+  { name: "numbers", label: "الأرقام", icon: "bar-chart-2" },
 ];
 
 const springConfig = LayoutAnimation.create(
@@ -107,7 +107,7 @@ export default function MismariTabBar({ state, navigation }: BottomTabBarProps) 
           <TextInput
             ref={searchInputRef}
             style={s.searchInput}
-            placeholder="Search Mismari..."
+            placeholder="ابحث في Mismari..."
             placeholderTextColor={Colors.light.textSecondary}
             value={searchText}
             onChangeText={setSearchText}

@@ -12,18 +12,18 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Colors from "@/constants/colors";
 
 const STATS = [
-  { label: "Total Apps", value: "8,000+", icon: "smartphone", color: Colors.light.tint },
-  { label: "Categories", value: "8", icon: "grid", color: "#AF52DE" },
-  { label: "Downloads", value: "250K+", icon: "download", color: Colors.light.success },
-  { label: "Active Users", value: "15K+", icon: "users", color: Colors.light.tagModded },
+  { label: "إجمالي التطبيقات", value: "+8,000", icon: "smartphone", color: Colors.light.tint },
+  { label: "الأقسام", value: "8", icon: "grid", color: "#AF52DE" },
+  { label: "التحميلات", value: "+250 ألف", icon: "download", color: Colors.light.success },
+  { label: "المستخدمون النشطون", value: "+15 ألف", icon: "users", color: Colors.light.tagModded },
 ];
 
 const TOP_APPS = [
-  { rank: 1, name: "Netflix", downloads: "30K", trend: "+12%" },
-  { rank: 2, name: "YouTube Premium", downloads: "25K", trend: "+8%" },
-  { rank: 3, name: "Spotify++", downloads: "22K", trend: "+15%" },
-  { rank: 4, name: "TikTok++", downloads: "20K", trend: "+5%" },
-  { rank: 5, name: "Instagram++", downloads: "18K", trend: "+10%" },
+  { rank: 1, name: "Netflix", downloads: "30 ألف", trend: "+12%" },
+  { rank: 2, name: "YouTube Premium", downloads: "25 ألف", trend: "+8%" },
+  { rank: 3, name: "Spotify++", downloads: "22 ألف", trend: "+15%" },
+  { rank: 4, name: "TikTok++", downloads: "20 ألف", trend: "+5%" },
+  { rank: 5, name: "Instagram++", downloads: "18 ألف", trend: "+10%" },
 ];
 
 export default function NumbersScreen() {
@@ -37,7 +37,7 @@ export default function NumbersScreen() {
       </View>
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: isWeb ? 34 : 100 }}
+        contentContainerStyle={{ paddingBottom: isWeb ? 34 : 80 }}
         contentInsetAdjustmentBehavior="automatic"
       >
         <View style={styles.statsGrid}>
@@ -53,13 +53,13 @@ export default function NumbersScreen() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Top Downloads</Text>
+          <Text style={styles.sectionTitle}>الأكثر تحميلاً</Text>
           {TOP_APPS.map((app) => (
             <View key={app.rank} style={styles.rankRow}>
               <Text style={styles.rankNumber}>#{app.rank}</Text>
               <View style={styles.rankInfo}>
                 <Text style={styles.rankName}>{app.name}</Text>
-                <Text style={styles.rankDownloads}>{app.downloads} downloads</Text>
+                <Text style={styles.rankDownloads}>{app.downloads} تحميل</Text>
               </View>
               <View style={styles.trendBadge}>
                 <Feather name="trending-up" size={12} color={Colors.light.success} />

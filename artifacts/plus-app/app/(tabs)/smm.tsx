@@ -13,14 +13,14 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Colors from "@/constants/colors";
 
 const SMM_APPS = [
-  { id: 1, name: "Instagram++", desc: "Download stories & reels", icon: "instagram" },
-  { id: 2, name: "WhatsApp++", desc: "Hidden features unlocked", icon: "message-circle" },
-  { id: 3, name: "Snapchat++", desc: "Save snaps & stories", icon: "camera" },
-  { id: 4, name: "TikTok++", desc: "No ads, download videos", icon: "video" },
-  { id: 5, name: "Twitter++", desc: "Download videos & threads", icon: "twitter" },
-  { id: 6, name: "Facebook++", desc: "Enhanced features", icon: "facebook" },
-  { id: 7, name: "Telegram++", desc: "Premium features free", icon: "send" },
-  { id: 8, name: "Reddit++", desc: "Ad-free browsing", icon: "message-square" },
+  { id: 1, name: "Instagram++", desc: "تحميل القصص والريلز", icon: "instagram" },
+  { id: 2, name: "WhatsApp++", desc: "ميزات مخفية مفعّلة", icon: "message-circle" },
+  { id: 3, name: "Snapchat++", desc: "حفظ السنابات والقصص", icon: "camera" },
+  { id: 4, name: "TikTok++", desc: "بدون إعلانات، تحميل الفيديو", icon: "video" },
+  { id: 5, name: "Twitter++", desc: "تحميل الفيديوهات والثريدات", icon: "twitter" },
+  { id: 6, name: "Facebook++", desc: "ميزات محسّنة", icon: "facebook" },
+  { id: 7, name: "Telegram++", desc: "ميزات بريميوم مجانية", icon: "send" },
+  { id: 8, name: "Reddit++", desc: "تصفح بدون إعلانات", icon: "message-square" },
 ];
 
 export default function SmmScreen() {
@@ -36,7 +36,7 @@ export default function SmmScreen() {
         data={SMM_APPS}
         keyExtractor={(item) => item.id.toString()}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: isWeb ? 34 : 100 }}
+        contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: isWeb ? 34 : 80 }}
         contentInsetAdjustmentBehavior="automatic"
         ItemSeparatorComponent={() => <View style={styles.divider} />}
         renderItem={({ item }) => (
@@ -49,7 +49,7 @@ export default function SmmScreen() {
               <Text style={styles.appDesc}>{item.desc}</Text>
             </View>
             <Pressable style={styles.getButton}>
-              <Text style={styles.getButtonText}>Get</Text>
+              <Text style={styles.getButtonText}>تحميل</Text>
             </Pressable>
           </Pressable>
         )}
