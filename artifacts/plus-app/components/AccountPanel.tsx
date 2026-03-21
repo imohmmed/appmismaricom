@@ -59,10 +59,14 @@ export default function AccountPanel({ visible, onClose }: AccountPanelProps) {
   const slideAnim = React.useRef(new Animated.Value(SCREEN_HEIGHT)).current;
   const backdropAnim = React.useRef(new Animated.Value(0)).current;
   const [mounted, setMounted] = React.useState(false);
+  const isClosing = React.useRef(false);
 
   React.useEffect(() => {
     if (visible) {
+      isClosing.current = false;
       setMounted(true);
+      slideAnim.setValue(SCREEN_HEIGHT);
+      backdropAnim.setValue(0);
       Animated.parallel([
         Animated.spring(slideAnim, {
           toValue: 0,
@@ -76,12 +80,12 @@ export default function AccountPanel({ visible, onClose }: AccountPanelProps) {
           useNativeDriver: true,
         }),
       ]).start();
-    } else if (mounted) {
+    } else if (mounted && !isClosing.current) {
+      isClosing.current = true;
       Animated.parallel([
-        Animated.spring(slideAnim, {
+        Animated.timing(slideAnim, {
           toValue: SCREEN_HEIGHT,
-          damping: 25,
-          stiffness: 300,
+          duration: 250,
           useNativeDriver: true,
         }),
         Animated.timing(backdropAnim, {
@@ -89,7 +93,10 @@ export default function AccountPanel({ visible, onClose }: AccountPanelProps) {
           duration: 200,
           useNativeDriver: true,
         }),
-      ]).start(() => setMounted(false));
+      ]).start(() => {
+        setMounted(false);
+        isClosing.current = false;
+      });
     }
   }, [visible]);
 
