@@ -29,7 +29,7 @@ function NativeTabLayout() {
   ];
 
   const searchTrigger = (
-    <NativeTabs.Trigger key="search" name="search" role="search">
+    <NativeTabs.Trigger key="search" name="search" {...(isArabic ? {} : { role: "search" })}>
       <Icon sf="magnifyingglass" />
       <Label>{t("headerSearch")}</Label>
     </NativeTabs.Trigger>
