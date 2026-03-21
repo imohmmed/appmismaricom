@@ -346,7 +346,19 @@ export default function PlusScreen() {
 
       <SlidePanel visible={selectedApp !== null} onClose={() => setSelectedApp(null)}>
         {selectedApp && (
-          <AppDetailPanel app={selectedApp} onClose={() => setSelectedApp(null)} />
+          <AppDetailPanel
+            app={selectedApp}
+            onClose={() => setSelectedApp(null)}
+            onCategoryPress={(catKey) => {
+              setSelectedApp(null);
+              if (catToAppTimer.current) clearTimeout(catToAppTimer.current);
+              catToAppTimer.current = setTimeout(() => setActiveCat(catKey), 300);
+            }}
+            relatedApps={ALL_APPS.filter(
+              (a) => a.catKey === selectedApp.catKey && a.id !== selectedApp.id
+            )}
+            onRelatedAppPress={(a) => setSelectedApp(a)}
+          />
         )}
       </SlidePanel>
     </View>
