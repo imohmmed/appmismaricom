@@ -167,10 +167,10 @@ function StackedSection({ title, subtitle, data, onAppPress }: { title: string; 
   const pages = chunkArray(data, 3);
   return (
     <View style={styles.section}>
-      <View style={[styles.sectionHeader, isArabic && { flexDirection: "row-reverse" }]}>
-        <View style={isArabic ? { alignItems: "flex-end" } : undefined}>
-          <Text style={[styles.sectionTitle, { color: colors.text, fontFamily: fontAr("Bold") }]}>{title}</Text>
-          <Text style={[styles.sectionSubtitle, { color: colors.textSecondary, fontFamily: fontAr("Regular") }]}>{subtitle}</Text>
+      <View style={styles.sectionHeader}>
+        <View>
+          <Text style={[styles.sectionTitle, { color: colors.text, fontFamily: fontAr("Bold"), writingDirection: "ltr" }]}>{title}</Text>
+          <Text style={[styles.sectionSubtitle, { color: colors.textSecondary, fontFamily: fontAr("Regular"), writingDirection: "ltr" }]}>{subtitle}</Text>
         </View>
         <Feather name="chevron-right" size={18} color={colors.textSecondary} />
       </View>
@@ -328,7 +328,7 @@ export default function PlusScreen() {
       >
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionLabel, { color: colors.tint, fontFamily: fontAr("SemiBold") }]}>{t("featured")}</Text>
+            <Text style={[styles.sectionLabel, { color: colors.tint, fontFamily: fontAr("SemiBold"), writingDirection: "ltr" }]}>{t("featured")}</Text>
           </View>
           <FlatList
             ref={featuredRef}

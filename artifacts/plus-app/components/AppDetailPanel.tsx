@@ -351,8 +351,8 @@ export default function AppDetailPanel({ app, onClose, onCategoryPress, relatedA
           <>
             <View style={[st.dividerFull, { backgroundColor: colors.separator }]} />
             <View style={st.section}>
-              <View style={[st.sectionHeaderRow, isArabic && { flexDirection: "row-reverse" }]}>
-                <Text style={[st.sectionTitle, { color: colors.text, fontFamily: fontAr("Bold") }]}>{t("youMayLike")}</Text>
+              <View style={st.sectionHeaderRow}>
+                <Text style={[st.sectionTitle, { color: colors.text, fontFamily: fontAr("Bold"), writingDirection: "ltr" }]}>{t("youMayLike")}</Text>
                 <Feather name="chevron-right" size={18} color={colors.textSecondary} />
               </View>
             </View>

@@ -130,11 +130,56 @@ export default function MismariTabBar({ state, navigation }: BottomTabBarProps) 
     </View>
   ) : null;
 
+  const tabsForRender = isArabic ? [...TAB_KEYS].reverse() : TAB_KEYS;
+
+  const tabsSectionAr = !isSearchMode ? (
+    <View style={s.tabsContainer}>
+      {tabsForRender.map((tab) => {
+        const isActive = activeRoute === tab.name;
+        return (
+          <Pressable
+            key={tab.name}
+            onPress={() => navigateToTab(tab.name)}
+            style={s.tabItem}
+          >
+            <Feather
+              name={tab.icon as any}
+              size={20}
+              color={isActive ? colors.tint : colors.tabIconDefault}
+            />
+            <Text
+              style={[
+                s.tabLabel,
+                {
+                  color: isActive ? colors.tint : colors.tabIconDefault,
+                  fontFamily: fontAr("SemiBold"),
+                },
+              ]}
+              numberOfLines={1}
+            >
+              {t(tab.translationKey)}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  ) : null;
+
   const barContent = (
     <View style={s.barInner}>
-      {homeButton}
-      {tabsSection}
-      {searchButton}
+      {isArabic ? (
+        <>
+          {searchButton}
+          {homeButton}
+          {tabsSectionAr}
+        </>
+      ) : (
+        <>
+          {homeButton}
+          {tabsSection}
+          {searchButton}
+        </>
+      )}
     </View>
   );
 
