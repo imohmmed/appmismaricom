@@ -95,10 +95,9 @@ export default function Home() {
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.7, ease: "easeOut" }}
-          className="w-24 h-24 md:w-32 md:h-32 mb-8 rounded-[2.5rem] overflow-hidden shadow-2xl shadow-primary/20 relative"
+          className="mb-8"
         >
-          <div className="absolute inset-0 bg-gradient-to-tr from-primary to-secondary opacity-30 animate-pulse" />
-          <img src={`${import.meta.env.BASE_URL}images/logo.png`} alt="Plus Store Logo" className="w-full h-full object-cover relative z-10 p-2" />
+          <img src={`${import.meta.env.BASE_URL}mismari-logo-nobg.png`} alt="Mismari | مسماري" className="h-28 md:h-36 w-auto object-contain drop-shadow-2xl" />
         </motion.div>
 
         <motion.div

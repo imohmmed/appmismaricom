@@ -42,11 +42,12 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-[#1a1a2e] flex" dir="rtl">
       <aside className="w-60 bg-[#16162a] border-l border-[#2a2a45] hidden md:flex flex-col shrink-0">
-        <div className="h-16 flex items-center justify-end gap-3 px-5 border-b border-[#2a2a45]">
-          <span className="font-bold text-white text-base">مسماري</span>
-          <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-            <span className="font-black text-white text-xs">+</span>
-          </div>
+        <div className="h-16 flex items-center justify-center px-4 border-b border-[#2a2a45]">
+          <img
+            src={`${import.meta.env.BASE_URL}mismari-logo-nobg.png`}
+            alt="Mismari | مسماري"
+            className="h-10 w-auto object-contain"
+          />
         </div>
 
         <nav className="flex-1 py-3 overflow-y-auto">

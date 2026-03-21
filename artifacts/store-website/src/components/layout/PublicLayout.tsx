@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import { ShoppingBag, Search, Menu, X, ShieldCheck } from "lucide-react";
+import { Search, Menu, X, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -14,11 +14,12 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
       <header className="sticky top-0 z-50 w-full border-b border-border bg-background/80 backdrop-blur-xl">
         <div className="container mx-auto px-4 h-20 flex items-center justify-between">
           <div className="flex items-center gap-8">
-            <Link href="/" className="flex items-center gap-3 group">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center shadow-lg shadow-primary/20 group-hover:shadow-primary/40 transition-all duration-300">
-                <ShoppingBag className="w-5 h-5 text-white" />
-              </div>
-              <span className="font-bold text-2xl tracking-tight text-foreground">متجر بلس</span>
+            <Link href="/" className="flex items-center group">
+              <img
+                src={`${import.meta.env.BASE_URL}mismari-logo-nobg.png`}
+                alt="Mismari | مسماري"
+                className="h-10 w-auto object-contain group-hover:opacity-80 transition-opacity"
+              />
             </Link>
 
             <nav className="hidden md:flex items-center gap-6">
@@ -74,11 +75,12 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
             <div className="md:col-span-2">
-              <Link href="/" className="flex items-center gap-3 mb-6">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center shadow-lg">
-                  <ShoppingBag className="w-4 h-4 text-white" />
-                </div>
-                <span className="font-bold text-xl text-foreground">متجر بلس</span>
+              <Link href="/" className="flex items-center mb-6">
+                <img
+                  src={`${import.meta.env.BASE_URL}mismari-logo-nobg.png`}
+                  alt="Mismari | مسماري"
+                  className="h-9 w-auto object-contain"
+                />
               </Link>
               <p className="text-muted-foreground leading-relaxed max-w-sm">
                 المنصة الأولى والآمنة لتحميل تطبيقات بلس والألعاب المهكرة والبرامج المدفوعة لأجهزة الآيفون والآيباد بدون جلبريك.
