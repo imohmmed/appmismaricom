@@ -76,30 +76,22 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
   ];
 
   return (
-    <div className="min-h-screen flex flex-col overflow-x-hidden" style={{ background: "#ffffff", color: TEXT, direction: "rtl" }}>
+    <div className="min-h-screen flex flex-col" style={{ background: "#ffffff", color: TEXT, direction: "rtl", maxWidth: "100vw", overflowX: "clip" }}>
 
       <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-xl border-b border-black/8 shadow-sm">
         <div className="flex items-center justify-between px-5 py-3 max-w-5xl mx-auto" style={{ minHeight: "68px" }}>
-          <a href="/" className="flex items-center flex-shrink-0" style={{ overflow: "visible" }}>
-            <div style={{
-              width: "100px",
-              height: "58px",
-              overflow: "visible",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}>
-              <img
-                src={`${import.meta.env.BASE_URL}mismari-logo-nobg.png`}
-                alt="مسماري"
-                style={{
-                  height: "44px",
-                  width: "auto",
-                  display: "block",
-                  objectFit: "contain",
-                }}
-              />
-            </div>
+          <a href="/" className="flex items-center flex-shrink-0">
+            <img
+              src={`${import.meta.env.BASE_URL}mismari-logo-nobg.png`}
+              alt="مسماري"
+              style={{
+                height: "60px",
+                width: "auto",
+                display: "block",
+                padding: "10px 14px",
+                boxSizing: "content-box",
+              }}
+            />
           </a>
 
           <div className="flex items-center gap-3">
