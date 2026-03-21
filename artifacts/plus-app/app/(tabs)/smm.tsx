@@ -36,7 +36,7 @@ export default function SmmScreen() {
       <View style={[styles.header, isArabic && { flexDirection: "row-reverse" }]}>
         <Text style={[styles.headerTitle, { color: colors.text, fontFamily: fontAr("Bold") }]}>
           {isArabic ? (
-            <><Text style={{ fontFamily: "Inter_700Bold" }}>SMM</Text>{" مسماري"}</>
+            <>{"مسماري "}<Text style={{ fontFamily: "Inter_700Bold" }}>SMM</Text></>
           ) : (
             <>{"Mismari "}<Text style={{ fontFamily: "Inter_700Bold" }}>SMM</Text></>
           )}

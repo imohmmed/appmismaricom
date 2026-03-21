@@ -44,7 +44,7 @@ export default function TvScreen() {
       <View style={[styles.header, isArabic && { flexDirection: "row-reverse" }]}>
         <Text style={[styles.headerTitle, { color: colors.text, fontFamily: fontAr("Bold") }]}>
           {isArabic ? (
-            <><Text style={{ fontFamily: "Inter_700Bold" }}>TV</Text>{" مسماري"}</>
+            <>{"مسماري "}<Text style={{ fontFamily: "Inter_700Bold" }}>TV</Text></>
           ) : (
             <>{"Mismari "}<Text style={{ fontFamily: "Inter_700Bold" }}>TV</Text></>
           )}
