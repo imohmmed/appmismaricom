@@ -215,7 +215,7 @@ export default function Home() {
           style={{
             width: "160px",
             height: "160px",
-            backgroundImage: `url(${import.meta.env.BASE_URL}mismari-logo-padded.png)`,
+            backgroundImage: `url(${import.meta.env.BASE_URL}mismari-logo-clean.png)`,
             backgroundSize: "contain",
             backgroundRepeat: "no-repeat",
             backgroundPosition: "center",
