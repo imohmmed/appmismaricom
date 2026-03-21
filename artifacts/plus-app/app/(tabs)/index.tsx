@@ -167,12 +167,12 @@ function StackedSection({ title, subtitle, data, onAppPress }: { title: string; 
   const pages = chunkArray(data, 3);
   return (
     <View style={styles.section}>
-      <View style={[styles.sectionHeader, isArabic && { flexDirection: "row-reverse" }]}>
-        <View style={isArabic ? { alignItems: "flex-end" } : undefined}>
+      <View style={styles.sectionHeader}>
+        <Feather name={isArabic ? "chevron-left" : "chevron-right"} size={18} color={colors.textSecondary} />
+        <View style={isArabic ? { alignItems: "flex-end", flex: 1 } : { flex: 1 }}>
           <Text style={[styles.sectionTitle, { color: colors.text, fontFamily: fontAr("Bold") }]}>{title}</Text>
           <Text style={[styles.sectionSubtitle, { color: colors.textSecondary, fontFamily: fontAr("Regular") }]}>{subtitle}</Text>
         </View>
-        <Feather name={isArabic ? "chevron-left" : "chevron-right"} size={18} color={colors.textSecondary} />
       </View>
       <FlatList
         data={pages}

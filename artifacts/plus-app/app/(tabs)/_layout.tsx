@@ -7,29 +7,34 @@ import MismariTabBar from "@/components/MismariTabBar";
 import { useSettings } from "@/contexts/SettingsContext";
 
 function NativeTabLayout() {
-  const { t } = useSettings();
+  const { t, isArabic } = useSettings();
+
+  const triggers = [
+    <NativeTabs.Trigger key="index" name="index">
+      <Icon sf={{ default: "plus.app", selected: "plus.app.fill" }} />
+      <Label>{t("tabPlus")}</Label>
+    </NativeTabs.Trigger>,
+    <NativeTabs.Trigger key="tv" name="tv">
+      <Icon sf={{ default: "play.tv", selected: "play.tv.fill" }} />
+      <Label>{t("tabTV")}</Label>
+    </NativeTabs.Trigger>,
+    <NativeTabs.Trigger key="smm" name="smm">
+      <Icon sf={{ default: "bubble.left.and.bubble.right", selected: "bubble.left.and.bubble.right.fill" }} />
+      <Label>{t("tabSMM")}</Label>
+    </NativeTabs.Trigger>,
+    <NativeTabs.Trigger key="numbers" name="numbers">
+      <Icon sf={{ default: "chart.bar", selected: "chart.bar.fill" }} />
+      <Label>{t("tabNumbers")}</Label>
+    </NativeTabs.Trigger>,
+    <NativeTabs.Trigger key="search" name="search" role="search">
+      <Icon sf="magnifyingglass" />
+      <Label>{t("headerSearch")}</Label>
+    </NativeTabs.Trigger>,
+  ];
+
   return (
     <NativeTabs>
-      <NativeTabs.Trigger name="index">
-        <Icon sf={{ default: "plus.app", selected: "plus.app.fill" }} />
-        <Label>{t("tabPlus")}</Label>
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="tv">
-        <Icon sf={{ default: "play.tv", selected: "play.tv.fill" }} />
-        <Label>{t("tabTV")}</Label>
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="smm">
-        <Icon sf={{ default: "bubble.left.and.bubble.right", selected: "bubble.left.and.bubble.right.fill" }} />
-        <Label>{t("tabSMM")}</Label>
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="numbers">
-        <Icon sf={{ default: "chart.bar", selected: "chart.bar.fill" }} />
-        <Label>{t("tabNumbers")}</Label>
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="search" role="search">
-        <Icon sf="magnifyingglass" />
-        <Label>{t("headerSearch")}</Label>
-      </NativeTabs.Trigger>
+      {isArabic ? [...triggers].reverse() : triggers}
     </NativeTabs>
   );
 }
