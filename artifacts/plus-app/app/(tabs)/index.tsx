@@ -268,16 +268,18 @@ export default function PlusScreen() {
         </Pressable>
       </View>
 
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.categoryRow}
-        style={styles.categoryScrollView}
-      >
+      <View style={styles.categoryWrapper}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.categoryRow}
+          style={styles.categoryScrollView}
+        >
         {CATEGORIES.map((cat) => (
           <CategoryPill key={cat.key} item={cat} onPress={() => setActiveCat(cat.key)} />
         ))}
-      </ScrollView>
+        </ScrollView>
+      </View>
 
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -391,13 +393,17 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
 
+  categoryWrapper: {
+    marginBottom: 4,
+  },
   categoryScrollView: {
     flexGrow: 0,
   },
   categoryRow: {
     paddingHorizontal: 16,
+    paddingRight: 32,
     gap: 8,
-    paddingVertical: 8,
+    paddingVertical: 12,
   },
   categoryPill: {
     flexDirection: "row",
