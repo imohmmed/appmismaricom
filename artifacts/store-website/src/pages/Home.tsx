@@ -210,13 +210,12 @@ export default function Home() {
         style={{ background: `radial-gradient(ellipse 80% 60% at 50% 0%, ${PRIMARY}22 0%, transparent 70%)` }}
       >
         <img
-          src={`${import.meta.env.BASE_URL}mismari-logo-nobg.png`}
+          src={`${import.meta.env.BASE_URL}mismari-logo-padded.png`}
           alt="مسماري"
           className="mb-6"
           style={{
-            width: "110px",
-            height: "140px",
-            objectFit: "contain",
+            height: "160px",
+            width: "auto",
             display: "block",
             filter: "drop-shadow(0 4px 12px rgba(0,0,0,0.10))",
           }}

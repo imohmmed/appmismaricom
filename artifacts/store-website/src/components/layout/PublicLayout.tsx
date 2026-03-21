@@ -82,14 +82,9 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
         <div className="flex items-center justify-between px-5 py-3 max-w-5xl mx-auto" style={{ minHeight: "68px" }}>
           <a href="/" className="flex items-center flex-shrink-0">
             <img
-              src={`${import.meta.env.BASE_URL}mismari-logo-nobg.png`}
+              src={`${import.meta.env.BASE_URL}mismari-logo-padded.png`}
               alt="مسماري"
-              style={{
-                width: "68px",
-                height: "80px",
-                objectFit: "contain",
-                display: "block",
-              }}
+              style={{ height: "64px", width: "auto", display: "block" }}
             />
           </a>
 
@@ -143,9 +138,9 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
       <footer className="border-t border-black/8 py-10 px-5 text-center" style={{ background: `${PRIMARY}08` }}>
         <a href="/" className="inline-flex items-center justify-center mb-5">
           <img
-            src={`${import.meta.env.BASE_URL}mismari-logo-nobg.png`}
+            src={`${import.meta.env.BASE_URL}mismari-logo-padded.png`}
             alt="مسماري"
-            style={{ width: "75px", height: "90px", objectFit: "contain", display: "block" }}
+            style={{ height: "90px", width: "auto", display: "block" }}
           />
         </a>
         <div className="flex flex-wrap justify-center gap-6 mb-5 text-sm" style={{ color: `${TEXT}88` }}>
