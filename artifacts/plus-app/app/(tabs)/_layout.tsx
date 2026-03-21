@@ -64,8 +64,7 @@ function ClassicTabLayout() {
 }
 
 export default function TabLayout() {
-  const { isArabic } = useSettings();
-  if (isLiquidGlassAvailable() && !isArabic) {
+  if (isLiquidGlassAvailable()) {
     return <NativeTabLayout />;
   }
   return <ClassicTabLayout />;
