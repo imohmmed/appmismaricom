@@ -8,6 +8,7 @@ import React from "react";
 import { Platform, StyleSheet, View } from "react-native";
 
 import Colors from "@/constants/colors";
+import MismariTabBar from "@/components/MismariTabBar";
 
 function NativeTabLayout() {
   return (
@@ -37,100 +38,18 @@ function NativeTabLayout() {
 }
 
 function ClassicTabLayout() {
-  const isIOS = Platform.OS === "ios";
-  const isWeb = Platform.OS === "web";
-
   return (
     <Tabs
+      tabBar={(props) => <MismariTabBar {...props} />}
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: Colors.light.tint,
-        tabBarInactiveTintColor: Colors.light.tabIconDefault,
-        tabBarStyle: {
-          position: "absolute",
-          backgroundColor: isIOS ? "transparent" : Colors.light.background,
-          borderTopWidth: 0,
-          borderTopColor: Colors.light.cardBorder,
-          elevation: 0,
-          ...(isWeb ? { height: 84, borderTopWidth: 1 } : {}),
-        },
-        tabBarBackground: () =>
-          isIOS ? (
-            <BlurView
-              intensity={80}
-              tint="light"
-              style={StyleSheet.absoluteFill}
-            />
-          ) : isWeb ? (
-            <View
-              style={[
-                StyleSheet.absoluteFill,
-                { backgroundColor: Colors.light.background, borderTopWidth: 1, borderTopColor: Colors.light.cardBorder },
-              ]}
-            />
-          ) : null,
       }}
     >
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: "PLUS+",
-          tabBarIcon: ({ color }) =>
-            isIOS ? (
-              <SymbolView name="plus.app" tintColor={color} size={24} />
-            ) : (
-              <Feather name="plus-square" size={22} color={color} />
-            ),
-        }}
-      />
-      <Tabs.Screen
-        name="tv"
-        options={{
-          title: "TV",
-          tabBarIcon: ({ color }) =>
-            isIOS ? (
-              <SymbolView name="play.tv" tintColor={color} size={24} />
-            ) : (
-              <Feather name="tv" size={22} color={color} />
-            ),
-        }}
-      />
-      <Tabs.Screen
-        name="smm"
-        options={{
-          title: "SMM",
-          tabBarIcon: ({ color }) =>
-            isIOS ? (
-              <SymbolView name="bubble.left.and.bubble.right" tintColor={color} size={24} />
-            ) : (
-              <Feather name="message-square" size={22} color={color} />
-            ),
-        }}
-      />
-      <Tabs.Screen
-        name="numbers"
-        options={{
-          title: "Numbers",
-          tabBarIcon: ({ color }) =>
-            isIOS ? (
-              <SymbolView name="chart.bar" tintColor={color} size={24} />
-            ) : (
-              <Feather name="bar-chart-2" size={22} color={color} />
-            ),
-        }}
-      />
-      <Tabs.Screen
-        name="search"
-        options={{
-          title: "Search",
-          tabBarIcon: ({ color }) =>
-            isIOS ? (
-              <SymbolView name="magnifyingglass" tintColor={color} size={24} />
-            ) : (
-              <Feather name="search" size={22} color={color} />
-            ),
-        }}
-      />
+      <Tabs.Screen name="index" />
+      <Tabs.Screen name="tv" />
+      <Tabs.Screen name="smm" />
+      <Tabs.Screen name="numbers" />
+      <Tabs.Screen name="search" />
     </Tabs>
   );
 }
