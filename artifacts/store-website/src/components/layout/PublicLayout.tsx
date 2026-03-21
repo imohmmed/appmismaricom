@@ -86,7 +86,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
               style={{
                 width: "62px",
                 height: "62px",
-                backgroundImage: `url(${import.meta.env.BASE_URL}mismari-logo-clean.png)`,
+                backgroundImage: `url(${import.meta.env.BASE_URL}mismari-logo-final.png)`,
                 backgroundSize: "contain",
                 backgroundRepeat: "no-repeat",
                 backgroundPosition: "center",
@@ -149,7 +149,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
             style={{
               width: "100px",
               height: "100px",
-              backgroundImage: `url(${import.meta.env.BASE_URL}mismari-logo-clean.png)`,
+              backgroundImage: `url(${import.meta.env.BASE_URL}mismari-logo-final.png)`,
               backgroundSize: "contain",
               backgroundRepeat: "no-repeat",
               backgroundPosition: "center",
