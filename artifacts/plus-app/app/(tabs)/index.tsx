@@ -23,7 +23,7 @@ if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental
 }
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
-const APP_CARD_WIDTH = (SCREEN_WIDTH - 56) / 3;
+const PAGE_WIDTH = SCREEN_WIDTH - 40;
 
 const CATEGORIES = [
   { key: "all", label: "All" },
@@ -171,20 +171,33 @@ function FeaturedCard({ item }: { item: typeof FEATURED_APPS[number] }) {
   );
 }
 
-function HorizontalAppCard({ app }: { app: AppItem }) {
+function AppListRow({ app, showDivider }: { app: AppItem; showDivider: boolean }) {
   const tagColor = getTagColor(app.tag);
   return (
-    <View style={styles.hAppCard}>
-      <View style={[styles.hAppIcon, { backgroundColor: `${tagColor}20` }]}>
-        <Feather name={app.icon as any} size={24} color={tagColor} />
+    <View>
+      <View style={styles.listRow}>
+        <View style={[styles.listRowIcon, { backgroundColor: `${tagColor}20` }]}>
+          <Feather name={app.icon as any} size={24} color={tagColor} />
+        </View>
+        <View style={styles.listRowInfo}>
+          <Text style={styles.listRowName} numberOfLines={1}>{app.name}</Text>
+          <Text style={styles.listRowCategory} numberOfLines={1}>{app.category}</Text>
+        </View>
+        <Pressable style={styles.listRowGetButton}>
+          <Text style={styles.listRowGetText}>GET</Text>
+        </Pressable>
       </View>
-      <Text style={styles.hAppName} numberOfLines={1}>{app.name}</Text>
-      <Text style={styles.hAppCategory} numberOfLines={1}>{app.category}</Text>
-      <Pressable style={styles.hGetButton}>
-        <Text style={styles.hGetButtonText}>GET</Text>
-      </Pressable>
+      {showDivider && <View style={styles.listRowDivider} />}
     </View>
   );
+}
+
+function chunkArray<T>(arr: T[], size: number): T[][] {
+  const chunks: T[][] = [];
+  for (let i = 0; i < arr.length; i += size) {
+    chunks.push(arr.slice(i, i + size));
+  }
+  return chunks;
 }
 
 function AppRow({ app }: { app: AppItem }) {
@@ -210,7 +223,8 @@ function AppRow({ app }: { app: AppItem }) {
   );
 }
 
-function HorizontalSection({ title, subtitle, data }: { title: string; subtitle: string; data: AppItem[] }) {
+function StackedSection({ title, subtitle, data }: { title: string; subtitle: string; data: AppItem[] }) {
+  const pages = chunkArray(data, 3);
   return (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
@@ -221,14 +235,21 @@ function HorizontalSection({ title, subtitle, data }: { title: string; subtitle:
         <Feather name="chevron-right" size={18} color={Colors.light.textSecondary} />
       </View>
       <FlatList
-        data={data}
+        data={pages}
         horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: 16, gap: 12 }}
-        keyExtractor={(item) => item.id.toString()}
-        snapToInterval={APP_CARD_WIDTH + 12}
+        pagingEnabled={false}
+        snapToInterval={PAGE_WIDTH + 16}
         decelerationRate="fast"
-        renderItem={({ item }) => <HorizontalAppCard app={item} />}
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ paddingHorizontal: 20, gap: 16 }}
+        keyExtractor={(_, i) => i.toString()}
+        renderItem={({ item: page }) => (
+          <View style={{ width: PAGE_WIDTH }}>
+            {page.map((app, idx) => (
+              <AppListRow key={app.id} app={app} showDivider={idx < page.length - 1} />
+            ))}
+          </View>
+        )}
       />
     </View>
   );
@@ -307,33 +328,19 @@ export default function PlusScreen() {
               </View>
             </View>
 
-            <View style={styles.section}>
-              <View style={styles.sectionHeader}>
-                <View>
-                  <Text style={styles.sectionTitle}>What's Hot 🔥</Text>
-                  <Text style={styles.sectionSubtitle}>Trending right now</Text>
-                </View>
-                <Feather name="chevron-right" size={18} color={Colors.light.textSecondary} />
-              </View>
-              <FlatList
-                data={hotApps}
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{ paddingHorizontal: 16, gap: 12 }}
-                keyExtractor={(item) => item.id.toString()}
-                snapToInterval={APP_CARD_WIDTH + 12}
-                decelerationRate="fast"
-                renderItem={({ item }) => <HorizontalAppCard app={item} />}
-              />
-            </View>
+            <StackedSection
+              title="What's Hot 🔥"
+              subtitle="Trending right now"
+              data={hotApps}
+            />
 
-            <HorizontalSection
+            <StackedSection
               title="Most Downloaded"
               subtitle="Top picks by the community"
               data={mostDownloaded}
             />
 
-            <HorizontalSection
+            <StackedSection
               title="Recently Added"
               subtitle="Fresh apps just dropped"
               data={newAdds}
@@ -504,42 +511,50 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.light.tint,
   },
 
-  hAppCard: {
-    width: APP_CARD_WIDTH,
+  listRow: {
+    flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    paddingVertical: 10,
+    gap: 12,
   },
-  hAppIcon: {
-    width: 64,
-    height: 64,
-    borderRadius: 18,
+  listRowIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
   },
-  hAppName: {
-    fontSize: 13,
+  listRowInfo: {
+    flex: 1,
+    gap: 3,
+  },
+  listRowName: {
+    fontSize: 16,
     fontFamily: "Inter_600SemiBold",
     color: Colors.light.text,
-    textAlign: "center",
   },
-  hAppCategory: {
-    fontSize: 11,
+  listRowCategory: {
+    fontSize: 13,
     fontFamily: "Inter_400Regular",
     color: Colors.light.textSecondary,
-    textAlign: "center",
   },
-  hGetButton: {
+  listRowGetButton: {
     backgroundColor: Colors.light.card,
     borderWidth: 1,
     borderColor: Colors.light.cardBorder,
-    paddingHorizontal: 20,
-    paddingVertical: 6,
-    borderRadius: 16,
+    paddingHorizontal: 22,
+    paddingVertical: 7,
+    borderRadius: 18,
   },
-  hGetButtonText: {
-    fontSize: 13,
+  listRowGetText: {
+    fontSize: 14,
     fontFamily: "Inter_700Bold",
     color: Colors.light.tint,
+  },
+  listRowDivider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: Colors.light.cardBorder,
+    marginLeft: 68,
   },
 
   appList: {
