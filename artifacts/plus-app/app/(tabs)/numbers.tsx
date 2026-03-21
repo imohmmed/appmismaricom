@@ -13,9 +13,9 @@ import Colors from "@/constants/colors";
 
 const STATS = [
   { label: "Total Apps", value: "8,000+", icon: "smartphone", color: Colors.light.tint },
-  { label: "Categories", value: "8", icon: "grid", color: Colors.light.tagTweaked },
+  { label: "Categories", value: "8", icon: "grid", color: "#AF52DE" },
   { label: "Downloads", value: "250K+", icon: "download", color: Colors.light.success },
-  { label: "Active Users", value: "15K+", icon: "users", color: Colors.light.tintSecondary },
+  { label: "Active Users", value: "15K+", icon: "users", color: Colors.light.tagModded },
 ];
 
 const TOP_APPS = [
@@ -43,7 +43,7 @@ export default function NumbersScreen() {
         <View style={styles.statsGrid}>
           {STATS.map((stat) => (
             <View key={stat.label} style={styles.statCard}>
-              <View style={[styles.statIcon, { backgroundColor: `${stat.color}20` }]}>
+              <View style={[styles.statIcon, { backgroundColor: `${stat.color}15` }]}>
                 <Feather name={stat.icon as any} size={20} color={stat.color} />
               </View>
               <Text style={styles.statValue}>{stat.value}</Text>
@@ -77,62 +77,28 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.light.background },
   header: { paddingHorizontal: 20, paddingVertical: 12 },
   headerTitle: { fontSize: 32, fontFamily: "Inter_700Bold", color: Colors.light.text },
-  statsGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    paddingHorizontal: 16,
-    gap: 12,
-  },
+  statsGrid: { flexDirection: "row", flexWrap: "wrap", paddingHorizontal: 16, gap: 12 },
   statCard: {
     width: "47%" as any,
     backgroundColor: Colors.light.card,
     borderRadius: 16,
     padding: 16,
-    borderWidth: 1,
-    borderColor: Colors.light.cardBorder,
     gap: 8,
   },
-  statIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  statValue: {
-    fontSize: 24,
-    fontFamily: "Inter_700Bold",
-    color: Colors.light.text,
-  },
-  statLabel: {
-    fontSize: 13,
-    fontFamily: "Inter_400Regular",
-    color: Colors.light.textSecondary,
-  },
-  section: {
-    marginTop: 24,
-    paddingHorizontal: 20,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontFamily: "Inter_700Bold",
-    color: Colors.light.text,
-    marginBottom: 16,
-  },
+  statIcon: { width: 40, height: 40, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  statValue: { fontSize: 24, fontFamily: "Inter_700Bold", color: Colors.light.text },
+  statLabel: { fontSize: 13, fontFamily: "Inter_400Regular", color: Colors.light.textSecondary },
+  section: { marginTop: 24, paddingHorizontal: 20 },
+  sectionTitle: { fontSize: 20, fontFamily: "Inter_700Bold", color: Colors.light.text, marginBottom: 16 },
   rankRow: {
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.light.cardBorder,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: Colors.light.separator,
     gap: 14,
   },
-  rankNumber: {
-    fontSize: 16,
-    fontFamily: "Inter_700Bold",
-    color: Colors.light.tint,
-    width: 30,
-  },
+  rankNumber: { fontSize: 16, fontFamily: "Inter_700Bold", color: Colors.light.tint, width: 30 },
   rankInfo: { flex: 1, gap: 2 },
   rankName: { fontSize: 16, fontFamily: "Inter_600SemiBold", color: Colors.light.text },
   rankDownloads: { fontSize: 13, fontFamily: "Inter_400Regular", color: Colors.light.textSecondary },
@@ -140,7 +106,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    backgroundColor: `${Colors.light.success}20`,
+    backgroundColor: `${Colors.light.success}15`,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,

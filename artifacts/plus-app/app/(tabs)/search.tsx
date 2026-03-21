@@ -25,7 +25,7 @@ const ALL_APPS = [
   { id: 9, name: "Minecraft Hack", category: "Games", tag: "hacked", icon: "box" },
   { id: 10, name: "GTA+", category: "Games", tag: "modded", icon: "monitor" },
   { id: 11, name: "Telegram++", category: "Social Media", tag: "tweaked", icon: "send" },
-  { id: 12, name: "CapCut Pro", category: "Design", tag: "tweaked", icon: "scissors" },
+  { id: 12, name: "CapCut Pro", category: "Design", tag: "modded", icon: "scissors" },
 ];
 
 function getTagColor(tag: string) {
@@ -56,7 +56,7 @@ export default function SearchScreen() {
         <Feather name="search" size={18} color={Colors.light.textSecondary} />
         <TextInput
           style={styles.searchInput}
-          placeholder="Search apps & games..."
+          placeholder="Apps, Games, Categories..."
           placeholderTextColor={Colors.light.textSecondary}
           value={query}
           onChangeText={setQuery}
@@ -76,6 +76,7 @@ export default function SearchScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: isWeb ? 34 : 100 }}
         contentInsetAdjustmentBehavior="automatic"
+        ItemSeparatorComponent={() => <View style={styles.divider} />}
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <Feather name="search" size={48} color={Colors.light.textSecondary} />
@@ -86,20 +87,15 @@ export default function SearchScreen() {
           const tagColor = getTagColor(item.tag);
           return (
             <Pressable style={styles.appRow}>
-              <View style={[styles.appIcon, { backgroundColor: `${tagColor}20` }]}>
+              <View style={[styles.appIcon, { backgroundColor: `${tagColor}15` }]}>
                 <Feather name={item.icon as any} size={22} color={tagColor} />
               </View>
               <View style={styles.appInfo}>
                 <Text style={styles.appName}>{item.name}</Text>
-                <View style={styles.meta}>
-                  <Text style={styles.appCategory}>{item.category}</Text>
-                  <View style={[styles.tagBadge, { backgroundColor: `${tagColor}20` }]}>
-                    <Text style={[styles.tagText, { color: tagColor }]}>{item.tag}</Text>
-                  </View>
-                </View>
+                <Text style={styles.appCategory}>{item.category}</Text>
               </View>
               <Pressable style={styles.getButton}>
-                <Text style={styles.getButtonText}>GET</Text>
+                <Text style={styles.getButtonText}>Get</Text>
               </Pressable>
             </Pressable>
           );
@@ -117,13 +113,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: Colors.light.card,
-    borderRadius: 14,
+    borderRadius: 12,
     paddingHorizontal: 14,
-    paddingVertical: 12,
+    paddingVertical: 10,
     marginHorizontal: 20,
     marginBottom: 12,
-    borderWidth: 1,
-    borderColor: Colors.light.cardBorder,
     gap: 10,
   },
   searchInput: {
@@ -134,14 +128,12 @@ const styles = StyleSheet.create({
   },
   appRow: { flexDirection: "row", alignItems: "center", paddingVertical: 12, gap: 14 },
   appIcon: { width: 52, height: 52, borderRadius: 14, alignItems: "center", justifyContent: "center" },
-  appInfo: { flex: 1, gap: 4 },
+  appInfo: { flex: 1, gap: 3 },
   appName: { fontSize: 16, fontFamily: "Inter_600SemiBold", color: Colors.light.text },
-  meta: { flexDirection: "row", alignItems: "center", gap: 8 },
   appCategory: { fontSize: 13, fontFamily: "Inter_400Regular", color: Colors.light.textSecondary },
-  tagBadge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6 },
-  tagText: { fontSize: 11, fontFamily: "Inter_600SemiBold" },
-  getButton: { backgroundColor: Colors.light.tint, paddingHorizontal: 18, paddingVertical: 8, borderRadius: 20 },
-  getButtonText: { fontSize: 14, fontFamily: "Inter_700Bold", color: "#FFF" },
+  getButton: { backgroundColor: Colors.light.card, paddingHorizontal: 22, paddingVertical: 7, borderRadius: 18 },
+  getButtonText: { fontSize: 15, fontFamily: "Inter_700Bold", color: Colors.light.tint },
+  divider: { height: StyleSheet.hairlineWidth, backgroundColor: Colors.light.separator, marginLeft: 66 },
   emptyState: { alignItems: "center", justifyContent: "center", paddingTop: 80, gap: 16 },
   emptyText: { fontSize: 16, fontFamily: "Inter_500Medium", color: Colors.light.textSecondary },
 });

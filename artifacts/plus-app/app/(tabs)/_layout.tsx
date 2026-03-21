@@ -49,23 +49,23 @@ function ClassicTabLayout() {
         tabBarStyle: {
           position: "absolute",
           backgroundColor: isIOS ? "transparent" : Colors.light.background,
-          borderTopWidth: isWeb ? 1 : 0,
+          borderTopWidth: 0,
           borderTopColor: Colors.light.cardBorder,
           elevation: 0,
-          ...(isWeb ? { height: 84 } : {}),
+          ...(isWeb ? { height: 84, borderTopWidth: 1 } : {}),
         },
         tabBarBackground: () =>
           isIOS ? (
             <BlurView
               intensity={80}
-              tint="dark"
+              tint="light"
               style={StyleSheet.absoluteFill}
             />
           ) : isWeb ? (
             <View
               style={[
                 StyleSheet.absoluteFill,
-                { backgroundColor: Colors.light.background },
+                { backgroundColor: Colors.light.background, borderTopWidth: 1, borderTopColor: Colors.light.cardBorder },
               ]}
             />
           ) : null,
