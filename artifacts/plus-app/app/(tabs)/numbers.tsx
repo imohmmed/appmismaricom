@@ -1,15 +1,17 @@
 import { Feather } from "@expo/vector-icons";
-import React from "react";
+import React, { useState } from "react";
 import {
   Platform,
   ScrollView,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useSettings } from "@/contexts/SettingsContext";
+import AccountPanel from "@/components/AccountPanel";
 
 const TOP_APPS = [
   { rank: 1, name: "Netflix", downloads: "30K", trend: "+12%" },
@@ -22,7 +24,8 @@ const TOP_APPS = [
 export default function NumbersScreen() {
   const insets = useSafeAreaInsets();
   const isWeb = Platform.OS === "web";
-  const { colors, t, fontAr } = useSettings();
+  const { colors, t, fontAr, isArabic } = useSettings();
+  const [showAccount, setShowAccount] = useState(false);
 
   const STATS = [
     { label: t("totalApps"), value: "+8,000", icon: "smartphone", color: colors.tint },
@@ -33,10 +36,13 @@ export default function NumbersScreen() {
 
   return (
     <View style={[styles.container, { paddingTop: isWeb ? 67 : insets.top, backgroundColor: colors.background }]}>
-      <View style={styles.header}>
+      <View style={[styles.header, isArabic && { flexDirection: "row-reverse" }]}>
         <Text style={[styles.headerTitle, { color: colors.text, fontFamily: fontAr("Bold") }]}>
           {t("headerNum")}
         </Text>
+        <TouchableOpacity style={[styles.profileButton, { backgroundColor: colors.card }]} onPress={() => setShowAccount(true)} activeOpacity={0.6}>
+          <Feather name="user" size={20} color={colors.textSecondary} />
+        </TouchableOpacity>
       </View>
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -78,14 +84,16 @@ export default function NumbersScreen() {
           ))}
         </View>
       </ScrollView>
+      <AccountPanel visible={showAccount} onClose={() => setShowAccount(false)} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: { paddingHorizontal: 20, paddingVertical: 12 },
+  header: { paddingHorizontal: 20, paddingVertical: 12, flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   headerTitle: { fontSize: 28 },
+  profileButton: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center" },
   statsGrid: { flexDirection: "row", flexWrap: "wrap", paddingHorizontal: 16, gap: 12 },
   statCard: {
     width: "47%" as any,

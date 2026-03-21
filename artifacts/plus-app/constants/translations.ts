@@ -22,7 +22,7 @@ const translations = {
     headerPlus: "مسماري +",
     headerTV: "مسماري TV",
     headerSMM: "مسماري SMM",
-    headerNum: "مسماري NUM.",
+    headerNum: "مسماري NUM",
     headerSearch: "البحث",
 
     tabPlus: "بلس+",
@@ -106,7 +106,7 @@ const translations = {
     headerPlus: "Mismari +",
     headerTV: "Mismari TV",
     headerSMM: "Mismari SMM",
-    headerNum: "Mismari NUM.",
+    headerNum: "Mismari NUM",
     headerSearch: "Search",
 
     tabPlus: "PLUS+",

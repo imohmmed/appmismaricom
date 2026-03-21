@@ -1,16 +1,18 @@
 import { Feather } from "@expo/vector-icons";
-import React from "react";
+import React, { useState } from "react";
 import {
   FlatList,
   Platform,
   Pressable,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useSettings } from "@/contexts/SettingsContext";
+import AccountPanel from "@/components/AccountPanel";
 
 const SMM_APPS = [
   { id: 1, name: "Instagram++", descAr: "تحميل القصص والريلز", descEn: "Download stories & reels", icon: "instagram" },
@@ -27,13 +29,17 @@ export default function SmmScreen() {
   const insets = useSafeAreaInsets();
   const isWeb = Platform.OS === "web";
   const { colors, t, fontAr, isArabic } = useSettings();
+  const [showAccount, setShowAccount] = useState(false);
 
   return (
     <View style={[styles.container, { paddingTop: isWeb ? 67 : insets.top, backgroundColor: colors.background }]}>
-      <View style={styles.header}>
+      <View style={[styles.header, isArabic && { flexDirection: "row-reverse" }]}>
         <Text style={[styles.headerTitle, { color: colors.text, fontFamily: fontAr("Bold") }]}>
           {t("headerSMM")}
         </Text>
+        <TouchableOpacity style={[styles.profileButton, { backgroundColor: colors.card }]} onPress={() => setShowAccount(true)} activeOpacity={0.6}>
+          <Feather name="user" size={20} color={colors.textSecondary} />
+        </TouchableOpacity>
       </View>
       <FlatList
         data={SMM_APPS}
@@ -61,14 +67,16 @@ export default function SmmScreen() {
           </Pressable>
         )}
       />
+      <AccountPanel visible={showAccount} onClose={() => setShowAccount(false)} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: { paddingHorizontal: 20, paddingVertical: 12 },
+  header: { paddingHorizontal: 20, paddingVertical: 12, flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   headerTitle: { fontSize: 28 },
+  profileButton: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center" },
   appRow: { flexDirection: "row", alignItems: "center", paddingVertical: 12, gap: 14 },
   appIcon: { width: 52, height: 52, borderRadius: 14, alignItems: "center", justifyContent: "center" },
   appInfo: { flex: 1, gap: 3 },

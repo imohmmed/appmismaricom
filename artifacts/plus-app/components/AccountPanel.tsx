@@ -225,12 +225,12 @@ const styles = StyleSheet.create({
   },
   panel: {
     position: "absolute",
-    top: 0,
+    top: 60,
     left: 0,
     right: 0,
     bottom: 0,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
     paddingHorizontal: 20,
   },
   handleBar: {
