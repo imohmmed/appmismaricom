@@ -19,6 +19,8 @@ import AdminPurchases from "./pages/admin/Purchases";
 import AdminNotifications from "./pages/admin/Notifications";
 import AdminDownloads from "./pages/admin/Downloads";
 import AdminSettings from "./pages/admin/Settings";
+import AdminAddByUrl from "./pages/admin/AddByUrl";
+import AdminAddByFile from "./pages/admin/AddByFile";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -48,6 +50,8 @@ function Router() {
       <Route path="/admin/notifications" component={AdminNotifications} />
       <Route path="/admin/downloads" component={AdminDownloads} />
       <Route path="/admin/settings" component={AdminSettings} />
+      <Route path="/admin/apps/add-url" component={AdminAddByUrl} />
+      <Route path="/admin/apps/add-file" component={AdminAddByFile} />
 
       <Route component={NotFound} />
     </Switch>

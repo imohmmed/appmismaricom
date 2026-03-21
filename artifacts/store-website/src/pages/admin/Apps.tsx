@@ -1,4 +1,5 @@
 import { useState, useMemo, useRef } from "react";
+import { useLocation } from "wouter";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { useAdminListApps, useAdminCreateApp, useAdminUpdateApp, useAdminDeleteApp, useAdminListCategories, getAdminListAppsQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -378,6 +379,7 @@ function IpaImportModal({ onClose, onDone }: { onClose: () => void; onDone: () =
 }
 
 export default function AdminApps() {
+  const [, navigate] = useLocation();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { data, isLoading } = useAdminListApps({ page: 1, limit: 100 });
@@ -391,7 +393,6 @@ export default function AdminApps() {
   const [search, setSearch] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [menuOpenId, setMenuOpenId] = useState<number | null>(null);
-  const [showImport, setShowImport] = useState(false);
 
   const filteredApps = useMemo(() => {
     if (!search.trim()) return apps;
@@ -451,19 +452,19 @@ export default function AdminApps() {
           </div>
           <div className="flex items-center gap-2 flex-wrap">
             <button
-              onClick={() => setShowImport(true)}
+              onClick={() => navigate("/admin/apps/add-file")}
               className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm border border-white/10 text-white/50 hover:text-white hover:border-white/20 transition-colors"
             >
               <Upload className="w-3.5 h-3.5" /> رفع ملف
             </button>
             <button
-              onClick={() => setShowImport(true)}
+              onClick={() => navigate("/admin/apps/add-url")}
               className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm border border-white/10 text-white/50 hover:text-white hover:border-white/20 transition-colors"
             >
               <Link2 className="w-3.5 h-3.5" /> عبر رابط
             </button>
             <button
-              onClick={() => setShowImport(true)}
+              onClick={() => navigate("/admin/apps/add-url")}
               className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-bold text-black"
               style={{ background: ACCENT }}
             >
@@ -583,15 +584,6 @@ export default function AdminApps() {
         </div>
       </div>
 
-      {showImport && (
-        <IpaImportModal
-          onClose={() => setShowImport(false)}
-          onDone={() => {
-            setShowImport(false);
-            queryClient.invalidateQueries({ queryKey: getAdminListAppsQueryKey() });
-          }}
-        />
-      )}
     </AdminLayout>
   );
 }
