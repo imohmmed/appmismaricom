@@ -29,9 +29,13 @@ export interface App {
   tag: AppTag;
   version?: string;
   size?: string;
+  bundleId?: string | null;
+  downloadUrl?: string | null;
   downloads?: number;
   isFeatured?: boolean;
   isHot?: boolean;
+  isHidden?: boolean;
+  isTestMode?: boolean;
   createdAt?: string;
 }
 
@@ -101,8 +105,11 @@ export interface CreateAppRequest {
   version?: string;
   size?: string;
   bundleId?: string;
+  downloadUrl?: string;
   isFeatured?: boolean;
   isHot?: boolean;
+  isHidden?: boolean;
+  isTestMode?: boolean;
 }
 
 export interface CreateCategoryRequest {

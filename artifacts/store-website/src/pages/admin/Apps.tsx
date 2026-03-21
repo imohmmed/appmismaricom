@@ -378,6 +378,138 @@ function IpaImportModal({ onClose, onDone }: { onClose: () => void; onDone: () =
   );
 }
 
+function EditAppModal({ app, onClose }: { app: App; onClose: () => void }) {
+  const { data: catData } = useAdminListCategories();
+  const categories = catData?.categories || [];
+  const updateMutation = useAdminUpdateApp();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  const [form, setForm] = useState({
+    name: app.name || "",
+    bundleId: app.bundleId || "",
+    version: app.version || "",
+    size: app.size || "",
+    icon: app.icon || "",
+    description: app.description || "",
+    downloadUrl: app.downloadUrl || "",
+    categoryId: app.categoryId || 1,
+    isFeatured: app.isFeatured || false,
+    isHot: app.isHot || false,
+  });
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await updateMutation.mutateAsync({
+        id: app.id,
+        data: {
+          name: form.name,
+          description: form.description,
+          icon: form.icon,
+          categoryId: form.categoryId,
+          tag: app.tag,
+          version: form.version,
+          size: form.size,
+          bundleId: form.bundleId,
+          downloadUrl: form.downloadUrl,
+          isFeatured: form.isFeatured,
+          isHot: form.isHot,
+        },
+      });
+      queryClient.invalidateQueries({ queryKey: getAdminListAppsQueryKey() });
+      toast({ title: "تم تحديث التطبيق بنجاح" });
+      onClose();
+    } catch {
+      toast({ title: "حدث خطأ أثناء التحديث", variant: "destructive" });
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/85 backdrop-blur-sm" dir="rtl">
+      <div className="bg-[#0a0a0a] border border-white/10 rounded-2xl w-full max-w-lg max-h-[92vh] flex flex-col shadow-2xl overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-white/5 shrink-0">
+          <div className="flex items-center gap-3">
+            <img src={app.icon} alt={app.name} className="w-10 h-10 rounded-xl object-cover bg-white/5" onError={e => { (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${app.name}&background=111111&color=9fbcff`; }} />
+            <div>
+              <h3 className="text-sm font-bold text-white">تعديل التطبيق</h3>
+              <p className="text-xs mt-0.5 font-mono" style={{ color: `${ACCENT}70` }}>{app.bundleId || app.name}</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-lg text-white/30 hover:text-white hover:bg-white/5">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-5">
+          <form id="edit-form" onSubmit={handleSubmit} className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="col-span-2">
+                <FieldGroup label="اسم التطبيق *">
+                  <Input required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="اسم التطبيق" />
+                </FieldGroup>
+              </div>
+              <FieldGroup label="Bundle ID">
+                <Input dir="ltr" value={form.bundleId} onChange={e => setForm({ ...form, bundleId: e.target.value })} placeholder="com.example.app" />
+              </FieldGroup>
+              <FieldGroup label="الإصدار">
+                <Input dir="ltr" value={form.version} onChange={e => setForm({ ...form, version: e.target.value })} placeholder="1.0.0" />
+              </FieldGroup>
+              <FieldGroup label="التصنيف">
+                <Select value={form.categoryId} onChange={e => setForm({ ...form, categoryId: Number(e.target.value) })}>
+                  {categories.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </Select>
+              </FieldGroup>
+              <FieldGroup label="الحجم">
+                <Input dir="ltr" value={form.size} onChange={e => setForm({ ...form, size: e.target.value })} placeholder="MB 120" />
+              </FieldGroup>
+              <div className="col-span-2">
+                <FieldGroup label="رابط التحميل (IPA)">
+                  <Input dir="ltr" value={form.downloadUrl} onChange={e => setForm({ ...form, downloadUrl: e.target.value })} placeholder="https://yourserver.com/app.ipa" />
+                </FieldGroup>
+              </div>
+              <div className="col-span-2">
+                <FieldGroup label="رابط الأيقونة">
+                  <div className="flex gap-2">
+                    {form.icon && <img src={form.icon} alt="" className="w-10 h-10 rounded-lg object-cover shrink-0 border border-white/10" onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />}
+                    <Input dir="ltr" value={form.icon} onChange={e => setForm({ ...form, icon: e.target.value })} placeholder="رابط الأيقونة" className="flex-1" />
+                  </div>
+                </FieldGroup>
+              </div>
+              <div className="col-span-2">
+                <FieldGroup label="الوصف">
+                  <textarea
+                    value={form.description}
+                    onChange={e => setForm({ ...form, description: e.target.value })}
+                    className="w-full bg-black border border-white/10 rounded-lg py-2 px-3 text-sm text-white h-16 focus:border-[#9fbcff]/50 focus:outline-none placeholder-white/20 resize-none"
+                    placeholder="وصف التطبيق..."
+                  />
+                </FieldGroup>
+              </div>
+              <div className="col-span-2 flex items-center gap-2 pt-1">
+                <button type="button" onClick={() => setForm(f => ({ ...f, isFeatured: !f.isFeatured }))} className={cn("flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs transition-all", form.isFeatured ? "border-current" : "border-white/5 text-white/30")} style={form.isFeatured ? { background: `${ACCENT}10`, borderColor: `${ACCENT}30`, color: ACCENT } : {}}>
+                  <Star className="w-3.5 h-3.5" /> مميز
+                </button>
+                <button type="button" onClick={() => setForm(f => ({ ...f, isHot: !f.isHot }))} className={cn("flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs transition-all", form.isHot ? "border-current" : "border-white/5 text-white/30")} style={form.isHot ? { background: `orange15`, borderColor: `orange30`, color: "orange" } : {}}>
+                  🔥 رائج
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <div className="border-t border-white/5 p-4 flex items-center justify-between shrink-0">
+          <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg border border-white/10 text-white/50 hover:text-white text-sm transition-colors">إلغاء</button>
+          <button form="edit-form" type="submit" disabled={updateMutation.isPending} className="px-5 py-2 rounded-lg text-sm font-bold text-black disabled:opacity-50 flex items-center gap-1.5" style={{ background: ACCENT }}>
+            {updateMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
+            حفظ التغييرات
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function AdminApps() {
   const [, navigate] = useLocation();
   const queryClient = useQueryClient();
@@ -393,6 +525,7 @@ export default function AdminApps() {
   const [search, setSearch] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [menuOpenId, setMenuOpenId] = useState<number | null>(null);
+  const [editingApp, setEditingApp] = useState<App | null>(null);
 
   const filteredApps = useMemo(() => {
     if (!search.trim()) return apps;
@@ -436,14 +569,14 @@ export default function AdminApps() {
   };
 
   const statusBadge = (app: App) => {
-    const a = app as any;
-    if (a.isHidden) return <span className="px-2 py-0.5 rounded-md text-[10px] font-medium bg-yellow-500/10 text-yellow-400">مخفي</span>;
-    if (a.isTestMode) return <span className="px-2 py-0.5 rounded-md text-[10px] font-medium bg-purple-500/10 text-purple-400">تجريبي</span>;
+    if (app.isHidden) return <span className="px-2 py-0.5 rounded-md text-[10px] font-medium bg-yellow-500/10 text-yellow-400">مخفي</span>;
+    if (app.isTestMode) return <span className="px-2 py-0.5 rounded-md text-[10px] font-medium bg-purple-500/10 text-purple-400">تجريبي</span>;
     return <span className="px-2 py-0.5 rounded-md text-[10px] font-medium bg-green-500/10 text-green-400">نشط</span>;
   };
 
   return (
     <AdminLayout>
+      {editingApp && <EditAppModal app={editingApp} onClose={() => setEditingApp(null)} />}
       <div className="space-y-4" dir="rtl">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
@@ -542,7 +675,7 @@ export default function AdminApps() {
                       </td>
                       <td className="px-4 py-3 text-white/40 text-xs">{app.version || "—"}</td>
                       <td className="px-4 py-3 hidden sm:table-cell">
-                        <span className="text-white/30 text-xs font-mono">{(app as any).bundleId || "—"}</span>
+                        <span className="text-white/30 text-xs font-mono">{app.bundleId || "—"}</span>
                       </td>
                       <td className="px-4 py-3 text-white/30 text-xs hidden md:table-cell">{app.size || "—"}</td>
                       <td className="px-4 py-3">{statusBadge(app)}</td>
@@ -556,17 +689,44 @@ export default function AdminApps() {
                         </button>
                         {menuOpenId === app.id && (
                           <div className="absolute left-0 top-full mt-1 w-48 bg-[#111111] border border-white/10 rounded-xl shadow-2xl z-50 py-1 text-right overflow-hidden">
-                            <button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/app/${app.id}`); toast({ title: "تم نسخ الرابط" }); setMenuOpenId(null); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-white/50 hover:text-white hover:bg-white/5">
+                            <button
+                              onClick={() => {
+                                const url = app.downloadUrl || `${window.location.origin}/app/${app.id}`;
+                                navigator.clipboard.writeText(url);
+                                toast({ title: "تم نسخ الرابط" });
+                                setMenuOpenId(null);
+                              }}
+                              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-white/50 hover:text-white hover:bg-white/5"
+                            >
                               <Copy className="w-3.5 h-3.5" /> نسخ الرابط
                             </button>
-                            <button onClick={() => setMenuOpenId(null)} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-white/50 hover:text-white hover:bg-white/5">
+                            <button
+                              onClick={() => { setEditingApp(app); setMenuOpenId(null); }}
+                              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-white/50 hover:text-white hover:bg-white/5"
+                            >
                               <Edit2 className="w-3.5 h-3.5" /> تعديل
                             </button>
-                            <button className="w-full flex items-center gap-2 px-3 py-2 text-sm text-yellow-400 hover:bg-white/5">
-                              <EyeOff className="w-3.5 h-3.5" /> وضع الإخفاء
+                            <button
+                              onClick={async () => {
+                                await updateMutation.mutateAsync({ id: app.id, data: { name: app.name, icon: app.icon, categoryId: app.categoryId, tag: app.tag, isHidden: !app.isHidden } });
+                                queryClient.invalidateQueries({ queryKey: getAdminListAppsQueryKey() });
+                                setMenuOpenId(null);
+                                toast({ title: app.isHidden ? "تم إظهار التطبيق" : "تم إخفاء التطبيق" });
+                              }}
+                              className={cn("w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-white/5", app.isHidden ? "text-green-400" : "text-yellow-400")}
+                            >
+                              <EyeOff className="w-3.5 h-3.5" /> {app.isHidden ? "إظهار التطبيق" : "وضع الإخفاء"}
                             </button>
-                            <button className="w-full flex items-center gap-2 px-3 py-2 text-sm text-purple-400 hover:bg-white/5">
-                              <FlaskConical className="w-3.5 h-3.5" /> وضع التجربة
+                            <button
+                              onClick={async () => {
+                                await updateMutation.mutateAsync({ id: app.id, data: { name: app.name, icon: app.icon, categoryId: app.categoryId, tag: app.tag, isTestMode: !app.isTestMode } });
+                                queryClient.invalidateQueries({ queryKey: getAdminListAppsQueryKey() });
+                                setMenuOpenId(null);
+                                toast({ title: app.isTestMode ? "تم إلغاء وضع التجربة" : "تم تفعيل وضع التجربة" });
+                              }}
+                              className={cn("w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-white/5", app.isTestMode ? "text-green-400" : "text-purple-400")}
+                            >
+                              <FlaskConical className="w-3.5 h-3.5" /> {app.isTestMode ? "إلغاء التجربة" : "وضع التجربة"}
                             </button>
                             <div className="my-1 border-t border-white/5" />
                             <button onClick={() => handleDelete(app.id)} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-white/5">

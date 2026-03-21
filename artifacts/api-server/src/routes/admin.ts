@@ -67,10 +67,14 @@ router.get("/admin/apps", async (req, res): Promise<void> => {
       categoryName: categoriesTable.name,
       tag: appsTable.tag,
       version: appsTable.version,
+      bundleId: appsTable.bundleId,
       size: appsTable.size,
+      downloadUrl: appsTable.downloadUrl,
       downloads: appsTable.downloads,
       isFeatured: appsTable.isFeatured,
       isHot: appsTable.isHot,
+      isHidden: appsTable.isHidden,
+      isTestMode: appsTable.isTestMode,
       createdAt: appsTable.createdAt,
     })
     .from(appsTable)

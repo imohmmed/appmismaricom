@@ -13,6 +13,7 @@ export const appsTable = pgTable("apps", {
   version: text("version"),
   bundleId: text("bundle_id"),
   size: text("size"),
+  downloadUrl: text("download_url"),
   downloads: integer("downloads").notNull().default(0),
   isFeatured: boolean("is_featured").notNull().default(false),
   isHot: boolean("is_hot").notNull().default(false),
