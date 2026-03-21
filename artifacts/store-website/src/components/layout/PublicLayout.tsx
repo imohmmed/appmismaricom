@@ -79,13 +79,27 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen flex flex-col overflow-x-hidden" style={{ background: "#ffffff", color: TEXT, direction: "rtl" }}>
 
       <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-xl border-b border-black/8 shadow-sm">
-        <div className="flex items-center justify-between px-5 h-16 max-w-5xl mx-auto">
-          <a href="/" className="flex items-center gap-2.5 flex-shrink-0">
-            <img
-              src={`${import.meta.env.BASE_URL}mismari-logo-nobg.png`}
-              alt="مسماري"
-              style={{ height: "36px", width: "auto", objectFit: "contain" }}
-            />
+        <div className="flex items-center justify-between px-5 py-3 max-w-5xl mx-auto" style={{ minHeight: "68px" }}>
+          <a href="/" className="flex items-center flex-shrink-0" style={{ overflow: "visible" }}>
+            <div style={{
+              width: "100px",
+              height: "58px",
+              overflow: "visible",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}>
+              <img
+                src={`${import.meta.env.BASE_URL}mismari-logo-nobg.png`}
+                alt="مسماري"
+                style={{
+                  height: "44px",
+                  width: "auto",
+                  display: "block",
+                  objectFit: "contain",
+                }}
+              />
+            </div>
           </a>
 
           <div className="flex items-center gap-3">
@@ -136,11 +150,11 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
       </main>
 
       <footer className="border-t border-black/8 py-10 px-5 text-center" style={{ background: `${PRIMARY}08` }}>
-        <a href="/" className="inline-flex items-center justify-center mb-5">
+        <a href="/" className="inline-flex items-center justify-center mb-5" style={{ overflow: "visible" }}>
           <img
             src={`${import.meta.env.BASE_URL}mismari-logo-nobg.png`}
             alt="مسماري"
-            style={{ height: "40px", width: "auto", objectFit: "contain" }}
+            style={{ height: "64px", width: "auto", objectFit: "contain", display: "block" }}
           />
         </a>
         <div className="flex flex-wrap justify-center gap-6 mb-5 text-sm" style={{ color: `${TEXT}88` }}>

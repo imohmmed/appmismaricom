@@ -209,12 +209,13 @@ export default function Home() {
         className="flex flex-col items-center justify-center text-center px-5 py-20"
         style={{ background: `radial-gradient(ellipse 80% 60% at 50% 0%, ${PRIMARY}22 0%, transparent 70%)` }}
       >
-        <img
-          src={`${import.meta.env.BASE_URL}mismari-logo-nobg.png`}
-          alt="مسماري"
-          className="w-auto mb-6 drop-shadow-md"
-          style={{ height: "112px", objectFit: "contain" }}
-        />
+        <div style={{ padding: "10px 12px", overflow: "visible", marginBottom: "24px" }}>
+          <img
+            src={`${import.meta.env.BASE_URL}mismari-logo-nobg.png`}
+            alt="مسماري"
+            style={{ height: "100px", width: "auto", objectFit: "contain", display: "block", filter: "drop-shadow(0 4px 12px rgba(0,0,0,0.10))" }}
+          />
+        </div>
         <p className="text-sm font-semibold mb-6" style={{ color: PRIMARY }}>
           متجر التطبيقات المميز
         </p>
