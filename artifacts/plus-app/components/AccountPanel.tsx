@@ -200,17 +200,31 @@ export default function AccountPanel({ visible, onClose }: AccountPanelProps) {
             {MENU_ITEMS.map((item) => (
               <TouchableOpacity
                 key={item.key}
-                style={[styles.menuRow, { borderBottomColor: colors.cardBorder }, isArabic && { flexDirection: "row-reverse" }]}
+                style={[styles.menuRow, { borderBottomColor: colors.cardBorder }]}
                 activeOpacity={0.6}
                 onPress={() => handleMenuPress(item.key)}
               >
-                <View style={[styles.menuIconWrap, { backgroundColor: `${colors.tint}15` }]}>
-                  <Feather name={item.icon} size={18} color={colors.tint} />
-                </View>
-                <Text style={[styles.menuLabel, { color: colors.text, fontFamily: fontAr("SemiBold"), textAlign: isArabic ? "right" : "left" }]}>
-                  {item.label}
-                </Text>
-                <Feather name={isArabic ? "chevron-left" : "chevron-right"} size={18} color={colors.separator} />
+                {isArabic ? (
+                  <>
+                    <Feather name="chevron-left" size={18} color={colors.separator} />
+                    <Text style={[styles.menuLabel, { color: colors.text, fontFamily: fontAr("SemiBold"), textAlign: "right" }]}>
+                      {item.label}
+                    </Text>
+                    <View style={[styles.menuIconWrap, { backgroundColor: `${colors.tint}15` }]}>
+                      <Feather name={item.icon} size={18} color={colors.tint} />
+                    </View>
+                  </>
+                ) : (
+                  <>
+                    <View style={[styles.menuIconWrap, { backgroundColor: `${colors.tint}15` }]}>
+                      <Feather name={item.icon} size={18} color={colors.tint} />
+                    </View>
+                    <Text style={[styles.menuLabel, { color: colors.text, fontFamily: fontAr("SemiBold") }]}>
+                      {item.label}
+                    </Text>
+                    <Feather name="chevron-right" size={18} color={colors.separator} />
+                  </>
+                )}
               </TouchableOpacity>
             ))}
           </View>
