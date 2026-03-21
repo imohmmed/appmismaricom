@@ -1,5 +1,5 @@
 import { Feather } from "@expo/vector-icons";
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import {
   Animated,
   Dimensions,
@@ -245,10 +245,20 @@ export default function PlusScreen() {
   const [selectedApp, setSelectedApp] = useState<AppItem | null>(null);
   const scrollX = useRef(new Animated.Value(0)).current;
   const catToAppTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const featuredRef = useRef<FlatList>(null);
+  const featuredIndex = useRef(0);
   const isWeb = Platform.OS === "web";
 
-  React.useEffect(() => {
+  useEffect(() => {
+    const interval = setInterval(() => {
+      featuredIndex.current = (featuredIndex.current + 1) % FEATURED_APPS.length;
+      featuredRef.current?.scrollToOffset({
+        offset: featuredIndex.current * (SCREEN_WIDTH - 24),
+        animated: true,
+      });
+    }, 3000);
     return () => {
+      clearInterval(interval);
       if (catToAppTimer.current) clearTimeout(catToAppTimer.current);
     };
   }, []);
@@ -283,7 +293,7 @@ export default function PlusScreen() {
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: isWeb ? 34 : 100 }}
+        contentContainerStyle={{ paddingBottom: isWeb ? 34 : 80 }}
         contentInsetAdjustmentBehavior="automatic"
       >
         <View style={styles.section}>
@@ -292,6 +302,7 @@ export default function PlusScreen() {
             <Feather name="chevron-right" size={18} color={Colors.light.textSecondary} />
           </View>
           <FlatList
+            ref={featuredRef}
             data={FEATURED_APPS}
             horizontal
             pagingEnabled={false}
