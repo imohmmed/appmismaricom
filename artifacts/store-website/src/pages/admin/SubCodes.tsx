@@ -37,44 +37,44 @@ export default function AdminSubCodes() {
             <Plus className="w-4 h-4" /> إنشاء كود
           </button>
           <div className="relative max-w-sm flex-1 mr-4">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8888aa]" />
-            <input placeholder="بحث..." value={search} onChange={e => setSearch(e.target.value)} className="w-full bg-[#22223a] border border-[#2a2a45] rounded-lg py-2 pr-4 pl-10 text-sm text-white placeholder-[#8888aa] focus:outline-none focus:border-blue-500" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+            <input placeholder="بحث..." value={search} onChange={e => setSearch(e.target.value)} className="w-full bg-[#111111] border border-white/10 rounded-lg py-2 pr-4 pl-10 text-sm text-white placeholder-[#8888aa] focus:outline-none focus:border-white/30" />
           </div>
         </div>
 
         {selectedIds.size > 0 && (
-          <div className="flex items-center gap-3 bg-[#2a2a50] border border-[#3a3a65] rounded-lg px-4 py-2.5">
+          <div className="flex items-center gap-3 bg-[#1a2a4a] border border-[#3a3a65] rounded-lg px-4 py-2.5">
             <span className="text-sm text-white">{selectedIds.size} محدد</span>
             <div className="flex-1" />
             <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs bg-red-500/20 text-red-400"><Trash2 className="w-3 h-3" /> حذف</button>
           </div>
         )}
 
-        <div className="bg-[#22223a] rounded-xl border border-[#2a2a45] overflow-hidden">
+        <div className="bg-[#111111] rounded-xl border border-white/10 overflow-hidden">
           <table className="w-full text-sm text-right">
-            <thead className="bg-[#1e1e35] border-b border-[#2a2a45]">
+            <thead className="bg-[#0a0a0a] border-b border-white/10">
               <tr>
-                <th className="px-4 py-3 w-10"><button onClick={toggleAll}>{allSelected ? <CheckSquare className="w-4 h-4 text-blue-400" /> : <Square className="w-4 h-4 text-[#8888aa]" />}</button></th>
-                <th className="px-4 py-3 font-medium text-[#8888aa]">كود</th>
-                <th className="px-4 py-3 font-medium text-[#8888aa]">المجموعة</th>
-                <th className="px-4 py-3 font-medium text-[#8888aa]">السعر</th>
-                <th className="px-4 py-3 font-medium text-[#8888aa]">المدة</th>
-                <th className="px-4 py-3 font-medium text-[#8888aa]">الاستخدام</th>
-                <th className="px-4 py-3 font-medium text-[#8888aa]">المستخدمي</th>
+                <th className="px-4 py-3 w-10"><button onClick={toggleAll}>{allSelected ? <CheckSquare className="w-4 h-4 text-blue-400" /> : <Square className="w-4 h-4 text-white/40" />}</button></th>
+                <th className="px-4 py-3 font-medium text-white/40">كود</th>
+                <th className="px-4 py-3 font-medium text-white/40">المجموعة</th>
+                <th className="px-4 py-3 font-medium text-white/40">السعر</th>
+                <th className="px-4 py-3 font-medium text-white/40">المدة</th>
+                <th className="px-4 py-3 font-medium text-white/40">الاستخدام</th>
+                <th className="px-4 py-3 font-medium text-white/40">المستخدمي</th>
               </tr>
             </thead>
             <tbody>
               {filtered.length === 0 ? (
-                <tr><td colSpan={7} className="p-8 text-center text-[#8888aa]">لا يوجد كودات</td></tr>
+                <tr><td colSpan={7} className="p-8 text-center text-white/40">لا يوجد كودات</td></tr>
               ) : filtered.map(c => (
-                <tr key={c.id} className="border-b border-[#2a2a45] hover:bg-[#1e1e35]">
-                  <td className="px-4 py-3"><button onClick={() => toggle(c.id)}>{selectedIds.has(c.id) ? <CheckSquare className="w-4 h-4 text-blue-400" /> : <Square className="w-4 h-4 text-[#8888aa]" />}</button></td>
+                <tr key={c.id} className="border-b border-white/10 hover:bg-[#0a0a0a]">
+                  <td className="px-4 py-3"><button onClick={() => toggle(c.id)}>{selectedIds.has(c.id) ? <CheckSquare className="w-4 h-4 text-blue-400" /> : <Square className="w-4 h-4 text-white/40" />}</button></td>
                   <td className="px-4 py-3 text-white font-mono text-xs">{c.code}</td>
-                  <td className="px-4 py-3 text-[#8888aa]">{c.group}</td>
-                  <td className="px-4 py-3 text-[#8888aa]">{c.price}</td>
-                  <td className="px-4 py-3 text-[#8888aa]">{c.plan}</td>
-                  <td className="px-4 py-3 text-[#8888aa]">{c.status}</td>
-                  <td className="px-4 py-3 text-[#8888aa]">{c.subscriber || "-"}</td>
+                  <td className="px-4 py-3 text-white/40">{c.group}</td>
+                  <td className="px-4 py-3 text-white/40">{c.price}</td>
+                  <td className="px-4 py-3 text-white/40">{c.plan}</td>
+                  <td className="px-4 py-3 text-white/40">{c.status}</td>
+                  <td className="px-4 py-3 text-white/40">{c.subscriber || "-"}</td>
                 </tr>
               ))}
             </tbody>
@@ -84,12 +84,12 @@ export default function AdminSubCodes() {
 
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-[#22223a] border border-[#2a2a45] rounded-xl w-full max-w-md shadow-2xl p-5" dir="rtl">
+          <div className="bg-[#111111] border border-white/10 rounded-xl w-full max-w-md shadow-2xl p-5" dir="rtl">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-bold text-white">إنشاء كود اشتراك</h3>
-              <button onClick={() => setIsModalOpen(false)} className="p-1.5 rounded-lg hover:bg-[#1e1e35] text-[#8888aa]"><X className="w-5 h-5" /></button>
+              <button onClick={() => setIsModalOpen(false)} className="p-1.5 rounded-lg hover:bg-[#0a0a0a] text-white/40"><X className="w-5 h-5" /></button>
             </div>
-            <p className="text-[#8888aa] text-sm">قريباً - ربط الكودات بالمشتركين</p>
+            <p className="text-white/40 text-sm">قريباً - ربط الكودات بالمشتركين</p>
           </div>
         </div>
       )}

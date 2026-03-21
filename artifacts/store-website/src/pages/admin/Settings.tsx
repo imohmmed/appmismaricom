@@ -59,27 +59,27 @@ export default function AdminSettings() {
       <div className="space-y-6 max-w-2xl" dir="rtl">
         <div>
           <h2 className="text-xl font-bold text-white">الإعدادات</h2>
-          <p className="text-[#8888aa] text-sm mt-1">إعدادات الموقع والتطبيق</p>
+          <p className="text-white/40 text-sm mt-1">إعدادات الموقع والتطبيق</p>
         </div>
 
-        <div className="bg-[#22223a] rounded-xl border border-[#2a2a45] p-6 space-y-5">
+        <div className="bg-[#111111] rounded-xl border border-white/10 p-6 space-y-5">
           <h3 className="text-white font-bold text-sm">معلومات الموقع</h3>
 
           <div className="space-y-1.5">
-            <label className="text-xs text-[#8888aa]">اسم الموقع بالعربي</label>
-            <input value={settings.siteNameAr} onChange={e => setSettings({ ...settings, siteNameAr: e.target.value })} className="w-full bg-[#1a1a2e] border border-[#2a2a45] rounded-lg py-2 px-3 text-sm text-white focus:border-blue-500 focus:outline-none" />
+            <label className="text-xs text-white/40">اسم الموقع بالعربي</label>
+            <input value={settings.siteNameAr} onChange={e => setSettings({ ...settings, siteNameAr: e.target.value })} className="w-full bg-black border border-white/10 rounded-lg py-2 px-3 text-sm text-white focus:border-white/30 focus:outline-none" />
           </div>
           <div className="space-y-1.5">
-            <label className="text-xs text-[#8888aa]">اسم الموقع بالإنجليزي</label>
-            <input value={settings.siteNameEn} onChange={e => setSettings({ ...settings, siteNameEn: e.target.value })} className="w-full bg-[#1a1a2e] border border-[#2a2a45] rounded-lg py-2 px-3 text-sm text-white focus:border-blue-500 focus:outline-none" dir="ltr" />
+            <label className="text-xs text-white/40">اسم الموقع بالإنجليزي</label>
+            <input value={settings.siteNameEn} onChange={e => setSettings({ ...settings, siteNameEn: e.target.value })} className="w-full bg-black border border-white/10 rounded-lg py-2 px-3 text-sm text-white focus:border-white/30 focus:outline-none" dir="ltr" />
           </div>
           <div className="space-y-1.5">
-            <label className="text-xs text-[#8888aa]">رابط اللوقو</label>
-            <input value={settings.logoUrl} onChange={e => setSettings({ ...settings, logoUrl: e.target.value })} className="w-full bg-[#1a1a2e] border border-[#2a2a45] rounded-lg py-2 px-3 text-sm text-white focus:border-blue-500 focus:outline-none" dir="ltr" placeholder="https://..." />
+            <label className="text-xs text-white/40">رابط اللوقو</label>
+            <input value={settings.logoUrl} onChange={e => setSettings({ ...settings, logoUrl: e.target.value })} className="w-full bg-black border border-white/10 rounded-lg py-2 px-3 text-sm text-white focus:border-white/30 focus:outline-none" dir="ltr" placeholder="https://..." />
           </div>
         </div>
 
-        <div className="bg-[#22223a] rounded-xl border border-[#2a2a45] p-6 space-y-5">
+        <div className="bg-[#111111] rounded-xl border border-white/10 p-6 space-y-5">
           <div className="flex items-center gap-3">
             <AlertTriangle className="w-5 h-5 text-yellow-400" />
             <h3 className="text-white font-bold text-sm">وضع الصيانة</h3>
@@ -88,7 +88,7 @@ export default function AdminSettings() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-white text-sm">إيقاف المتجر مؤقتاً</p>
-              <p className="text-[#8888aa] text-xs mt-0.5">عرض رسالة الصيانة للمستخدمين</p>
+              <p className="text-white/40 text-xs mt-0.5">عرض رسالة الصيانة للمستخدمين</p>
             </div>
             <button
               onClick={() => setSettings({ ...settings, maintenanceMode: !settings.maintenanceMode })}
@@ -99,8 +99,8 @@ export default function AdminSettings() {
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs text-[#8888aa]">رسالة الصيانة</label>
-            <textarea value={settings.maintenanceMessage} onChange={e => setSettings({ ...settings, maintenanceMessage: e.target.value })} className="w-full bg-[#1a1a2e] border border-[#2a2a45] rounded-lg py-2 px-3 text-sm text-white h-20 focus:border-blue-500 focus:outline-none" />
+            <label className="text-xs text-white/40">رسالة الصيانة</label>
+            <textarea value={settings.maintenanceMessage} onChange={e => setSettings({ ...settings, maintenanceMessage: e.target.value })} className="w-full bg-black border border-white/10 rounded-lg py-2 px-3 text-sm text-white h-20 focus:border-white/30 focus:outline-none" />
           </div>
         </div>
 

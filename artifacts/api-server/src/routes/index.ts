@@ -4,6 +4,7 @@ import appsRouter from "./apps";
 import categoriesRouter from "./categories";
 import subscriptionsRouter from "./subscriptions";
 import adminRouter from "./admin";
+import ipaRouter from "./ipa";
 
 const router: IRouter = Router();
 
@@ -12,5 +13,6 @@ router.use(appsRouter);
 router.use(categoriesRouter);
 router.use(subscriptionsRouter);
 router.use(adminRouter);
+router.use(ipaRouter);
 
 export default router;

@@ -27,9 +27,9 @@ export default function AdminDashboard() {
       <div className="space-y-6">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {statCards.map((stat, i) => (
-            <div key={i} className="bg-[#22223a] rounded-xl p-5 border border-[#2a2a45]">
+            <div key={i} className="bg-[#111111] rounded-xl p-5 border border-white/10">
               <div className="flex items-center justify-between mb-3">
-                <span className="text-[#8888aa] text-xs">{stat.title}</span>
+                <span className="text-white/40 text-xs">{stat.title}</span>
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: stat.color + "20" }}>
                   <stat.icon className="w-4 h-4" style={{ color: stat.color }} />
                 </div>
@@ -43,9 +43,9 @@ export default function AdminDashboard() {
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {statCards2.map((stat, i) => (
-            <div key={i} className="bg-[#22223a] rounded-xl p-5 border border-[#2a2a45]">
+            <div key={i} className="bg-[#111111] rounded-xl p-5 border border-white/10">
               <div className="flex items-center justify-between mb-3">
-                <span className="text-[#8888aa] text-xs">{stat.title}</span>
+                <span className="text-white/40 text-xs">{stat.title}</span>
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: stat.color + "20" }}>
                   <stat.icon className="w-4 h-4" style={{ color: stat.color }} />
                 </div>
@@ -58,17 +58,17 @@ export default function AdminDashboard() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <div className="bg-[#22223a] rounded-xl p-5 border border-[#2a2a45]">
+          <div className="bg-[#111111] rounded-xl p-5 border border-white/10">
             <h3 className="text-white font-bold mb-1">حالة النظام</h3>
-            <p className="text-[#8888aa] text-xs mb-4">معلومات عامة</p>
+            <p className="text-white/40 text-xs mb-4">معلومات عامة</p>
             <div className="space-y-3">
-              <div className="flex items-center justify-between py-2 border-b border-[#2a2a45]">
+              <div className="flex items-center justify-between py-2 border-b border-white/10">
                 <span className="text-white text-sm">حالة السيرفر</span>
                 <span className="text-green-400 text-sm flex items-center gap-1">
                   <span className="w-2 h-2 rounded-full bg-green-400" /> يعمل
                 </span>
               </div>
-              <div className="flex items-center justify-between py-2 border-b border-[#2a2a45]">
+              <div className="flex items-center justify-between py-2 border-b border-white/10">
                 <span className="text-white text-sm">الباقات المفعلة</span>
                 <span className="text-white text-sm">2</span>
               </div>
@@ -79,19 +79,19 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          <div className="bg-[#22223a] rounded-xl p-5 border border-[#2a2a45]">
+          <div className="bg-[#111111] rounded-xl p-5 border border-white/10">
             <h3 className="text-white font-bold mb-4">ملخص سريع</h3>
             <div className="space-y-3">
-              <div className="flex items-center justify-between py-2 border-b border-[#2a2a45]">
-                <span className="text-[#8888aa] text-sm">عدد عمليات الشراء</span>
+              <div className="flex items-center justify-between py-2 border-b border-white/10">
+                <span className="text-white/40 text-sm">عدد عمليات الشراء</span>
                 <span className="text-white text-sm">0</span>
               </div>
-              <div className="flex items-center justify-between py-2 border-b border-[#2a2a45]">
-                <span className="text-[#8888aa] text-sm">المشتركين النشطين</span>
+              <div className="flex items-center justify-between py-2 border-b border-white/10">
+                <span className="text-white/40 text-sm">المشتركين النشطين</span>
                 <span className="text-white text-sm">{stats?.activeSubscriptions || 0}</span>
               </div>
               <div className="flex items-center justify-between py-2">
-                <span className="text-[#8888aa] text-sm">التطبيقات المضافة</span>
+                <span className="text-white/40 text-sm">التطبيقات المضافة</span>
                 <span className="text-white text-sm">{stats?.totalApps || 0}</span>
               </div>
             </div>

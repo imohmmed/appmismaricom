@@ -100,6 +100,7 @@ export interface CreateAppRequest {
   tag: CreateAppRequestTag;
   version?: string;
   size?: string;
+  bundleId?: string;
   isFeatured?: boolean;
   isHot?: boolean;
 }

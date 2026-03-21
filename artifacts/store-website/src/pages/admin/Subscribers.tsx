@@ -47,19 +47,19 @@ export default function AdminSubscribers() {
     <AdminLayout>
       <div className="space-y-4" dir="rtl">
         <div className="flex items-center justify-between">
-          <span className="text-sm text-[#8888aa]">{subscribers.length} مشترك</span>
+          <span className="text-sm text-white/40">{subscribers.length} مشترك</span>
           <div className="relative max-w-sm flex-1 mr-4">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8888aa]" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
             <input
               placeholder="ابحث بالاسم، الرقم، UDID، الكود..."
               value={search} onChange={e => setSearch(e.target.value)}
-              className="w-full bg-[#22223a] border border-[#2a2a45] rounded-lg py-2 pr-4 pl-10 text-sm text-white placeholder-[#8888aa] focus:outline-none focus:border-blue-500"
+              className="w-full bg-[#111111] border border-white/10 rounded-lg py-2 pr-4 pl-10 text-sm text-white placeholder-[#8888aa] focus:outline-none focus:border-white/30"
             />
           </div>
         </div>
 
         {selectedIds.size > 0 && (
-          <div className="flex items-center gap-3 bg-[#2a2a50] border border-[#3a3a65] rounded-lg px-4 py-2.5">
+          <div className="flex items-center gap-3 bg-[#1a2a4a] border border-[#3a3a65] rounded-lg px-4 py-2.5">
             <span className="text-sm text-white">{selectedIds.size} محدد</span>
             <div className="flex-1" />
             <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs bg-green-500/20 text-green-400 hover:bg-green-500/30">
@@ -71,41 +71,41 @@ export default function AdminSubscribers() {
           </div>
         )}
 
-        <div className="bg-[#22223a] rounded-xl border border-[#2a2a45] overflow-hidden">
+        <div className="bg-[#111111] rounded-xl border border-white/10 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-right">
-              <thead className="bg-[#1e1e35] border-b border-[#2a2a45]">
+              <thead className="bg-[#0a0a0a] border-b border-white/10">
                 <tr>
                   <th className="px-4 py-3 w-10">
-                    <button onClick={toggleAll} className="text-[#8888aa] hover:text-white">
+                    <button onClick={toggleAll} className="text-white/40 hover:text-white">
                       {allSelected ? <CheckSquare className="w-4 h-4 text-blue-400" /> : <Square className="w-4 h-4" />}
                     </button>
                   </th>
-                  <th className="px-4 py-3 font-medium text-[#8888aa]">المشترك</th>
-                  <th className="px-4 py-3 font-medium text-[#8888aa]">الباقة</th>
-                  <th className="px-4 py-3 font-medium text-[#8888aa]">UDID</th>
-                  <th className="px-4 py-3 font-medium text-[#8888aa]">الجهاز</th>
-                  <th className="px-4 py-3 font-medium text-[#8888aa]">كود الاشتراك</th>
-                  <th className="px-4 py-3 font-medium text-[#8888aa]">المجموعة</th>
-                  <th className="px-4 py-3 font-medium text-[#8888aa]">الباقة</th>
-                  <th className="px-4 py-3 font-medium text-[#8888aa]">تاريخ التسجيل</th>
+                  <th className="px-4 py-3 font-medium text-white/40">المشترك</th>
+                  <th className="px-4 py-3 font-medium text-white/40">الباقة</th>
+                  <th className="px-4 py-3 font-medium text-white/40">UDID</th>
+                  <th className="px-4 py-3 font-medium text-white/40">الجهاز</th>
+                  <th className="px-4 py-3 font-medium text-white/40">كود الاشتراك</th>
+                  <th className="px-4 py-3 font-medium text-white/40">المجموعة</th>
+                  <th className="px-4 py-3 font-medium text-white/40">الباقة</th>
+                  <th className="px-4 py-3 font-medium text-white/40">تاريخ التسجيل</th>
                 </tr>
               </thead>
               <tbody>
                 {filtered.length === 0 ? (
-                  <tr><td colSpan={9} className="p-8 text-center text-[#8888aa]">لا يوجد مشتركين</td></tr>
+                  <tr><td colSpan={9} className="p-8 text-center text-white/40">لا يوجد مشتركين</td></tr>
                 ) : (
                   filtered.map(sub => (
-                    <tr key={sub.id} className="border-b border-[#2a2a45] hover:bg-[#1e1e35]">
-                      <td className="px-4 py-3"><button onClick={() => toggle(sub.id)}>{selectedIds.has(sub.id) ? <CheckSquare className="w-4 h-4 text-blue-400" /> : <Square className="w-4 h-4 text-[#8888aa]" />}</button></td>
+                    <tr key={sub.id} className="border-b border-white/10 hover:bg-[#0a0a0a]">
+                      <td className="px-4 py-3"><button onClick={() => toggle(sub.id)}>{selectedIds.has(sub.id) ? <CheckSquare className="w-4 h-4 text-blue-400" /> : <Square className="w-4 h-4 text-white/40" />}</button></td>
                       <td className="px-4 py-3 text-white">{sub.subscriberName || "-"}</td>
-                      <td className="px-4 py-3 text-[#8888aa]">{sub.phone || "-"}</td>
-                      <td className="px-4 py-3 text-[#8888aa] text-xs font-mono">{sub.udid || "-"}</td>
-                      <td className="px-4 py-3 text-[#8888aa]">{sub.deviceType || "-"}</td>
-                      <td className="px-4 py-3 text-[#8888aa] text-xs font-mono">{sub.code}</td>
-                      <td className="px-4 py-3 text-[#8888aa]">{sub.groupName || "-"}</td>
-                      <td className="px-4 py-3 text-[#8888aa]">{sub.planName || "-"}</td>
-                      <td className="px-4 py-3 text-[#8888aa] text-xs">{sub.createdAt ? new Date(sub.createdAt).toLocaleDateString("ar-IQ") : "-"}</td>
+                      <td className="px-4 py-3 text-white/40">{sub.phone || "-"}</td>
+                      <td className="px-4 py-3 text-white/40 text-xs font-mono">{sub.udid || "-"}</td>
+                      <td className="px-4 py-3 text-white/40">{sub.deviceType || "-"}</td>
+                      <td className="px-4 py-3 text-white/40 text-xs font-mono">{sub.code}</td>
+                      <td className="px-4 py-3 text-white/40">{sub.groupName || "-"}</td>
+                      <td className="px-4 py-3 text-white/40">{sub.planName || "-"}</td>
+                      <td className="px-4 py-3 text-white/40 text-xs">{sub.createdAt ? new Date(sub.createdAt).toLocaleDateString("ar-IQ") : "-"}</td>
                     </tr>
                   ))
                 )}

@@ -58,7 +58,7 @@ export default function AdminPackages() {
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-xl font-bold text-white">باقات الاشتراك</h2>
-            <p className="text-[#8888aa] text-sm mt-1">إدارة وتعديل باقات المتجر</p>
+            <p className="text-white/40 text-sm mt-1">إدارة وتعديل باقات المتجر</p>
           </div>
           <button onClick={() => setIsModalOpen(true)} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium">
             <Plus className="w-4 h-4" /> إضافة باقة
@@ -67,7 +67,7 @@ export default function AdminPackages() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {plans.map(plan => (
-            <div key={plan.id} className="bg-[#22223a] rounded-xl border border-[#2a2a45] p-6 relative">
+            <div key={plan.id} className="bg-[#111111] rounded-xl border border-white/10 p-6 relative">
               {plan.isPopular && (
                 <span className="absolute top-3 left-3 px-2 py-0.5 rounded text-[10px] bg-green-500/20 text-green-400 border border-green-500/30">Active</span>
               )}
@@ -77,26 +77,26 @@ export default function AdminPackages() {
                 </div>
                 <div>
                   <p className="text-white font-bold">{plan.nameAr || plan.name}</p>
-                  <p className="text-[#8888aa] text-xs">{plan.duration === "month" ? "شهري" : plan.duration === "year" ? "سنوي" : plan.duration}</p>
+                  <p className="text-white/40 text-xs">{plan.duration === "month" ? "شهري" : plan.duration === "year" ? "سنوي" : plan.duration}</p>
                 </div>
               </div>
 
               <div className="mb-4">
                 <span className="text-2xl font-black text-white">{Number(plan.price).toLocaleString()}</span>
-                <span className="text-[#8888aa] text-sm mr-1">د.ع / {plan.duration === "month" ? "٣٦٥ يوم" : plan.duration}</span>
+                <span className="text-white/40 text-sm mr-1">د.ع / {plan.duration === "month" ? "٣٦٥ يوم" : plan.duration}</span>
               </div>
 
               <div className="space-y-2 mb-4">
                 {plan.features.map((f, i) => (
-                  <div key={i} className="flex items-center gap-2 text-sm text-[#8888aa]">
+                  <div key={i} className="flex items-center gap-2 text-sm text-white/40">
                     <Check className="w-3.5 h-3.5 text-green-400" /> {f}
                   </div>
                 ))}
               </div>
 
-              <div className="flex gap-2 pt-3 border-t border-[#2a2a45]">
-                <button className="p-2 rounded-lg text-[#8888aa] hover:text-red-400 hover:bg-[#1e1e35]"><Trash2 className="w-4 h-4" /></button>
-                <button className="p-2 rounded-lg text-[#8888aa] hover:text-white hover:bg-[#1e1e35]"><Edit2 className="w-4 h-4" /></button>
+              <div className="flex gap-2 pt-3 border-t border-white/10">
+                <button className="p-2 rounded-lg text-white/40 hover:text-red-400 hover:bg-[#0a0a0a]"><Trash2 className="w-4 h-4" /></button>
+                <button className="p-2 rounded-lg text-white/40 hover:text-white hover:bg-[#0a0a0a]"><Edit2 className="w-4 h-4" /></button>
               </div>
             </div>
           ))}
@@ -105,28 +105,28 @@ export default function AdminPackages() {
 
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-[#22223a] border border-[#2a2a45] rounded-xl w-full max-w-lg shadow-2xl" dir="rtl">
-            <div className="flex items-center justify-between p-5 border-b border-[#2a2a45]">
+          <div className="bg-[#111111] border border-white/10 rounded-xl w-full max-w-lg shadow-2xl" dir="rtl">
+            <div className="flex items-center justify-between p-5 border-b border-white/10">
               <h3 className="text-lg font-bold text-white">إضافة باقة</h3>
-              <button onClick={() => setIsModalOpen(false)} className="p-1.5 rounded-lg hover:bg-[#1e1e35] text-[#8888aa]"><X className="w-5 h-5" /></button>
+              <button onClick={() => setIsModalOpen(false)} className="p-1.5 rounded-lg hover:bg-[#0a0a0a] text-white/40"><X className="w-5 h-5" /></button>
             </div>
             <form onSubmit={handleSubmit} className="p-5 space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-xs text-[#8888aa]">الاسم بالإنجليزي</label>
-                  <input required value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className="w-full bg-[#1a1a2e] border border-[#2a2a45] rounded-lg py-2 px-3 text-sm text-white focus:border-blue-500 focus:outline-none" dir="ltr" />
+                  <label className="text-xs text-white/40">الاسم بالإنجليزي</label>
+                  <input required value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className="w-full bg-black border border-white/10 rounded-lg py-2 px-3 text-sm text-white focus:border-white/30 focus:outline-none" dir="ltr" />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs text-[#8888aa]">الاسم بالعربي</label>
-                  <input value={formData.nameAr} onChange={e => setFormData({ ...formData, nameAr: e.target.value })} className="w-full bg-[#1a1a2e] border border-[#2a2a45] rounded-lg py-2 px-3 text-sm text-white focus:border-blue-500 focus:outline-none" />
+                  <label className="text-xs text-white/40">الاسم بالعربي</label>
+                  <input value={formData.nameAr} onChange={e => setFormData({ ...formData, nameAr: e.target.value })} className="w-full bg-black border border-white/10 rounded-lg py-2 px-3 text-sm text-white focus:border-white/30 focus:outline-none" />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs text-[#8888aa]">السعر</label>
-                  <input type="number" required value={formData.price} onChange={e => setFormData({ ...formData, price: Number(e.target.value) })} className="w-full bg-[#1a1a2e] border border-[#2a2a45] rounded-lg py-2 px-3 text-sm text-white focus:border-blue-500 focus:outline-none" dir="ltr" />
+                  <label className="text-xs text-white/40">السعر</label>
+                  <input type="number" required value={formData.price} onChange={e => setFormData({ ...formData, price: Number(e.target.value) })} className="w-full bg-black border border-white/10 rounded-lg py-2 px-3 text-sm text-white focus:border-white/30 focus:outline-none" dir="ltr" />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs text-[#8888aa]">المدة</label>
-                  <select value={formData.duration} onChange={e => setFormData({ ...formData, duration: e.target.value })} className="w-full bg-[#1a1a2e] border border-[#2a2a45] rounded-lg py-2 px-3 text-sm text-white focus:border-blue-500 focus:outline-none appearance-none">
+                  <label className="text-xs text-white/40">المدة</label>
+                  <select value={formData.duration} onChange={e => setFormData({ ...formData, duration: e.target.value })} className="w-full bg-black border border-white/10 rounded-lg py-2 px-3 text-sm text-white focus:border-white/30 focus:outline-none appearance-none">
                     <option value="month">شهري</option>
                     <option value="year">سنوي</option>
                     <option value="lifetime">مدى الحياة</option>
@@ -134,11 +134,11 @@ export default function AdminPackages() {
                 </div>
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs text-[#8888aa]">المميزات (سطر لكل ميزة)</label>
-                <textarea value={formData.features} onChange={e => setFormData({ ...formData, features: e.target.value })} className="w-full bg-[#1a1a2e] border border-[#2a2a45] rounded-lg py-2 px-3 text-sm text-white h-24 focus:border-blue-500 focus:outline-none" />
+                <label className="text-xs text-white/40">المميزات (سطر لكل ميزة)</label>
+                <textarea value={formData.features} onChange={e => setFormData({ ...formData, features: e.target.value })} className="w-full bg-black border border-white/10 rounded-lg py-2 px-3 text-sm text-white h-24 focus:border-white/30 focus:outline-none" />
               </div>
-              <div className="pt-3 border-t border-[#2a2a45] flex justify-end gap-3">
-                <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 rounded-lg border border-[#2a2a45] text-[#8888aa] text-sm">إلغاء</button>
+              <div className="pt-3 border-t border-white/10 flex justify-end gap-3">
+                <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 rounded-lg border border-white/10 text-white/40 text-sm">إلغاء</button>
                 <button type="submit" className="px-6 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm">حفظ</button>
               </div>
             </form>
