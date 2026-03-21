@@ -207,7 +207,7 @@ export default function AccountPanel({ visible, onClose }: AccountPanelProps) {
                 {isArabic ? (
                   <>
                     <Feather name="chevron-left" size={18} color={colors.separator} />
-                    <Text style={[styles.menuLabel, { color: colors.text, fontFamily: fontAr("SemiBold"), textAlign: "right" }]}>
+                    <Text style={[styles.menuLabel, { color: colors.text, fontFamily: fontAr("SemiBold"), textAlign: "right", writingDirection: "rtl" }]}>
                       {item.label}
                     </Text>
                     <View style={[styles.menuIconWrap, { backgroundColor: `${colors.tint}15` }]}>
