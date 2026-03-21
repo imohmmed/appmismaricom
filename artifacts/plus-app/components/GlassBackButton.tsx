@@ -3,7 +3,7 @@ import { BlurView } from "expo-blur";
 import React from "react";
 import { Platform, Pressable, StyleSheet, View } from "react-native";
 
-import Colors from "@/constants/colors";
+import { useSettings } from "@/contexts/SettingsContext";
 
 type GlassBackButtonProps = {
   onPress: () => void;
@@ -11,19 +11,20 @@ type GlassBackButtonProps = {
 
 export default function GlassBackButton({ onPress }: GlassBackButtonProps) {
   const isWeb = Platform.OS === "web";
+  const { colors, isDark } = useSettings();
 
   if (isWeb) {
     return (
-      <Pressable onPress={onPress} style={styles.webButton}>
-        <Feather name="chevron-left" size={20} color={Colors.light.text} />
+      <Pressable onPress={onPress} style={[styles.webButton, isDark && { backgroundColor: "rgba(80, 80, 100, 0.45)" }]}>
+        <Feather name="chevron-left" size={20} color={colors.text} />
       </Pressable>
     );
   }
 
   return (
     <Pressable onPress={onPress} style={styles.wrapper}>
-      <BlurView intensity={60} tint="light" style={styles.blur}>
-        <Feather name="chevron-left" size={20} color={Colors.light.text} />
+      <BlurView intensity={60} tint={isDark ? "dark" : "light"} style={styles.blur}>
+        <Feather name="chevron-left" size={20} color={colors.text} />
       </BlurView>
     </Pressable>
   );

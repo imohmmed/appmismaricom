@@ -14,7 +14,8 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import Colors from "@/constants/colors";
+import { useSettings } from "@/contexts/SettingsContext";
+import type { ThemeColors } from "@/constants/colors";
 import SlidePanel from "@/components/SlidePanel";
 import AppDetailPanel from "@/components/AppDetailPanel";
 import GlassBackButton from "@/components/GlassBackButton";
@@ -23,26 +24,11 @@ import AccountPanel from "@/components/AccountPanel";
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const PAGE_WIDTH = SCREEN_WIDTH - 80;
 
-const CATEGORIES = [
-  { key: "social", label: "تواصل اجتماعي", icon: "message-circle" },
-  { key: "ai", label: "ذكاء اصطناعي", icon: "cpu" },
-  { key: "edit", label: "تعديل", icon: "edit-3" },
-  { key: "games", label: "ألعاب", icon: "play" },
-  { key: "tweaked", label: "تطبيقات بلس", icon: "settings" },
-  { key: "tv", label: "تلفزيون", icon: "tv" },
-  { key: "develop", label: "تطوير", icon: "terminal" },
-] as const;
-
-const FEATURED_APPS = [
-  { id: 1, title: "عروض الجمعة السوداء", subtitle: "خصم 50% على جميع الاشتراكات المميزة", color: "#007AFF" },
-  { id: 2, title: "تطبيقات جديدة", subtitle: "أكثر من 100 تطبيق معدّل هذا الأسبوع", color: "#5856D6" },
-  { id: 3, title: "باقة بريميوم", subtitle: "احصل على جميع التطبيقات باشتراك واحد", color: "#FF9500" },
-];
-
 type AppItem = {
   id: number;
   name: string;
-  desc: string;
+  descAr: string;
+  descEn: string;
   category: string;
   tag: "tweaked" | "modded" | "hacked";
   icon: string;
@@ -53,93 +39,59 @@ type AppItem = {
 };
 
 const ALL_APPS: AppItem[] = [
-  { id: 1, name: "WhatsApp++", desc: "ميزات مخفية مفعّلة", category: "تواصل اجتماعي", tag: "tweaked", icon: "message-circle", isHot: true, isMostDownloaded: true, catKey: "social" },
-  { id: 2, name: "Snapchat++", desc: "حفظ السنابات والقصص", category: "تواصل اجتماعي", tag: "tweaked", icon: "camera", isHot: true, isMostDownloaded: true, catKey: "social" },
-  { id: 3, name: "Instagram++", desc: "تحميل القصص والريلز", category: "تواصل اجتماعي", tag: "tweaked", icon: "instagram", isHot: true, isMostDownloaded: true, catKey: "social" },
-  { id: 4, name: "TikTok++", desc: "بدون إعلانات، تحميل الفيديو", category: "تواصل اجتماعي", tag: "tweaked", icon: "video", isHot: true, catKey: "social" },
-  { id: 5, name: "Telegram++", desc: "ميزات بريميوم مجانية", category: "تواصل اجتماعي", tag: "tweaked", icon: "send", catKey: "social" },
-  { id: 6, name: "Twitter++", desc: "تحميل الفيديوهات والثريدات", category: "تواصل اجتماعي", tag: "tweaked", icon: "twitter", catKey: "social" },
-  { id: 7, name: "ChatGPT Pro", desc: "وصول GPT-4 مفعّل", category: "ذكاء اصطناعي", tag: "modded", icon: "cpu", isHot: true, isMostDownloaded: true, catKey: "ai" },
-  { id: 8, name: "Copilot+", desc: "مساعد برمجة بالذكاء الاصطناعي", category: "ذكاء اصطناعي", tag: "modded", icon: "zap", isNew: true, catKey: "ai" },
-  { id: 9, name: "Gemini Pro", desc: "Google AI بريميوم", category: "ذكاء اصطناعي", tag: "modded", icon: "star", isNew: true, catKey: "ai" },
-  { id: 10, name: "CapCut Pro", desc: "أدوات تعديل متقدمة", category: "تعديل", tag: "modded", icon: "scissors", isHot: true, isNew: true, catKey: "edit" },
-  { id: 11, name: "Canva Pro", desc: "جميع القوالب مفتوحة", category: "تعديل", tag: "modded", icon: "edit", isNew: true, catKey: "edit" },
-  { id: 12, name: "Lightroom++", desc: "فلاتر بريميوم مجانية", category: "تعديل", tag: "tweaked", icon: "aperture", catKey: "edit" },
-  { id: 13, name: "PUBG Hack", desc: "تصويب تلقائي و ESP", category: "ألعاب", tag: "hacked", icon: "crosshair", isHot: true, isMostDownloaded: true, catKey: "games" },
-  { id: 14, name: "Minecraft+", desc: "جميع السكنات مفتوحة", category: "ألعاب", tag: "hacked", icon: "box", catKey: "games" },
-  { id: 15, name: "Roblox Mod", desc: "روبوكس غير محدود", category: "ألعاب", tag: "modded", icon: "play", isNew: true, catKey: "games" },
-  { id: 16, name: "YouTube Premium", desc: "بدون إعلانات، تشغيل بالخلفية", category: "تطبيقات بلس", tag: "tweaked", icon: "youtube", isHot: true, isMostDownloaded: true, catKey: "tweaked" },
-  { id: 17, name: "Spotify++", desc: "ميزات بريميوم مجانية", category: "تطبيقات بلس", tag: "tweaked", icon: "music", isHot: true, isMostDownloaded: true, catKey: "tweaked" },
-  { id: 18, name: "SoundCloud++", desc: "تحميل بدون إنترنت", category: "تطبيقات بلس", tag: "tweaked", icon: "headphones", catKey: "tweaked" },
-  { id: 19, name: "Netflix", desc: "جميع المحتوى مفتوح", category: "تلفزيون", tag: "modded", icon: "film", isHot: true, isMostDownloaded: true, catKey: "tv" },
-  { id: 20, name: "Disney+", desc: "ديزني و مارفل مباشر", category: "تلفزيون", tag: "modded", icon: "play-circle", catKey: "tv" },
-  { id: 21, name: "Shahid VIP", desc: "محتوى عربي بريميوم", category: "تلفزيون", tag: "tweaked", icon: "tv", isNew: true, catKey: "tv" },
-  { id: 22, name: "Xcode Helper", desc: "أدوات تطوير iOS", category: "تطوير", tag: "modded", icon: "terminal", catKey: "develop" },
-  { id: 23, name: "iSH Shell", desc: "طرفية لينكس على iOS", category: "تطوير", tag: "tweaked", icon: "code", isNew: true, catKey: "develop" },
-  { id: 24, name: "Pythonista+", desc: "بايثون IDE بريميوم", category: "تطوير", tag: "modded", icon: "file-text", catKey: "develop" },
+  { id: 1, name: "WhatsApp++", descAr: "ميزات مخفية مفعّلة", descEn: "Hidden features unlocked", category: "social", tag: "tweaked", icon: "message-circle", isHot: true, isMostDownloaded: true, catKey: "social" },
+  { id: 2, name: "Snapchat++", descAr: "حفظ السنابات والقصص", descEn: "Save snaps & stories", category: "social", tag: "tweaked", icon: "camera", isHot: true, isMostDownloaded: true, catKey: "social" },
+  { id: 3, name: "Instagram++", descAr: "تحميل القصص والريلز", descEn: "Download stories & reels", category: "social", tag: "tweaked", icon: "instagram", isHot: true, isMostDownloaded: true, catKey: "social" },
+  { id: 4, name: "TikTok++", descAr: "بدون إعلانات، تحميل الفيديو", descEn: "No ads, video download", category: "social", tag: "tweaked", icon: "video", isHot: true, catKey: "social" },
+  { id: 5, name: "Telegram++", descAr: "ميزات بريميوم مجانية", descEn: "Free premium features", category: "social", tag: "tweaked", icon: "send", catKey: "social" },
+  { id: 6, name: "Twitter++", descAr: "تحميل الفيديوهات والثريدات", descEn: "Download videos & threads", category: "social", tag: "tweaked", icon: "twitter", catKey: "social" },
+  { id: 7, name: "ChatGPT Pro", descAr: "وصول GPT-4 مفعّل", descEn: "GPT-4 access unlocked", category: "ai", tag: "modded", icon: "cpu", isHot: true, isMostDownloaded: true, catKey: "ai" },
+  { id: 8, name: "Copilot+", descAr: "مساعد برمجة بالذكاء الاصطناعي", descEn: "AI coding assistant", category: "ai", tag: "modded", icon: "zap", isNew: true, catKey: "ai" },
+  { id: 9, name: "Gemini Pro", descAr: "Google AI بريميوم", descEn: "Google AI Premium", category: "ai", tag: "modded", icon: "star", isNew: true, catKey: "ai" },
+  { id: 10, name: "CapCut Pro", descAr: "أدوات تعديل متقدمة", descEn: "Advanced editing tools", category: "edit", tag: "modded", icon: "scissors", isHot: true, isNew: true, catKey: "edit" },
+  { id: 11, name: "Canva Pro", descAr: "جميع القوالب مفتوحة", descEn: "All templates unlocked", category: "edit", tag: "modded", icon: "edit", isNew: true, catKey: "edit" },
+  { id: 12, name: "Lightroom++", descAr: "فلاتر بريميوم مجانية", descEn: "Free premium filters", category: "edit", tag: "tweaked", icon: "aperture", catKey: "edit" },
+  { id: 13, name: "PUBG Hack", descAr: "تصويب تلقائي و ESP", descEn: "Aimbot & ESP", category: "games", tag: "hacked", icon: "crosshair", isHot: true, isMostDownloaded: true, catKey: "games" },
+  { id: 14, name: "Minecraft+", descAr: "جميع السكنات مفتوحة", descEn: "All skins unlocked", category: "games", tag: "hacked", icon: "box", catKey: "games" },
+  { id: 15, name: "Roblox Mod", descAr: "روبوكس غير محدود", descEn: "Unlimited Robux", category: "games", tag: "modded", icon: "play", isNew: true, catKey: "games" },
+  { id: 16, name: "YouTube Premium", descAr: "بدون إعلانات، تشغيل بالخلفية", descEn: "No ads, background play", category: "tweaked", tag: "tweaked", icon: "youtube", isHot: true, isMostDownloaded: true, catKey: "tweaked" },
+  { id: 17, name: "Spotify++", descAr: "ميزات بريميوم مجانية", descEn: "Free premium features", category: "tweaked", tag: "tweaked", icon: "music", isHot: true, isMostDownloaded: true, catKey: "tweaked" },
+  { id: 18, name: "SoundCloud++", descAr: "تحميل بدون إنترنت", descEn: "Offline download", category: "tweaked", tag: "tweaked", icon: "headphones", catKey: "tweaked" },
+  { id: 19, name: "Netflix", descAr: "جميع المحتوى مفتوح", descEn: "All content unlocked", category: "tv", tag: "modded", icon: "film", isHot: true, isMostDownloaded: true, catKey: "tv" },
+  { id: 20, name: "Disney+", descAr: "ديزني و مارفل مباشر", descEn: "Disney & Marvel streaming", category: "tv", tag: "modded", icon: "play-circle", catKey: "tv" },
+  { id: 21, name: "Shahid VIP", descAr: "محتوى عربي بريميوم", descEn: "Premium Arabic content", category: "tv", tag: "tweaked", icon: "tv", isNew: true, catKey: "tv" },
+  { id: 22, name: "Xcode Helper", descAr: "أدوات تطوير iOS", descEn: "iOS dev tools", category: "develop", tag: "modded", icon: "terminal", catKey: "develop" },
+  { id: 23, name: "iSH Shell", descAr: "طرفية لينكس على iOS", descEn: "Linux terminal on iOS", category: "develop", tag: "tweaked", icon: "code", isNew: true, catKey: "develop" },
+  { id: 24, name: "Pythonista+", descAr: "بايثون IDE بريميوم", descEn: "Premium Python IDE", category: "develop", tag: "modded", icon: "file-text", catKey: "develop" },
 ];
 
-const BROWSE_CATEGORIES = [
-  { key: "social", label: "تواصل اجتماعي", icon: "message-circle", bgColor: "#007AFF" },
-  { key: "ai", label: "ذكاء اصطناعي", icon: "cpu", bgColor: "#AF52DE" },
-  { key: "edit", label: "تعديل", icon: "edit-3", bgColor: "#FF9500" },
-  { key: "games", label: "ألعاب", icon: "play", bgColor: "#34C759" },
-  { key: "tweaked", label: "تطبيقات بلس", icon: "settings", bgColor: "#5AC8FA" },
-  { key: "tv", label: "تلفزيون", icon: "tv", bgColor: "#FF3B30" },
-  { key: "develop", label: "تطوير", icon: "terminal", bgColor: "#FF9500" },
-];
+const CATEGORY_KEYS = ["social", "ai", "edit", "games", "tweaked", "tv", "develop"] as const;
+const CATEGORY_ICONS: Record<string, string> = {
+  social: "message-circle",
+  ai: "cpu",
+  edit: "edit-3",
+  games: "play",
+  tweaked: "settings",
+  tv: "tv",
+  develop: "terminal",
+};
+const CATEGORY_COLORS: Record<string, string> = {
+  social: "#007AFF",
+  ai: "#AF52DE",
+  edit: "#FF9500",
+  games: "#34C759",
+  tweaked: "#5AC8FA",
+  tv: "#FF3B30",
+  develop: "#FF9500",
+};
 
-function getTagColor(tag: string) {
+function getTagColor(tag: string, colors: ThemeColors) {
   switch (tag) {
-    case "tweaked": return Colors.light.tagTweaked;
-    case "modded": return Colors.light.tagModded;
-    case "hacked": return Colors.light.tagHacked;
-    default: return Colors.light.tint;
+    case "tweaked": return colors.tagTweaked;
+    case "modded": return colors.tagModded;
+    case "hacked": return colors.tagHacked;
+    default: return colors.tint;
   }
-}
-
-function CategoryPill({ item, onPress }: { item: typeof CATEGORIES[number]; onPress: () => void }) {
-  return (
-    <Pressable onPress={onPress} style={styles.categoryPill}>
-      <Feather name={item.icon as any} size={14} color={Colors.light.tint} style={{ marginLeft: 5 }} />
-      <Text style={styles.categoryPillText}>{item.label}</Text>
-    </Pressable>
-  );
-}
-
-function FeaturedCard({ item }: { item: typeof FEATURED_APPS[number] }) {
-  return (
-    <View style={[styles.featuredCard, { width: SCREEN_WIDTH - 48 }]}>
-      <View style={[styles.featuredGradient, { backgroundColor: item.color }]}>
-        <View style={styles.featuredContent}>
-          <Text style={styles.featuredLabel}>مميز</Text>
-          <Text style={styles.featuredTitle}>{item.title}</Text>
-          <Text style={styles.featuredSubtitle}>{item.subtitle}</Text>
-        </View>
-      </View>
-    </View>
-  );
-}
-
-function AppListRow({ app, showDivider, onPress }: { app: AppItem; showDivider: boolean; onPress: () => void }) {
-  const tagColor = getTagColor(app.tag);
-  return (
-    <View>
-      <Pressable style={styles.listRow} onPress={onPress}>
-        <View style={[styles.listRowIcon, { backgroundColor: `${tagColor}15` }]}>
-          <Feather name={app.icon as any} size={24} color={tagColor} />
-        </View>
-        <View style={styles.listRowInfo}>
-          <Text style={styles.listRowName} numberOfLines={1}>{app.name}</Text>
-          <Text style={styles.listRowDesc} numberOfLines={1}>{app.desc}</Text>
-        </View>
-        <Pressable style={styles.listRowGetButton}>
-          <Text style={styles.listRowGetText}>تحميل</Text>
-        </Pressable>
-      </Pressable>
-      {showDivider && <View style={styles.listRowDivider} />}
-    </View>
-  );
 }
 
 function chunkArray<T>(arr: T[], size: number): T[][] {
@@ -150,16 +102,77 @@ function chunkArray<T>(arr: T[], size: number): T[][] {
   return chunks;
 }
 
+const CAT_TRANSLATION_KEY: Record<string, string> = {
+  social: "social",
+  ai: "ai",
+  edit: "edit",
+  games: "games",
+  tweaked: "tweakedApps",
+  tv: "tv",
+  develop: "develop",
+};
+
+function CategoryPill({ catKey, onPress }: { catKey: string; onPress: () => void }) {
+  const { colors, t, fontAr } = useSettings();
+  const icon = CATEGORY_ICONS[catKey];
+  const label = t((CAT_TRANSLATION_KEY[catKey] || catKey) as any);
+  return (
+    <Pressable onPress={onPress} style={[styles.categoryPill, { backgroundColor: colors.background }]}>
+      <Feather name={icon as any} size={14} color={colors.tint} style={{ marginLeft: 5 }} />
+      <Text style={[styles.categoryPillText, { color: colors.text, fontFamily: fontAr("SemiBold") }]}>{label}</Text>
+    </Pressable>
+  );
+}
+
+function FeaturedCard({ item }: { item: { id: number; title: string; subtitle: string; color: string } }) {
+  const { fontAr } = useSettings();
+  return (
+    <View style={[styles.featuredCard, { width: SCREEN_WIDTH - 48 }]}>
+      <View style={[styles.featuredGradient, { backgroundColor: item.color }]}>
+        <View style={styles.featuredContent}>
+          <Text style={[styles.featuredTitle, { fontFamily: fontAr("Bold") }]}>{item.title}</Text>
+          <Text style={[styles.featuredSubtitle, { fontFamily: fontAr("Regular") }]}>{item.subtitle}</Text>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+function AppListRow({ app, showDivider, onPress }: { app: AppItem; showDivider: boolean; onPress: () => void }) {
+  const { colors, t, fontAr, isArabic } = useSettings();
+  const tagColor = getTagColor(app.tag, colors);
+  return (
+    <View>
+      <Pressable style={styles.listRow} onPress={onPress}>
+        <View style={[styles.listRowIcon, { backgroundColor: `${tagColor}15` }]}>
+          <Feather name={app.icon as any} size={24} color={tagColor} />
+        </View>
+        <View style={styles.listRowInfo}>
+          <Text style={[styles.listRowName, { color: colors.text }]} numberOfLines={1}>{app.name}</Text>
+          <Text style={[styles.listRowDesc, { color: colors.textSecondary, fontFamily: fontAr("Regular") }]} numberOfLines={1}>
+            {isArabic ? app.descAr : app.descEn}
+          </Text>
+        </View>
+        <Pressable style={[styles.listRowGetButton, { backgroundColor: colors.card }]}>
+          <Text style={[styles.listRowGetText, { color: colors.tint, fontFamily: fontAr("Bold") }]}>{t("download")}</Text>
+        </Pressable>
+      </Pressable>
+      {showDivider && <View style={[styles.listRowDivider, { backgroundColor: colors.separator }]} />}
+    </View>
+  );
+}
+
 function StackedSection({ title, subtitle, data, onAppPress }: { title: string; subtitle: string; data: AppItem[]; onAppPress: (app: AppItem) => void }) {
+  const { colors, fontAr } = useSettings();
   const pages = chunkArray(data, 3);
   return (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
         <View>
-          <Text style={styles.sectionTitle}>{title}</Text>
-          <Text style={styles.sectionSubtitle}>{subtitle}</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text, fontFamily: fontAr("Bold") }]}>{title}</Text>
+          <Text style={[styles.sectionSubtitle, { color: colors.textSecondary, fontFamily: fontAr("Regular") }]}>{subtitle}</Text>
         </View>
-        <Feather name="chevron-left" size={18} color={Colors.light.textSecondary} />
+        <Feather name="chevron-left" size={18} color={colors.textSecondary} />
       </View>
       <FlatList
         data={pages}
@@ -183,28 +196,32 @@ function StackedSection({ title, subtitle, data, onAppPress }: { title: string; 
 }
 
 function AppRow({ app, onPress }: { app: AppItem; onPress: () => void }) {
-  const tagColor = getTagColor(app.tag);
+  const { colors, t, fontAr, isArabic } = useSettings();
+  const tagColor = getTagColor(app.tag, colors);
   return (
     <Pressable style={styles.appRow} onPress={onPress}>
       <View style={[styles.appIcon, { backgroundColor: `${tagColor}15` }]}>
         <Feather name={app.icon as any} size={22} color={tagColor} />
       </View>
       <View style={styles.appInfo}>
-        <Text style={styles.appName}>{app.name}</Text>
-        <Text style={styles.appDesc}>{app.desc}</Text>
+        <Text style={[styles.appName, { color: colors.text }]}>{app.name}</Text>
+        <Text style={[styles.appDesc, { color: colors.textSecondary, fontFamily: fontAr("Regular") }]}>
+          {isArabic ? app.descAr : app.descEn}
+        </Text>
       </View>
-      <Pressable style={styles.getButton}>
-        <Text style={styles.getButtonText}>تحميل</Text>
+      <Pressable style={[styles.getButton, { backgroundColor: colors.card }]}>
+        <Text style={[styles.getButtonText, { color: colors.tint, fontFamily: fontAr("Bold") }]}>{t("download")}</Text>
       </Pressable>
     </Pressable>
   );
 }
 
-function CategoryCard({ cat, onPress }: { cat: typeof BROWSE_CATEGORIES[number]; onPress: () => void }) {
+function CategoryCard({ catKey, onPress }: { catKey: string; onPress: () => void }) {
+  const { t, fontAr } = useSettings();
   return (
-    <Pressable style={[styles.catCard, { backgroundColor: cat.bgColor }]} onPress={onPress}>
-      <Feather name={cat.icon as any} size={28} color="rgba(255,255,255,0.9)" style={styles.catCardIcon} />
-      <Text style={styles.catCardLabel}>{cat.label}</Text>
+    <Pressable style={[styles.catCard, { backgroundColor: CATEGORY_COLORS[catKey] }]} onPress={onPress}>
+      <Feather name={CATEGORY_ICONS[catKey] as any} size={28} color="rgba(255,255,255,0.9)" style={styles.catCardIcon} />
+      <Text style={[styles.catCardLabel, { fontFamily: fontAr("Bold") }]}>{t((CAT_TRANSLATION_KEY[catKey] || catKey) as any)}</Text>
     </Pressable>
   );
 }
@@ -212,16 +229,16 @@ function CategoryCard({ cat, onPress }: { cat: typeof BROWSE_CATEGORIES[number];
 function CategoryPageContent({ catKey, onClose, onAppPress }: { catKey: string; onClose: () => void; onAppPress: (app: AppItem) => void }) {
   const insets = useSafeAreaInsets();
   const isWeb = Platform.OS === "web";
-  const cat = CATEGORIES.find((c) => c.key === catKey);
+  const { colors, t, fontAr } = useSettings();
   const apps = ALL_APPS.filter((a) => a.catKey === catKey);
 
   return (
-    <View style={[styles.container, { paddingTop: isWeb ? 67 : insets.top }]}>
+    <View style={[styles.container, { paddingTop: isWeb ? 67 : insets.top, backgroundColor: colors.background }]}>
       <View style={styles.catPageHeader}>
         <GlassBackButton onPress={onClose} />
       </View>
       <View style={styles.catPageTitleRow}>
-        <Text style={styles.headerTitle}>{cat?.label}</Text>
+        <Text style={[styles.headerTitle, { color: colors.text, fontFamily: fontAr("Bold") }]}>{t((CAT_TRANSLATION_KEY[catKey] || catKey) as any)}</Text>
       </View>
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -232,7 +249,7 @@ function CategoryPageContent({ catKey, onClose, onAppPress }: { catKey: string; 
           {apps.map((app, idx) => (
             <View key={app.id}>
               <AppRow app={app} onPress={() => onAppPress(app)} />
-              {idx < apps.length - 1 && <View style={styles.listRowDivider} />}
+              {idx < apps.length - 1 && <View style={[styles.listRowDivider, { backgroundColor: colors.separator }]} />}
             </View>
           ))}
         </View>
@@ -243,6 +260,7 @@ function CategoryPageContent({ catKey, onClose, onAppPress }: { catKey: string; 
 
 export default function PlusScreen() {
   const insets = useSafeAreaInsets();
+  const { colors, t, fontAr, isArabic } = useSettings();
   const [activeCat, setActiveCat] = useState<string | null>(null);
   const [selectedApp, setSelectedApp] = useState<AppItem | null>(null);
   const [showAccount, setShowAccount] = useState(false);
@@ -251,6 +269,12 @@ export default function PlusScreen() {
   const featuredRef = useRef<FlatList>(null);
   const featuredIndex = useRef(0);
   const isWeb = Platform.OS === "web";
+
+  const FEATURED_APPS = [
+    { id: 1, title: t("featuredBlackFriday"), subtitle: t("featuredBlackFridaySub"), color: "#007AFF" },
+    { id: 2, title: t("featuredNewApps"), subtitle: t("featuredNewAppsSub"), color: "#5856D6" },
+    { id: 3, title: t("featuredPremium"), subtitle: t("featuredPremiumSub"), color: "#FF9500" },
+  ];
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -273,11 +297,11 @@ export default function PlusScreen() {
   const handleAppPress = (app: AppItem) => setSelectedApp(app);
 
   return (
-    <View style={[styles.container, { paddingTop: isWeb ? 67 : insets.top }]}>
+    <View style={[styles.container, { paddingTop: isWeb ? 67 : insets.top, backgroundColor: colors.background }]}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>مسماري +</Text>
-        <TouchableOpacity style={styles.profileButton} onPress={() => setShowAccount(true)} activeOpacity={0.6}>
-          <Feather name="user" size={20} color={Colors.light.textSecondary} />
+        <Text style={[styles.headerTitle, { color: colors.text, fontFamily: fontAr("Bold") }]}>{t("headerPlus")}</Text>
+        <TouchableOpacity style={[styles.profileButton, { backgroundColor: colors.card }]} onPress={() => setShowAccount(true)} activeOpacity={0.6}>
+          <Feather name="user" size={20} color={colors.textSecondary} />
         </TouchableOpacity>
       </View>
 
@@ -288,9 +312,9 @@ export default function PlusScreen() {
           contentContainerStyle={styles.categoryRow}
           style={styles.categoryScrollView}
         >
-        {CATEGORIES.map((cat) => (
-          <CategoryPill key={cat.key} item={cat} onPress={() => setActiveCat(cat.key)} />
-        ))}
+          {CATEGORY_KEYS.map((catKey) => (
+            <CategoryPill key={catKey} catKey={catKey} onPress={() => setActiveCat(catKey)} />
+          ))}
         </ScrollView>
       </View>
 
@@ -301,8 +325,8 @@ export default function PlusScreen() {
       >
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionLabel}>مميز</Text>
-            <Feather name="chevron-left" size={18} color={Colors.light.textSecondary} />
+            <Text style={[styles.sectionLabel, { color: colors.tint, fontFamily: fontAr("SemiBold") }]}>{t("featured")}</Text>
+            <Feather name="chevron-left" size={18} color={colors.textSecondary} />
           </View>
           <FlatList
             ref={featuredRef}
@@ -326,22 +350,22 @@ export default function PlusScreen() {
               const inputRange = [(i - 1) * snap, i * snap, (i + 1) * snap];
               const dotWidth = scrollX.interpolate({ inputRange, outputRange: [8, 20, 8], extrapolate: "clamp" });
               const dotOpacity = scrollX.interpolate({ inputRange, outputRange: [0.4, 1, 0.4], extrapolate: "clamp" });
-              return <Animated.View key={i} style={[styles.dot, { width: dotWidth, opacity: dotOpacity }]} />;
+              return <Animated.View key={i} style={[styles.dot, { width: dotWidth, opacity: dotOpacity, backgroundColor: colors.tint }]} />;
             })}
           </View>
         </View>
 
-        <StackedSection title="الأكثر رواجاً 🔥" subtitle="التطبيقات الرائجة الآن" data={hotApps} onAppPress={handleAppPress} />
-        <StackedSection title="الأكثر تحميلاً" subtitle="الأفضل حسب اختيار المجتمع" data={mostDownloaded} onAppPress={handleAppPress} />
-        <StackedSection title="أضيف مؤخراً" subtitle="تطبيقات جديدة للتو" data={newAdds} onAppPress={handleAppPress} />
+        <StackedSection title={t("trending")} subtitle={t("trendingSub")} data={hotApps} onAppPress={handleAppPress} />
+        <StackedSection title={t("mostDownloaded")} subtitle={t("mostDownloadedSub")} data={mostDownloaded} onAppPress={handleAppPress} />
+        <StackedSection title={t("recentlyAdded")} subtitle={t("recentlyAddedSub")} data={newAdds} onAppPress={handleAppPress} />
 
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>الأقسام</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text, fontFamily: fontAr("Bold") }]}>{t("sections")}</Text>
           </View>
           <View style={styles.catGrid}>
-            {BROWSE_CATEGORIES.map((cat) => (
-              <CategoryCard key={cat.key} cat={cat} onPress={() => setActiveCat(cat.key)} />
+            {CATEGORY_KEYS.map((catKey) => (
+              <CategoryCard key={catKey} catKey={catKey} onPress={() => setActiveCat(catKey)} />
             ))}
           </View>
         </View>
@@ -387,7 +411,6 @@ export default function PlusScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.light.background,
   },
   header: {
     flexDirection: "row",
@@ -398,14 +421,11 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 32,
-    fontFamily: "Mestika-Bold",
-    color: Colors.light.text,
   },
   profileButton: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: Colors.light.card,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -428,7 +448,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 22,
-    backgroundColor: Colors.light.background,
     ...Platform.select({
       ios: {
         shadowColor: "#000",
@@ -446,8 +465,6 @@ const styles = StyleSheet.create({
   },
   categoryPillText: {
     fontSize: 14,
-    fontFamily: "Mestika-SemiBold",
-    color: Colors.light.text,
   },
 
   section: {
@@ -462,19 +479,13 @@ const styles = StyleSheet.create({
   },
   sectionLabel: {
     fontSize: 12,
-    fontFamily: "Mestika-SemiBold",
-    color: Colors.light.tint,
     letterSpacing: 1,
   },
   sectionTitle: {
     fontSize: 22,
-    fontFamily: "Mestika-Bold",
-    color: Colors.light.text,
   },
   sectionSubtitle: {
     fontSize: 13,
-    fontFamily: "Mestika-Regular",
-    color: Colors.light.textSecondary,
     marginTop: 2,
   },
 
@@ -491,20 +502,12 @@ const styles = StyleSheet.create({
   featuredContent: {
     gap: 4,
   },
-  featuredLabel: {
-    fontSize: 11,
-    fontFamily: "Mestika-SemiBold",
-    color: "rgba(255,255,255,0.7)",
-    letterSpacing: 1,
-  },
   featuredTitle: {
     fontSize: 22,
-    fontFamily: "Mestika-Bold",
     color: "#FFF",
   },
   featuredSubtitle: {
     fontSize: 14,
-    fontFamily: "Mestika-Regular",
     color: "rgba(255,255,255,0.8)",
   },
   paginationDots: {
@@ -517,7 +520,6 @@ const styles = StyleSheet.create({
   dot: {
     height: 6,
     borderRadius: 3,
-    backgroundColor: Colors.light.tint,
   },
 
   listRow: {
@@ -540,27 +542,20 @@ const styles = StyleSheet.create({
   listRowName: {
     fontSize: 16,
     fontFamily: "Inter_600SemiBold",
-    color: Colors.light.text,
   },
   listRowDesc: {
     fontSize: 13,
-    fontFamily: "Mestika-Regular",
-    color: Colors.light.textSecondary,
   },
   listRowGetButton: {
-    backgroundColor: Colors.light.card,
     paddingHorizontal: 22,
     paddingVertical: 7,
     borderRadius: 18,
   },
   listRowGetText: {
     fontSize: 15,
-    fontFamily: "Mestika-Bold",
-    color: Colors.light.tint,
   },
   listRowDivider: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: Colors.light.separator,
     marginLeft: 68,
   },
 
@@ -587,23 +582,17 @@ const styles = StyleSheet.create({
   appName: {
     fontSize: 16,
     fontFamily: "Inter_600SemiBold",
-    color: Colors.light.text,
   },
   appDesc: {
     fontSize: 13,
-    fontFamily: "Mestika-Regular",
-    color: Colors.light.textSecondary,
   },
   getButton: {
-    backgroundColor: Colors.light.card,
     paddingHorizontal: 22,
     paddingVertical: 7,
     borderRadius: 18,
   },
   getButtonText: {
     fontSize: 15,
-    fontFamily: "Mestika-Bold",
-    color: Colors.light.tint,
   },
 
   catGrid: {
@@ -627,7 +616,6 @@ const styles = StyleSheet.create({
   },
   catCardLabel: {
     fontSize: 16,
-    fontFamily: "Mestika-Bold",
     color: "#FFF",
   },
 

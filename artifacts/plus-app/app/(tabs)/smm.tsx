@@ -10,27 +10,30 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import Colors from "@/constants/colors";
+import { useSettings } from "@/contexts/SettingsContext";
 
 const SMM_APPS = [
-  { id: 1, name: "Instagram++", desc: "تحميل القصص والريلز", icon: "instagram" },
-  { id: 2, name: "WhatsApp++", desc: "ميزات مخفية مفعّلة", icon: "message-circle" },
-  { id: 3, name: "Snapchat++", desc: "حفظ السنابات والقصص", icon: "camera" },
-  { id: 4, name: "TikTok++", desc: "بدون إعلانات، تحميل الفيديو", icon: "video" },
-  { id: 5, name: "Twitter++", desc: "تحميل الفيديوهات والثريدات", icon: "twitter" },
-  { id: 6, name: "Facebook++", desc: "ميزات محسّنة", icon: "facebook" },
-  { id: 7, name: "Telegram++", desc: "ميزات بريميوم مجانية", icon: "send" },
-  { id: 8, name: "Reddit++", desc: "تصفح بدون إعلانات", icon: "message-square" },
+  { id: 1, name: "Instagram++", descAr: "تحميل القصص والريلز", descEn: "Download stories & reels", icon: "instagram" },
+  { id: 2, name: "WhatsApp++", descAr: "ميزات مخفية مفعّلة", descEn: "Hidden features unlocked", icon: "message-circle" },
+  { id: 3, name: "Snapchat++", descAr: "حفظ السنابات والقصص", descEn: "Save snaps & stories", icon: "camera" },
+  { id: 4, name: "TikTok++", descAr: "بدون إعلانات، تحميل الفيديو", descEn: "No ads, video download", icon: "video" },
+  { id: 5, name: "Twitter++", descAr: "تحميل الفيديوهات والثريدات", descEn: "Download videos & threads", icon: "twitter" },
+  { id: 6, name: "Facebook++", descAr: "ميزات محسّنة", descEn: "Enhanced features", icon: "facebook" },
+  { id: 7, name: "Telegram++", descAr: "ميزات بريميوم مجانية", descEn: "Free premium features", icon: "send" },
+  { id: 8, name: "Reddit++", descAr: "تصفح بدون إعلانات", descEn: "Ad-free browsing", icon: "message-square" },
 ];
 
 export default function SmmScreen() {
   const insets = useSafeAreaInsets();
   const isWeb = Platform.OS === "web";
+  const { colors, t, fontAr, isArabic } = useSettings();
 
   return (
-    <View style={[styles.container, { paddingTop: isWeb ? 67 : insets.top }]}>
+    <View style={[styles.container, { paddingTop: isWeb ? 67 : insets.top, backgroundColor: colors.background }]}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>مسماري SMM</Text>
+        <Text style={[styles.headerTitle, { color: colors.text, fontFamily: fontAr("Bold") }]}>
+          {t("headerSMM")}
+        </Text>
       </View>
       <FlatList
         data={SMM_APPS}
@@ -38,18 +41,22 @@ export default function SmmScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: isWeb ? 34 : 80 }}
         contentInsetAdjustmentBehavior="automatic"
-        ItemSeparatorComponent={() => <View style={styles.divider} />}
+        ItemSeparatorComponent={() => <View style={[styles.divider, { backgroundColor: colors.separator }]} />}
         renderItem={({ item }) => (
           <Pressable style={styles.appRow}>
-            <View style={[styles.appIcon, { backgroundColor: `${Colors.light.tagTweaked}15` }]}>
-              <Feather name={item.icon as any} size={22} color={Colors.light.tagTweaked} />
+            <View style={[styles.appIcon, { backgroundColor: `${colors.tagTweaked}15` }]}>
+              <Feather name={item.icon as any} size={22} color={colors.tagTweaked} />
             </View>
             <View style={styles.appInfo}>
-              <Text style={styles.appName}>{item.name}</Text>
-              <Text style={styles.appDesc}>{item.desc}</Text>
+              <Text style={[styles.appName, { color: colors.text }]}>{item.name}</Text>
+              <Text style={[styles.appDesc, { color: colors.textSecondary, fontFamily: fontAr("Regular") }]}>
+                {isArabic ? item.descAr : item.descEn}
+              </Text>
             </View>
-            <Pressable style={styles.getButton}>
-              <Text style={styles.getButtonText}>تحميل</Text>
+            <Pressable style={[styles.getButton, { backgroundColor: colors.card }]}>
+              <Text style={[styles.getButtonText, { color: colors.tint, fontFamily: fontAr("Bold") }]}>
+                {t("download")}
+              </Text>
             </Pressable>
           </Pressable>
         )}
@@ -59,15 +66,15 @@ export default function SmmScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.light.background },
+  container: { flex: 1 },
   header: { paddingHorizontal: 20, paddingVertical: 12 },
-  headerTitle: { fontSize: 32, fontFamily: "Mestika-Bold", color: Colors.light.text },
+  headerTitle: { fontSize: 28 },
   appRow: { flexDirection: "row", alignItems: "center", paddingVertical: 12, gap: 14 },
   appIcon: { width: 52, height: 52, borderRadius: 14, alignItems: "center", justifyContent: "center" },
   appInfo: { flex: 1, gap: 3 },
-  appName: { fontSize: 16, fontFamily: "Inter_600SemiBold", color: Colors.light.text },
-  appDesc: { fontSize: 13, fontFamily: "Mestika-Regular", color: Colors.light.textSecondary },
-  getButton: { backgroundColor: Colors.light.card, paddingHorizontal: 22, paddingVertical: 7, borderRadius: 18 },
-  getButtonText: { fontSize: 15, fontFamily: "Mestika-Bold", color: Colors.light.tint },
-  divider: { height: StyleSheet.hairlineWidth, backgroundColor: Colors.light.separator, marginLeft: 66 },
+  appName: { fontSize: 16, fontFamily: "Inter_600SemiBold" },
+  appDesc: { fontSize: 12 },
+  getButton: { paddingHorizontal: 22, paddingVertical: 7, borderRadius: 18 },
+  getButtonText: { fontSize: 14 },
+  divider: { height: StyleSheet.hairlineWidth, marginLeft: 66 },
 });

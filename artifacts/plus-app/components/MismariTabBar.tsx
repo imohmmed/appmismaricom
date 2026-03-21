@@ -14,17 +14,17 @@ import {
 } from "react-native";
 import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 
-import Colors from "@/constants/colors";
+import { useSettings } from "@/contexts/SettingsContext";
 
 if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-const TAB_ITEMS = [
-  { name: "index", label: "بلس+", icon: "plus-square" },
-  { name: "tv", label: "تلفاز", icon: "tv" },
-  { name: "smm", label: "رشق", icon: "message-square" },
-  { name: "numbers", label: "أرقام", icon: "bar-chart-2" },
+const TAB_KEYS = [
+  { name: "index", translationKey: "tabPlus" as const, icon: "plus-square" },
+  { name: "tv", translationKey: "tabTV" as const, icon: "tv" },
+  { name: "smm", translationKey: "tabSMM" as const, icon: "message-square" },
+  { name: "numbers", translationKey: "tabNumbers" as const, icon: "bar-chart-2" },
 ];
 
 const springConfig = LayoutAnimation.create(
@@ -37,6 +37,7 @@ export default function MismariTabBar({ state, navigation }: BottomTabBarProps) 
   const [isSearchMode, setIsSearchMode] = useState(false);
   const [searchText, setSearchText] = useState("");
   const searchInputRef = useRef<TextInput>(null);
+  const { colors, t, fontAr, isDark, isArabic } = useSettings();
 
   const activeRoute = state.routes[state.index]?.name;
 
@@ -69,11 +70,11 @@ export default function MismariTabBar({ state, navigation }: BottomTabBarProps) 
     <View style={s.barInner}>
       {isSearchMode ? (
         <Pressable onPress={exitSearchMode} style={s.homeBtn}>
-          <Feather name="home" size={20} color={Colors.light.tint} />
+          <Feather name="home" size={20} color={colors.tint} />
         </Pressable>
       ) : (
         <View style={s.tabsContainer}>
-          {TAB_ITEMS.map((tab) => {
+          {TAB_KEYS.map((tab) => {
             const isActive = activeRoute === tab.name;
             return (
               <Pressable
@@ -84,16 +85,19 @@ export default function MismariTabBar({ state, navigation }: BottomTabBarProps) 
                 <Feather
                   name={tab.icon as any}
                   size={20}
-                  color={isActive ? Colors.light.tint : Colors.light.tabIconDefault}
+                  color={isActive ? colors.tint : colors.tabIconDefault}
                 />
                 <Text
                   style={[
                     s.tabLabel,
-                    { color: isActive ? Colors.light.tint : Colors.light.tabIconDefault },
+                    {
+                      color: isActive ? colors.tint : colors.tabIconDefault,
+                      fontFamily: fontAr("SemiBold"),
+                    },
                   ]}
                   numberOfLines={1}
                 >
-                  {tab.label}
+                  {t(tab.translationKey)}
                 </Text>
               </Pressable>
             );
@@ -103,12 +107,12 @@ export default function MismariTabBar({ state, navigation }: BottomTabBarProps) 
 
       {isSearchMode ? (
         <View style={s.searchExpanded}>
-          <Feather name="search" size={18} color={Colors.light.textSecondary} />
+          <Feather name="search" size={18} color={colors.textSecondary} />
           <TextInput
             ref={searchInputRef}
-            style={s.searchInput}
-            placeholder="...ابحث في مسماري"
-            placeholderTextColor={Colors.light.textSecondary}
+            style={[s.searchInput, { color: colors.text, fontFamily: fontAr("Regular"), textAlign: isArabic ? "right" : "left" }]}
+            placeholder={t("searchPlaceholder")}
+            placeholderTextColor={colors.textSecondary}
             value={searchText}
             onChangeText={setSearchText}
             autoCapitalize="none"
@@ -116,22 +120,24 @@ export default function MismariTabBar({ state, navigation }: BottomTabBarProps) 
           />
           {searchText.length > 0 && (
             <Pressable onPress={() => setSearchText("")}>
-              <Feather name="x-circle" size={16} color={Colors.light.textSecondary} />
+              <Feather name="x-circle" size={16} color={colors.textSecondary} />
             </Pressable>
           )}
         </View>
       ) : (
         <Pressable onPress={enterSearchMode} style={s.searchBtn}>
-          <Feather name="search" size={20} color={Colors.light.tint} />
+          <Feather name="search" size={20} color={colors.tint} />
         </Pressable>
       )}
     </View>
   );
 
+  const webGlassBg = isDark ? "rgba(43,40,59,0.85)" : "rgba(255,255,255,0.85)";
+
   if (isWeb) {
     return (
       <View style={s.barWrapper}>
-        <View style={[s.glassBar, s.webGlass]}>{barContent}</View>
+        <View style={[s.glassBar, s.webGlass, { backgroundColor: webGlassBg }]}>{barContent}</View>
       </View>
     );
   }
@@ -139,7 +145,7 @@ export default function MismariTabBar({ state, navigation }: BottomTabBarProps) 
   if (isIOS) {
     return (
       <View style={s.barWrapper}>
-        <BlurView intensity={80} tint="light" style={s.glassBar}>
+        <BlurView intensity={80} tint={isDark ? "dark" : "light"} style={s.glassBar}>
           {barContent}
         </BlurView>
       </View>
@@ -148,7 +154,7 @@ export default function MismariTabBar({ state, navigation }: BottomTabBarProps) 
 
   return (
     <View style={s.barWrapper}>
-      <View style={[s.glassBar, { backgroundColor: Colors.light.background }]}>{barContent}</View>
+      <View style={[s.glassBar, { backgroundColor: colors.background }]}>{barContent}</View>
     </View>
   );
 }
@@ -179,7 +185,6 @@ const s = StyleSheet.create({
     }),
   },
   webGlass: {
-    backgroundColor: "rgba(255,255,255,0.85)",
     backdropFilter: "blur(20px)",
   },
   barInner: {
@@ -209,7 +214,6 @@ const s = StyleSheet.create({
   },
   tabLabel: {
     fontSize: 10,
-    fontFamily: "Mestika-SemiBold",
   },
 
   homeBtn: {
@@ -242,9 +246,6 @@ const s = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 15,
-    fontFamily: "Mestika-Regular",
-    color: Colors.light.text,
     height: 44,
-    textAlign: "right",
   },
 });

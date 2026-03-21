@@ -14,7 +14,8 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import Colors from "@/constants/colors";
+import { useSettings } from "@/contexts/SettingsContext";
+import type { ThemeColors } from "@/constants/colors";
 import GlassBackButton from "@/components/GlassBackButton";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
@@ -23,7 +24,9 @@ const HEADER_COLLAPSE_POINT = 120;
 type AppData = {
   id: number;
   name: string;
-  desc: string;
+  descAr?: string;
+  descEn?: string;
+  desc?: string;
   category: string;
   tag: string;
   icon: string;
@@ -47,12 +50,22 @@ type AppDetailProps = {
   onRelatedAppPress?: (app: AppData) => void;
 };
 
-function getTagColor(tag: string) {
+const CAT_TRANSLATION_KEY: Record<string, string> = {
+  social: "social",
+  ai: "ai",
+  edit: "edit",
+  games: "games",
+  tweaked: "tweakedApps",
+  tv: "tv",
+  develop: "develop",
+};
+
+function getTagColor(tag: string, colors: ThemeColors) {
   switch (tag) {
-    case "tweaked": return Colors.light.tagTweaked;
-    case "modded": return Colors.light.tagModded;
-    case "hacked": return Colors.light.tagHacked;
-    default: return Colors.light.tint;
+    case "tweaked": return colors.tagTweaked;
+    case "modded": return colors.tagModded;
+    case "hacked": return colors.tagHacked;
+    default: return colors.tint;
   }
 }
 
@@ -62,10 +75,11 @@ function maskPhone(phone: string) {
 }
 
 function StarRow({ rating, size = 14, color = "#FFD700" }: { rating: number; size?: number; color?: string }) {
+  const { colors } = useSettings();
   return (
     <View style={{ flexDirection: "row", gap: 2 }}>
       {[1, 2, 3, 4, 5].map((sv) => (
-        <Feather key={sv} name="star" size={size} color={sv <= rating ? color : Colors.light.separator} />
+        <Feather key={sv} name="star" size={size} color={sv <= rating ? color : colors.separator} />
       ))}
     </View>
   );
@@ -73,13 +87,14 @@ function StarRow({ rating, size = 14, color = "#FFD700" }: { rating: number; siz
 
 function TapToRate({ onRate }: { onRate: (r: number) => void }) {
   const [hover, setHover] = useState(0);
+  const { colors, t, fontAr } = useSettings();
   return (
     <View style={st.tapToRate}>
-      <Text style={st.tapToRateLabel}>اضغط للتقييم</Text>
+      <Text style={[st.tapToRateLabel, { color: colors.text, fontFamily: fontAr("SemiBold") }]}>{t("tapToRate")}</Text>
       <View style={st.tapStars}>
         {[1, 2, 3, 4, 5].map((v) => (
           <Pressable key={v} onPress={() => { setHover(v); onRate(v); }}>
-            <Feather name="star" size={32} color={v <= hover ? "#FFD700" : Colors.light.separator} />
+            <Feather name="star" size={32} color={v <= hover ? "#FFD700" : colors.separator} />
           </Pressable>
         ))}
       </View>
@@ -94,6 +109,7 @@ function chunkArray<T>(arr: T[], size: number): T[][] {
 }
 
 function RelatedAppsRow({ apps, onPress }: { apps: AppData[]; onPress?: (app: AppData) => void }) {
+  const { colors, t, fontAr, isArabic } = useSettings();
   const pages = chunkArray(apps.slice(0, 9), 3);
   const pageW = SCREEN_WIDTH - 80;
   return (
@@ -109,7 +125,8 @@ function RelatedAppsRow({ apps, onPress }: { apps: AppData[]; onPress?: (app: Ap
       renderItem={({ item: chunk }) => (
         <View style={{ width: pageW }}>
           {chunk.map((a, idx) => {
-            const tc = getTagColor(a.tag);
+            const tc = getTagColor(a.tag, colors);
+            const desc = isArabic ? (a.descAr || a.desc || "") : (a.descEn || a.desc || "");
             return (
               <View key={a.id}>
                 <Pressable style={st.relatedRow} onPress={() => onPress?.(a)}>
@@ -117,14 +134,14 @@ function RelatedAppsRow({ apps, onPress }: { apps: AppData[]; onPress?: (app: Ap
                     <Feather name={a.icon as any} size={24} color={tc} />
                   </View>
                   <View style={{ flex: 1, gap: 2 }}>
-                    <Text style={st.relatedName} numberOfLines={1}>{a.name}</Text>
-                    <Text style={st.relatedDesc} numberOfLines={1}>{a.desc}</Text>
+                    <Text style={[st.relatedName, { color: colors.text }]} numberOfLines={1}>{a.name}</Text>
+                    <Text style={[st.relatedDesc, { color: colors.textSecondary, fontFamily: fontAr("Regular") }]} numberOfLines={1}>{desc}</Text>
                   </View>
-                  <Pressable style={st.relatedGetBtn}>
-                    <Text style={st.relatedGetText}>تحميل</Text>
+                  <Pressable style={[st.relatedGetBtn, { backgroundColor: colors.card }]}>
+                    <Text style={[st.relatedGetText, { color: colors.tint, fontFamily: fontAr("Bold") }]}>{t("download")}</Text>
                   </Pressable>
                 </Pressable>
-                {idx < chunk.length - 1 && <View style={st.relatedDivider} />}
+                {idx < chunk.length - 1 && <View style={[st.relatedDivider, { backgroundColor: colors.separator }]} />}
               </View>
             );
           })}
@@ -134,56 +151,43 @@ function RelatedAppsRow({ apps, onPress }: { apps: AppData[]; onPress?: (app: Ap
   );
 }
 
-const MOCK_USER = {
-  name: "أحمد المسماري",
-  phone: "+964 770 123 4567",
-};
+const MOCK_USER_AR = { name: "أحمد المسماري", phone: "+964 770 123 4567" };
+const MOCK_USER_EN = { name: "Ahmed Al-Mismari", phone: "+964 770 123 4567" };
 
-const MOCK_REVIEWS: Review[] = [
+const MOCK_REVIEWS_AR: Review[] = [
   { id: 1, name: "أحمد", phone: "+964 770 123 4567", rating: 5, text: "تطبيق ممتاز! يعمل بشكل مثالي بدون أي مشاكل.", date: "قبل يومين" },
   { id: 2, name: "سارة", phone: "+964 771 234 5678", rating: 4, text: "ميزات رائعة، تجربة سلسة جداً.", date: "قبل أسبوع" },
 ];
+const MOCK_REVIEWS_EN: Review[] = [
+  { id: 1, name: "Ahmed", phone: "+964 770 123 4567", rating: 5, text: "Excellent app! Works perfectly without any issues.", date: "2 days ago" },
+  { id: 2, name: "Sara", phone: "+964 771 234 5678", rating: 4, text: "Great features, very smooth experience.", date: "1 week ago" },
+];
 
 const APP_SIZES: Record<string, string> = {
-  "تواصل اجتماعي": "85", "ذكاء اصطناعي": "142", "تعديل": "210",
-  "ألعاب": "320", "تطبيقات بلس": "95", "تلفزيون": "130", "تطوير": "65",
-  "Social Media": "85", "Ai": "142", "Edit": "210",
-  "Games": "320", "Tweaked Apps": "95", "TV , LIVE": "130", "Develop": "65",
+  social: "85", ai: "142", edit: "210",
+  games: "320", tweaked: "95", tv: "130", develop: "65",
 };
-
-function GlassGetButton({ small }: { small?: boolean }) {
-  const isWeb = Platform.OS === "web";
-  if (small) {
-    if (isWeb) {
-      return (
-        <Pressable style={st.glassGetSmallWeb}>
-          <Text style={st.glassGetSmallText}>تحميل</Text>
-        </Pressable>
-      );
-    }
-    return (
-      <Pressable style={st.glassGetSmallWrap}>
-        <View style={st.glassGetSmallInner}>
-          <Text style={st.glassGetSmallText}>تحميل</Text>
-        </View>
-      </Pressable>
-    );
-  }
-  return null;
-}
 
 export default function AppDetailPanel({ app, onClose, onCategoryPress, relatedApps = [], onRelatedAppPress }: AppDetailProps) {
   const insets = useSafeAreaInsets();
   const isWeb = Platform.OS === "web";
-  const tagColor = getTagColor(app.tag);
+  const { colors, t, fontAr, isArabic } = useSettings();
+  const tagColor = getTagColor(app.tag, colors);
   const scrollY = useRef(new Animated.Value(0)).current;
 
+  const mockUser = isArabic ? MOCK_USER_AR : MOCK_USER_EN;
   const [descExpanded, setDescExpanded] = useState(false);
-  const [reviews, setReviews] = useState<Review[]>(MOCK_REVIEWS);
+  const [reviews, setReviews] = useState<Review[]>(isArabic ? MOCK_REVIEWS_AR : MOCK_REVIEWS_EN);
   const [reviewText, setReviewText] = useState("");
   const [reviewRating, setReviewRating] = useState(0);
 
-  const fullDesc = `${app.desc}. هذا إصدار ${app.tag === "tweaked" ? "بلس" : app.tag === "modded" ? "معدّل" : "مهكر"} من ${app.name} مع ميزات بريميوم مفعّلة. التثبيت مباشر بدون جيلبريك. تحديثات مستمرة ودعم فني مع اشتراكك. متوافق مع أحدث إصدارات iOS. بدون إلغاء - نحافظ على الشهادات محدّثة. الميزات تشمل جميع المحتوى المميز، إزالة الإعلانات، وتعديلات حصرية غير متوفرة في التطبيق الأصلي.`;
+  const appDesc = isArabic ? (app.descAr || app.desc || "") : (app.descEn || app.desc || "");
+  const catTransKey = CAT_TRANSLATION_KEY[app.catKey || ""] || CAT_TRANSLATION_KEY[app.category] || app.category;
+  const catLabel = t(catTransKey as any) || app.category;
+
+  const fullDescAr = `${app.descAr || app.desc}. هذا إصدار ${app.tag === "tweaked" ? "بلس" : app.tag === "modded" ? "معدّل" : "مهكر"} من ${app.name} مع ميزات بريميوم مفعّلة. التثبيت مباشر بدون جيلبريك. تحديثات مستمرة ودعم فني مع اشتراكك. متوافق مع أحدث إصدارات iOS. بدون إلغاء - نحافظ على الشهادات محدّثة.`;
+  const fullDescEn = `${app.descEn || app.desc}. This is a ${app.tag} version of ${app.name} with premium features unlocked. Direct install without jailbreak. Continuous updates and support with your subscription. Compatible with latest iOS versions. No revokes - certificates kept up to date.`;
+  const fullDesc = isArabic ? fullDescAr : fullDescEn;
 
   const avgRating = reviews.length > 0
     ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
@@ -192,13 +196,13 @@ export default function AppDetailPanel({ app, onClose, onCategoryPress, relatedA
   const submitReview = () => {
     if (!reviewText.trim() || reviewRating === 0) return;
     setReviews([{
-      id: Date.now(), name: MOCK_USER.name, phone: MOCK_USER.phone,
-      rating: reviewRating, text: reviewText, date: "الآن",
+      id: Date.now(), name: mockUser.name, phone: mockUser.phone,
+      rating: reviewRating, text: reviewText, date: t("now"),
     }, ...reviews]);
     setReviewText(""); setReviewRating(0);
   };
 
-  const appSize = APP_SIZES[app.category] || "100";
+  const appSize = APP_SIZES[app.catKey || ""] || APP_SIZES[app.category] || "100";
 
   const stickyOpacity = scrollY.interpolate({
     inputRange: [HEADER_COLLAPSE_POINT - 20, HEADER_COLLAPSE_POINT + 10],
@@ -212,7 +216,7 @@ export default function AppDetailPanel({ app, onClose, onCategoryPress, relatedA
   });
 
   return (
-    <View style={[st.container, { paddingTop: isWeb ? 67 : insets.top }]}>
+    <View style={[st.container, { paddingTop: isWeb ? 67 : insets.top, backgroundColor: colors.background }]}>
       <View style={st.navBar}>
         <GlassBackButton onPress={onClose} />
         <Animated.View style={[st.stickyCenter, { opacity: stickyOpacity, transform: [{ translateY: stickyTranslate }] }]}>
@@ -221,8 +225,8 @@ export default function AppDetailPanel({ app, onClose, onCategoryPress, relatedA
           </View>
         </Animated.View>
         <Animated.View style={{ opacity: stickyOpacity }}>
-          <Pressable style={st.stickyGetBtn}>
-            <Text style={st.stickyGetText}>تحميل</Text>
+          <Pressable style={[st.stickyGetBtn, { backgroundColor: colors.tint }]}>
+            <Text style={[st.stickyGetText, { fontFamily: fontAr("Bold") }]}>{t("download")}</Text>
           </Pressable>
         </Animated.View>
       </View>
@@ -242,106 +246,113 @@ export default function AppDetailPanel({ app, onClose, onCategoryPress, relatedA
             <Feather name={app.icon as any} size={48} color={tagColor} />
           </View>
           <View style={st.heroInfo}>
-            <Text style={st.appName} numberOfLines={2}>{app.name}</Text>
-            <Text style={st.appSubtitle}>{app.desc}</Text>
+            <Text style={[st.appName, { color: colors.text }]} numberOfLines={2}>{app.name}</Text>
+            <Text style={[st.appSubtitle, { color: colors.textSecondary, fontFamily: fontAr("Regular") }]}>{appDesc}</Text>
             <View style={st.heroButtons}>
-              <Pressable style={st.repeatBtn}>
-                <Feather name="repeat" size={14} color={Colors.light.tint} />
-                <Text style={st.repeatText}>إعادة</Text>
+              <Pressable style={[st.repeatBtn, { backgroundColor: colors.card }]}>
+                <Feather name="repeat" size={14} color={colors.tint} />
+                <Text style={[st.repeatText, { color: colors.tint, fontFamily: fontAr("Bold") }]}>{t("retry")}</Text>
               </Pressable>
-              <Pressable style={st.getBtn}>
-                <Text style={st.getBtnText}>تحميل</Text>
+              <Pressable style={[st.getBtn, { backgroundColor: colors.tint }]}>
+                <Text style={[st.getBtnText, { fontFamily: fontAr("Bold") }]}>{t("download")}</Text>
               </Pressable>
             </View>
           </View>
         </View>
 
-        <View style={st.infoBoxRow}>
+        <View style={[st.infoBoxRow, { backgroundColor: colors.card }]}>
           <View style={st.infoBox}>
-            <Text style={st.infoBoxLabel}>التقييم</Text>
-            <Text style={st.infoBoxValue}>{avgRating}</Text>
+            <Text style={[st.infoBoxLabel, { color: colors.textSecondary, fontFamily: fontAr("SemiBold") }]}>{t("rating")}</Text>
+            <Text style={[st.infoBoxValue, { color: colors.text }]}>{avgRating}</Text>
             <StarRow rating={Math.round(Number(avgRating))} size={10} />
           </View>
-          <View style={st.infoBoxDivider} />
+          <View style={[st.infoBoxDivider, { backgroundColor: colors.separator }]} />
           <View style={st.infoBox}>
-            <Text style={st.infoBoxLabel}>الحجم</Text>
-            <Text style={st.infoBoxValue}>{appSize}</Text>
-            <Text style={st.infoBoxSub}>م.ب</Text>
+            <Text style={[st.infoBoxLabel, { color: colors.textSecondary, fontFamily: fontAr("SemiBold") }]}>{t("size")}</Text>
+            <Text style={[st.infoBoxValue, { color: colors.text }]}>{appSize}</Text>
+            <Text style={[st.infoBoxSub, { color: colors.textSecondary, fontFamily: fontAr("Regular") }]}>{t("mb")}</Text>
           </View>
-          <View style={st.infoBoxDivider} />
+          <View style={[st.infoBoxDivider, { backgroundColor: colors.separator }]} />
           <Pressable
             style={st.infoBox}
             onPress={() => app.catKey && onCategoryPress?.(app.catKey)}
           >
-            <Text style={st.infoBoxLabel}>القسم</Text>
-            <Feather name="grid" size={18} color={Colors.light.tint} style={{ marginVertical: 2 }} />
-            <Text style={[st.infoBoxSub, { color: Colors.light.tint }]}>{app.category}</Text>
+            <Text style={[st.infoBoxLabel, { color: colors.textSecondary, fontFamily: fontAr("SemiBold") }]}>{t("category")}</Text>
+            <Feather name="grid" size={18} color={colors.tint} style={{ marginVertical: 2 }} />
+            <Text style={[st.infoBoxSub, { color: colors.tint, fontFamily: fontAr("Regular") }]}>{catLabel}</Text>
           </Pressable>
-          <View style={st.infoBoxDivider} />
+          <View style={[st.infoBoxDivider, { backgroundColor: colors.separator }]} />
           <View style={st.infoBox}>
-            <Text style={st.infoBoxLabel}>التحديث</Text>
-            <Text style={st.infoBoxValue}>3</Text>
-            <Text style={st.infoBoxSub}>أيام</Text>
+            <Text style={[st.infoBoxLabel, { color: colors.textSecondary, fontFamily: fontAr("SemiBold") }]}>{t("update")}</Text>
+            <Text style={[st.infoBoxValue, { color: colors.text }]}>3</Text>
+            <Text style={[st.infoBoxSub, { color: colors.textSecondary, fontFamily: fontAr("Regular") }]}>{t("days")}</Text>
           </View>
         </View>
 
         <View style={st.section}>
-          <Text style={st.sectionTitle}>الوصف</Text>
-          <Text style={st.descText} numberOfLines={descExpanded ? undefined : 3}>
+          <Text style={[st.sectionTitle, { color: colors.text, fontFamily: fontAr("Bold") }]}>{t("description")}</Text>
+          <Text style={[st.descText, { color: colors.textSecondary, fontFamily: fontAr("Regular") }]} numberOfLines={descExpanded ? undefined : 3}>
             {fullDesc}
           </Text>
           <Pressable onPress={() => setDescExpanded(!descExpanded)}>
-            <Text style={st.readMore}>{descExpanded ? "عرض أقل" : "قراءة المزيد..."}</Text>
+            <Text style={[st.readMore, { color: colors.tint, fontFamily: fontAr("SemiBold") }]}>{descExpanded ? t("showLess") : t("readMore")}</Text>
           </Pressable>
         </View>
 
-        <View style={st.dividerFull} />
+        <View style={[st.dividerFull, { backgroundColor: colors.separator }]} />
 
         <View style={st.section}>
-          <Text style={st.sectionTitle}>التقييمات والمراجعات</Text>
+          <Text style={[st.sectionTitle, { color: colors.text, fontFamily: fontAr("Bold") }]}>{t("ratingsReviews")}</Text>
           <View style={st.ratingOverview}>
-            <Text style={st.bigRating}>{avgRating}</Text>
+            <Text style={[st.bigRating, { color: colors.text }]}>{avgRating}</Text>
             <View style={{ gap: 4 }}>
               <StarRow rating={Math.round(Number(avgRating))} size={18} />
-              <Text style={st.ratingCount}>{reviews.length} تقييم</Text>
+              <Text style={[st.ratingCount, { color: colors.textSecondary, fontFamily: fontAr("Regular") }]}>{reviews.length} {t("reviews")}</Text>
             </View>
           </View>
 
           {reviews.map((review) => (
-            <View key={review.id} style={st.reviewCard}>
+            <View key={review.id} style={[st.reviewCard, { backgroundColor: colors.card }]}>
               <View style={st.reviewHeader}>
-                <View style={st.reviewerAvatar}>
+                <View style={[st.reviewerAvatar, { backgroundColor: colors.tint }]}>
                   <Text style={st.reviewerInitial}>{review.name[0]}</Text>
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={st.reviewerName}>{review.name}</Text>
-                  <Text style={st.reviewerPhone}>{maskPhone(review.phone)}</Text>
+                  <Text style={[st.reviewerName, { color: colors.text, fontFamily: fontAr("SemiBold") }]}>{review.name}</Text>
+                  <Text style={[st.reviewerPhone, { color: colors.textSecondary }]}>{maskPhone(review.phone)}</Text>
                 </View>
-                <Text style={st.reviewDate}>{review.date}</Text>
+                <Text style={[st.reviewDate, { color: colors.textSecondary, fontFamily: fontAr("Regular") }]}>{review.date}</Text>
               </View>
               <StarRow rating={review.rating} size={12} />
-              <Text style={st.reviewText}>{review.text}</Text>
+              <Text style={[st.reviewText, { color: colors.text, fontFamily: fontAr("Regular") }]}>{review.text}</Text>
             </View>
           ))}
 
           <TapToRate onRate={setReviewRating} />
 
           <View style={st.writeReviewSection}>
-            <Text style={st.writeReviewTitle}>اكتب مراجعة</Text>
-            <TextInput style={[st.input, { height: 80, textAlignVertical: "top" }]} placeholder="اكتب مراجعتك هنا..." placeholderTextColor={Colors.light.textSecondary} value={reviewText} onChangeText={setReviewText} multiline />
-            <Pressable style={[st.submitBtn, (!reviewText.trim() || reviewRating === 0) && st.submitBtnDisabled]} onPress={submitReview}>
-              <Text style={st.submitBtnText}>إرسال المراجعة</Text>
+            <Text style={[st.writeReviewTitle, { color: colors.text, fontFamily: fontAr("Bold") }]}>{t("writeReview")}</Text>
+            <TextInput
+              style={[st.input, { height: 80, textAlignVertical: "top", backgroundColor: colors.card, color: colors.text, fontFamily: fontAr("Regular"), textAlign: isArabic ? "right" : "left" }]}
+              placeholder={t("reviewPlaceholder")}
+              placeholderTextColor={colors.textSecondary}
+              value={reviewText}
+              onChangeText={setReviewText}
+              multiline
+            />
+            <Pressable style={[st.submitBtn, { backgroundColor: colors.tint }, (!reviewText.trim() || reviewRating === 0) && st.submitBtnDisabled]} onPress={submitReview}>
+              <Text style={[st.submitBtnText, { fontFamily: fontAr("Bold") }]}>{t("submitReview")}</Text>
             </Pressable>
           </View>
         </View>
 
         {relatedApps.length > 0 && (
           <>
-            <View style={st.dividerFull} />
+            <View style={[st.dividerFull, { backgroundColor: colors.separator }]} />
             <View style={st.section}>
               <View style={st.sectionHeaderRow}>
-                <Text style={st.sectionTitle}>قد يعجبك أيضاً</Text>
-                <Feather name="chevron-left" size={18} color={Colors.light.textSecondary} />
+                <Text style={[st.sectionTitle, { color: colors.text, fontFamily: fontAr("Bold") }]}>{t("youMayLike")}</Text>
+                <Feather name="chevron-left" size={18} color={colors.textSecondary} />
               </View>
             </View>
             <RelatedAppsRow apps={relatedApps} onPress={onRelatedAppPress} />
@@ -353,7 +364,7 @@ export default function AppDetailPanel({ app, onClose, onCategoryPress, relatedA
 }
 
 const st = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.light.background },
+  container: { flex: 1 },
 
   navBar: {
     flexDirection: "row",
@@ -376,14 +387,12 @@ const st = StyleSheet.create({
     justifyContent: "center",
   },
   stickyGetBtn: {
-    backgroundColor: Colors.light.tint,
     paddingHorizontal: 20,
     paddingVertical: 6,
     borderRadius: 16,
   },
   stickyGetText: {
     fontSize: 14,
-    fontFamily: "Mestika-Bold",
     color: "#FFF",
   },
 
@@ -409,12 +418,9 @@ const st = StyleSheet.create({
   appName: {
     fontSize: 22,
     fontFamily: "Inter_700Bold",
-    color: Colors.light.text,
   },
   appSubtitle: {
     fontSize: 13,
-    fontFamily: "Mestika-Regular",
-    color: Colors.light.textSecondary,
     marginBottom: 8,
   },
   heroButtons: {
@@ -429,12 +435,9 @@ const st = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 18,
-    backgroundColor: Colors.light.card,
   },
   repeatText: {
     fontSize: 13,
-    fontFamily: "Mestika-Bold",
-    color: Colors.light.tint,
   },
   getBtn: {
     alignItems: "center",
@@ -442,88 +445,61 @@ const st = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 24,
     borderRadius: 18,
-    backgroundColor: Colors.light.tint,
   },
   getBtnText: {
     fontSize: 13,
-    fontFamily: "Mestika-Bold",
     color: "#FFF",
-  },
-
-  glassGetSmallWeb: {
-    paddingHorizontal: 20,
-    paddingVertical: 6,
-    borderRadius: 16,
-    backgroundColor: "rgba(200,200,210,0.35)",
-    backdropFilter: "blur(20px)",
-    ...Platform.select({ web: { boxShadow: "0 2px 8px rgba(0,0,0,0.1)" } }),
-  },
-  glassGetSmallWrap: {
-    borderRadius: 16,
-    overflow: "hidden",
-  },
-  glassGetSmallInner: {
-    paddingHorizontal: 20,
-    paddingVertical: 6,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  glassGetSmallText: {
-    fontSize: 14,
-    fontFamily: "Mestika-Bold",
-    color: Colors.light.tint,
   },
 
   infoBoxRow: {
     flexDirection: "row",
     marginHorizontal: 20,
-    backgroundColor: Colors.light.card,
     borderRadius: 14,
     paddingVertical: 14,
     marginBottom: 24,
   },
   infoBox: { flex: 1, alignItems: "center", gap: 2 },
-  infoBoxDivider: { width: StyleSheet.hairlineWidth, backgroundColor: Colors.light.separator, marginVertical: 4 },
-  infoBoxLabel: { fontSize: 10, fontFamily: "Mestika-SemiBold", color: Colors.light.textSecondary, letterSpacing: 0.5 },
-  infoBoxValue: { fontSize: 20, fontFamily: "Inter_700Bold", color: Colors.light.text },
-  infoBoxSub: { fontSize: 11, fontFamily: "Mestika-Regular", color: Colors.light.textSecondary },
+  infoBoxDivider: { width: StyleSheet.hairlineWidth, marginVertical: 4 },
+  infoBoxLabel: { fontSize: 10, letterSpacing: 0.5 },
+  infoBoxValue: { fontSize: 20, fontFamily: "Inter_700Bold" },
+  infoBoxSub: { fontSize: 11 },
 
   section: { paddingHorizontal: 20, marginBottom: 8, paddingTop: 16 },
-  sectionTitle: { fontSize: 20, fontFamily: "Mestika-Bold", color: Colors.light.text, marginBottom: 10 },
+  sectionTitle: { fontSize: 20, marginBottom: 10 },
   sectionHeaderRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 14 },
-  descText: { fontSize: 15, fontFamily: "Mestika-Regular", color: Colors.light.textSecondary, lineHeight: 22 },
-  readMore: { fontSize: 15, fontFamily: "Mestika-SemiBold", color: Colors.light.tint, marginTop: 6, marginBottom: 8 },
-  dividerFull: { height: StyleSheet.hairlineWidth, backgroundColor: Colors.light.separator, marginHorizontal: 20, marginVertical: 8 },
+  descText: { fontSize: 15, lineHeight: 22 },
+  readMore: { fontSize: 15, marginTop: 6, marginBottom: 8 },
+  dividerFull: { height: StyleSheet.hairlineWidth, marginHorizontal: 20, marginVertical: 8 },
 
   ratingOverview: { flexDirection: "row", alignItems: "center", gap: 16, marginBottom: 16 },
-  bigRating: { fontSize: 48, fontFamily: "Inter_700Bold", color: Colors.light.text },
-  ratingCount: { fontSize: 13, fontFamily: "Mestika-Regular", color: Colors.light.textSecondary },
+  bigRating: { fontSize: 48, fontFamily: "Inter_700Bold" },
+  ratingCount: { fontSize: 13 },
 
-  reviewCard: { backgroundColor: Colors.light.card, borderRadius: 14, padding: 14, marginBottom: 10, gap: 6 },
+  reviewCard: { borderRadius: 14, padding: 14, marginBottom: 10, gap: 6 },
   reviewHeader: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 4 },
-  reviewerAvatar: { width: 34, height: 34, borderRadius: 17, backgroundColor: Colors.light.tint, alignItems: "center", justifyContent: "center" },
+  reviewerAvatar: { width: 34, height: 34, borderRadius: 17, alignItems: "center", justifyContent: "center" },
   reviewerInitial: { fontSize: 15, fontFamily: "Inter_700Bold", color: "#FFF" },
-  reviewerName: { fontSize: 15, fontFamily: "Mestika-SemiBold", color: Colors.light.text },
-  reviewerPhone: { fontSize: 12, fontFamily: "Inter_400Regular", color: Colors.light.textSecondary },
-  reviewDate: { fontSize: 12, fontFamily: "Mestika-Regular", color: Colors.light.textSecondary },
-  reviewText: { fontSize: 14, fontFamily: "Mestika-Regular", color: Colors.light.text, lineHeight: 20 },
+  reviewerName: { fontSize: 15 },
+  reviewerPhone: { fontSize: 12, fontFamily: "Inter_400Regular" },
+  reviewDate: { fontSize: 12 },
+  reviewText: { fontSize: 14, lineHeight: 20 },
 
   tapToRate: { alignItems: "center", gap: 8, marginVertical: 16 },
-  tapToRateLabel: { fontSize: 15, fontFamily: "Mestika-SemiBold", color: Colors.light.text },
+  tapToRateLabel: { fontSize: 15 },
   tapStars: { flexDirection: "row", gap: 12 },
 
   writeReviewSection: { gap: 10, marginTop: 8 },
-  writeReviewTitle: { fontSize: 17, fontFamily: "Mestika-Bold", color: Colors.light.text },
-  input: { backgroundColor: Colors.light.card, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, fontFamily: "Mestika-Regular", color: Colors.light.text, textAlign: "right" as const },
-  submitBtn: { backgroundColor: Colors.light.tint, borderRadius: 12, paddingVertical: 14, alignItems: "center" },
+  writeReviewTitle: { fontSize: 17 },
+  input: { borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15 },
+  submitBtn: { borderRadius: 12, paddingVertical: 14, alignItems: "center" },
   submitBtnDisabled: { opacity: 0.4 },
-  submitBtnText: { fontSize: 16, fontFamily: "Mestika-Bold", color: "#FFF" },
+  submitBtnText: { fontSize: 16, color: "#FFF" },
 
   relatedRow: { flexDirection: "row", alignItems: "center", paddingVertical: 10, gap: 12 },
   relatedIcon: { width: 56, height: 56, borderRadius: 14, alignItems: "center", justifyContent: "center" },
-  relatedName: { fontSize: 16, fontFamily: "Inter_600SemiBold", color: Colors.light.text },
-  relatedDesc: { fontSize: 13, fontFamily: "Mestika-Regular", color: Colors.light.textSecondary },
-  relatedGetBtn: { backgroundColor: Colors.light.card, paddingHorizontal: 22, paddingVertical: 7, borderRadius: 18 },
-  relatedGetText: { fontSize: 15, fontFamily: "Mestika-Bold", color: Colors.light.tint },
-  relatedDivider: { height: StyleSheet.hairlineWidth, backgroundColor: Colors.light.separator, marginLeft: 68 },
+  relatedName: { fontSize: 16, fontFamily: "Inter_600SemiBold" },
+  relatedDesc: { fontSize: 13 },
+  relatedGetBtn: { paddingHorizontal: 22, paddingVertical: 7, borderRadius: 18 },
+  relatedGetText: { fontSize: 15 },
+  relatedDivider: { height: StyleSheet.hairlineWidth, marginLeft: 68 },
 });

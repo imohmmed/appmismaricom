@@ -25,6 +25,33 @@ const Colors = {
     chipText: "#2B283B",
     chipTextActive: "#FFFFFF",
   },
+  dark: {
+    text: "#FFFFFF",
+    textSecondary: "#9FBCFF",
+    background: "#2B283B",
+    backgroundSecondary: "#36334A",
+    card: "#36334A",
+    cardBorder: "#4A4760",
+    tint: "#007AFF",
+    tintSecondary: "#9FBCFF",
+    tabIconDefault: "#9FBCFF",
+    tabIconSelected: "#007AFF",
+    tagTweaked: "#5AC8FA",
+    tagModded: "#FFB340",
+    tagHacked: "#FF6961",
+    tagNew: "#34C759",
+    tagHot: "#FF6961",
+    success: "#34C759",
+    error: "#FF6961",
+    warning: "#FFB340",
+    get: "#007AFF",
+    separator: "#4A4760",
+    chipBg: "#36334A",
+    chipBgActive: "#FFFFFF",
+    chipText: "#FFFFFF",
+    chipTextActive: "#2B283B",
+  },
 };
 
+export type ThemeColors = typeof Colors.light;
 export default Colors;

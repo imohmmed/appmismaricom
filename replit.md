@@ -66,9 +66,17 @@ All routes prefixed with `/api`:
 
 5 tabs: PLUS+ (home), TV, SMM, Numbers, Search
 - Uses Apple Liquid Glass tab bar (NativeTabs) on iOS 26+, BlurView fallback for older
-- Home tab has filter chips (All, Hot, New, Tweaked, Modded, Hacked), featured carousel, What's Hot section
-- Search is a separate container with its own search bar
-- Dark theme (#0D0B1A background, #B044FF accent)
+- Home tab has category pills, featured carousel, trending/most-downloaded/recently-added sections
+- Search is a separate tab with category browsing and app search
+
+### Theme & Localization System
+- **SettingsContext** (`contexts/SettingsContext.tsx`): Manages language (AR/EN), theme mode (light/dark/system)
+- **Colors**: Light mode (white bg, dark text) and Dark mode (#2B283B bg, white text, #9FBCFF secondary)
+- **Translations**: Full AR/EN in `constants/translations.ts` with `t(key)` helper
+- **Font**: Arabic text → Mestika-{weight} via `fontAr()`, English → Inter
+- **Persistence**: AsyncStorage keys `@mismari_language`, `@mismari_theme`
+- **SettingsPanel**: Accessible from Account panel → Settings, with language & appearance togglers
+- All screens use `useSettings()` hook for dynamic colors, translations, and font selection
 
 ## Website (store-website)
 

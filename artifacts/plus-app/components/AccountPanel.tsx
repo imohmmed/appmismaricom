@@ -14,17 +14,10 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import Colors from "@/constants/colors";
+import { useSettings } from "@/contexts/SettingsContext";
+import SettingsPanel from "@/components/SettingsPanel";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
-
-const MENU_ITEMS = [
-  { key: "profile", label: "حسابي", icon: "user" as const },
-  { key: "purchases", label: "سجل المشتريات", icon: "shopping-bag" as const },
-  { key: "notifications", label: "الإشعارات", icon: "bell" as const },
-  { key: "settings", label: "الإعدادات", icon: "settings" as const },
-  { key: "language", label: "اللغة: العربية", icon: "globe" as const },
-];
 
 const SOCIAL_LINKS = [
   {
@@ -57,10 +50,19 @@ interface AccountPanelProps {
 
 export default function AccountPanel({ visible, onClose }: AccountPanelProps) {
   const insets = useSafeAreaInsets();
+  const { colors, t, fontAr } = useSettings();
   const slideAnim = React.useRef(new Animated.Value(SCREEN_HEIGHT)).current;
   const backdropAnim = React.useRef(new Animated.Value(0)).current;
   const [mounted, setMounted] = React.useState(false);
+  const [showSettings, setShowSettings] = React.useState(false);
   const isClosing = React.useRef(false);
+
+  const MENU_ITEMS = [
+    { key: "profile", label: t("myAccount"), icon: "user" as const },
+    { key: "purchases", label: t("purchases"), icon: "shopping-bag" as const },
+    { key: "notifications", label: t("notifications"), icon: "bell" as const },
+    { key: "settings", label: t("settings"), icon: "settings" as const },
+  ];
 
   React.useEffect(() => {
     if (visible) {
@@ -107,6 +109,12 @@ export default function AccountPanel({ visible, onClose }: AccountPanelProps) {
     Linking.openURL(url).catch(() => {});
   };
 
+  const handleMenuPress = (key: string) => {
+    if (key === "settings") {
+      setShowSettings(true);
+    }
+  };
+
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
       <Animated.View style={[styles.backdrop, { opacity: backdropAnim }]}>
@@ -121,51 +129,73 @@ export default function AccountPanel({ visible, onClose }: AccountPanelProps) {
         style={[
           styles.panel,
           {
+            backgroundColor: colors.background,
             paddingTop: insets.top + 10,
             paddingBottom: insets.bottom + 10,
             transform: [{ translateY: slideAnim }],
           },
         ]}
       >
-        <View style={styles.handleBar} />
+        <View style={[styles.handleBar, { backgroundColor: colors.separator }]} />
 
         <View style={styles.headerRow}>
-          <Text style={styles.headerTitle}>الحساب</Text>
-          <TouchableOpacity onPress={onClose} style={styles.closeButton} activeOpacity={0.6}>
-            <Feather name="x" size={16} color={Colors.light.textSecondary} />
+          <Text style={[styles.headerTitle, { color: colors.text, fontFamily: fontAr("Bold") }]}>
+            {t("account")}
+          </Text>
+          <TouchableOpacity
+            onPress={onClose}
+            style={[styles.closeButton, { backgroundColor: colors.card }]}
+            activeOpacity={0.6}
+          >
+            <Feather name="x" size={16} color={colors.textSecondary} />
           </TouchableOpacity>
         </View>
 
         <ScrollView showsVerticalScrollIndicator={false} bounces={true}>
-          <View style={styles.profileCard}>
-            <View style={styles.avatarCircle}>
-              <Feather name="user" size={32} color={Colors.light.tint} />
+          <View style={[styles.profileCard, { backgroundColor: colors.card }]}>
+            <View style={[styles.avatarCircle, { backgroundColor: colors.backgroundSecondary, borderColor: colors.cardBorder }]}>
+              <Feather name="user" size={32} color={colors.tint} />
             </View>
             <View style={styles.profileInfo}>
-              <Text style={styles.profileName}>مستخدم زائر</Text>
-              <Text style={styles.profileEmail}>تسجيل الدخول</Text>
+              <Text style={[styles.profileName, { color: colors.text, fontFamily: fontAr("Bold") }]}>
+                {t("guestUser")}
+              </Text>
+              <Text style={[styles.profileEmail, { color: colors.textSecondary, fontFamily: fontAr("Regular") }]}>
+                {t("signIn")}
+              </Text>
             </View>
           </View>
 
-          <View style={styles.balanceCard}>
-            <Text style={styles.balanceLabel}>الرصيد</Text>
-            <Text style={styles.balanceAmount}>$0.00</Text>
+          <View style={[styles.balanceCard, { backgroundColor: colors.card }]}>
+            <Text style={[styles.balanceLabel, { color: colors.textSecondary, fontFamily: fontAr("Medium") }]}>
+              {t("balance")}
+            </Text>
+            <Text style={[styles.balanceAmount, { color: colors.text }]}>$0.00</Text>
           </View>
 
-          <View style={styles.menuSection}>
+          <View style={[styles.menuSection, { backgroundColor: colors.card }]}>
             {MENU_ITEMS.map((item) => (
-              <TouchableOpacity key={item.key} style={styles.menuRow} activeOpacity={0.6}>
-                <View style={styles.menuIconWrap}>
-                  <Feather name={item.icon} size={18} color={Colors.light.tint} />
+              <TouchableOpacity
+                key={item.key}
+                style={[styles.menuRow, { borderBottomColor: colors.cardBorder }]}
+                activeOpacity={0.6}
+                onPress={() => handleMenuPress(item.key)}
+              >
+                <View style={[styles.menuIconWrap, { backgroundColor: `${colors.tint}15` }]}>
+                  <Feather name={item.icon} size={18} color={colors.tint} />
                 </View>
-                <Text style={styles.menuLabel}>{item.label}</Text>
-                <Feather name="chevron-left" size={18} color={Colors.light.separator} />
+                <Text style={[styles.menuLabel, { color: colors.text, fontFamily: fontAr("SemiBold") }]}>
+                  {item.label}
+                </Text>
+                <Feather name="chevron-left" size={18} color={colors.separator} />
               </TouchableOpacity>
             ))}
           </View>
 
           <View style={styles.socialSection}>
-            <Text style={styles.socialTitle}>تواصل معنا</Text>
+            <Text style={[styles.socialTitle, { color: colors.textSecondary, fontFamily: fontAr("SemiBold") }]}>
+              {t("contactUs")}
+            </Text>
             <View style={styles.socialRow}>
               {SOCIAL_LINKS.map((s) => (
                 <TouchableOpacity
@@ -182,6 +212,8 @@ export default function AccountPanel({ visible, onClose }: AccountPanelProps) {
           </View>
         </ScrollView>
       </Animated.View>
+
+      <SettingsPanel visible={showSettings} onClose={() => setShowSettings(false)} />
     </View>
   );
 }
@@ -197,7 +229,6 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: Colors.light.background,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     paddingHorizontal: 20,
@@ -206,7 +237,6 @@ const styles = StyleSheet.create({
     width: 40,
     height: 5,
     borderRadius: 3,
-    backgroundColor: Colors.light.separator,
     alignSelf: "center",
     marginBottom: 10,
   },
@@ -217,22 +247,18 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   headerTitle: {
-    fontSize: 22,
-    fontFamily: "Mestika-Bold",
-    color: Colors.light.text,
+    fontSize: 20,
   },
   closeButton: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: Colors.light.card,
     alignItems: "center",
     justifyContent: "center",
   },
   profileCard: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: Colors.light.card,
     borderRadius: 16,
     padding: 16,
     gap: 14,
@@ -242,28 +268,21 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: Colors.light.backgroundSecondary,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 2,
-    borderColor: Colors.light.cardBorder,
   },
   profileInfo: {
     flex: 1,
     gap: 4,
   },
   profileName: {
-    fontSize: 18,
-    fontFamily: "Mestika-Bold",
-    color: Colors.light.text,
+    fontSize: 16,
   },
   profileEmail: {
-    fontSize: 14,
-    fontFamily: "Mestika-Regular",
-    color: Colors.light.textSecondary,
+    fontSize: 13,
   },
   balanceCard: {
-    backgroundColor: Colors.light.card,
     borderRadius: 16,
     padding: 16,
     alignItems: "center",
@@ -271,17 +290,13 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   balanceLabel: {
-    fontSize: 14,
-    fontFamily: "Mestika-Medium",
-    color: Colors.light.textSecondary,
+    fontSize: 13,
   },
   balanceAmount: {
     fontSize: 32,
     fontFamily: "Inter_700Bold",
-    color: Colors.light.text,
   },
   menuSection: {
-    backgroundColor: Colors.light.card,
     borderRadius: 16,
     overflow: "hidden",
     marginBottom: 16,
@@ -292,30 +307,24 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 16,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: Colors.light.cardBorder,
     gap: 14,
   },
   menuIconWrap: {
     width: 32,
     height: 32,
     borderRadius: 8,
-    backgroundColor: `${Colors.light.tint}15`,
     alignItems: "center",
     justifyContent: "center",
   },
   menuLabel: {
     flex: 1,
-    fontSize: 16,
-    fontFamily: "Mestika-SemiBold",
-    color: Colors.light.text,
+    fontSize: 15,
   },
   socialSection: {
     marginBottom: 10,
   },
   socialTitle: {
-    fontSize: 14,
-    fontFamily: "Mestika-SemiBold",
-    color: Colors.light.textSecondary,
+    fontSize: 13,
     textAlign: "center",
     marginBottom: 12,
   },

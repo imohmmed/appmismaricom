@@ -8,6 +8,8 @@ import {
   View,
 } from "react-native";
 
+import { useSettings } from "@/contexts/SettingsContext";
+
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.3;
 
@@ -18,6 +20,7 @@ type SlidePanelProps = {
 };
 
 export default function SlidePanel({ visible, onClose, children }: SlidePanelProps) {
+  const { colors } = useSettings();
   const translateX = useRef(new Animated.Value(SCREEN_WIDTH)).current;
   const [mounted, setMounted] = useState(false);
   const onCloseRef = useRef(onClose);
@@ -90,7 +93,7 @@ export default function SlidePanel({ visible, onClose, children }: SlidePanelPro
         <Pressable style={StyleSheet.absoluteFill} onPress={onCloseRef.current} />
       </Animated.View>
       <Animated.View
-        style={[styles.panel, { transform: [{ translateX }] }]}
+        style={[styles.panel, { backgroundColor: colors.background, transform: [{ translateX }] }]}
         {...panResponder.panHandlers}
       >
         {children}
@@ -110,6 +113,6 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#FFFFFF", // overridden dynamically
   },
 });
