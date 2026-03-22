@@ -126,6 +126,7 @@ export default function OnboardingScreen() {
   const [activeWord, setActiveWord] = useState(0);
   const [udid, setUdid] = useState(deviceUdid || "");
   const [checkResult, setCheckResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [isPolling, setIsPolling] = useState(false);
   const fadeAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
@@ -170,33 +171,58 @@ export default function OnboardingScreen() {
     const token = Math.random().toString(36).slice(2) + Date.now().toString(36);
     const url = `${API_BASE}/api/profile/enroll?source=app&token=${encodeURIComponent(token)}`;
 
+    let foundUdid = false;
+
+    // Build a poll function that can be reused (started before AND after browser closes)
+    function startPolling(maxSeconds: number): ReturnType<typeof setInterval> {
+      let count = 0;
+      return setInterval(async () => {
+        if (foundUdid) return;
+        count++;
+        if (count > maxSeconds) return;
+        try {
+          // _t busts any proxy/CDN cache — Replit dev proxy ignores Cache-Control on GET
+          const r = await fetch(
+            `${API_BASE}/api/profile/udid-check?token=${encodeURIComponent(token)}&_t=${Date.now()}`,
+            { cache: "no-store" }
+          );
+          const data = await r.json();
+          if (data.found && data.udid) {
+            foundUdid = true;
+            setUdid(data.udid);
+            setDeviceUdid(data.udid);
+            WebBrowser.dismissBrowser();
+            setTimeout(() => transition("udid"), 300);
+          }
+        } catch {}
+      }, 1000);
+    }
+
     // Start polling BEFORE opening browser so we catch the UDID as soon as it arrives
-    let pollCount = 0;
-    const pollInterval = setInterval(async () => {
-      pollCount++;
-      if (pollCount > 90) { clearInterval(pollInterval); return; } // 90s timeout
-      try {
-        const r = await fetch(`${API_BASE}/api/profile/udid-check?token=${encodeURIComponent(token)}`);
-        const data = await r.json();
-        if (data.found && data.udid) {
-          clearInterval(pollInterval);
-          setUdid(data.udid);
-          setDeviceUdid(data.udid);
-          // Dismiss browser then go directly to udid step
-          WebBrowser.dismissBrowser();
-          setTimeout(() => transition("udid"), 300);
-        }
-      } catch {}
-    }, 1000);
+    const prePoll = startPolling(90);
 
     await WebBrowser.openBrowserAsync(url, {
       dismissButtonStyle: "done",
       presentationStyle: WebBrowser.WebBrowserPresentationStyle.FULL_SCREEN,
     });
 
-    // Browser closed manually — stop polling and go to install step if UDID not found yet
-    clearInterval(pollInterval);
-    if (!udid) transition("install");
+    // Browser closed — clear the pre-poll and show install step
+    clearInterval(prePoll);
+
+    if (foundUdid) return; // Already found while browser was open — done!
+
+    // Continue polling for 60 MORE seconds after browser closes.
+    // iOS sometimes fires the callback just AFTER the user closes the browser
+    // (e.g. after "Profile Installation Failed" tap-OK → close).
+    setIsPolling(true);
+    transition("install");
+    const postPoll = startPolling(60);
+
+    // Auto-clear when found or after 60s
+    const guard = setInterval(() => {
+      if (foundUdid) { clearInterval(postPoll); clearInterval(guard); setIsPolling(false); }
+    }, 500);
+    setTimeout(() => { clearInterval(postPoll); clearInterval(guard); setIsPolling(false); }, 62000);
   }
 
   async function handleCheckDevice() {
@@ -351,7 +377,8 @@ export default function OnboardingScreen() {
 
               <Text style={[styles.stepDesc, { fontFamily: fontAr("Regular") }]}>
                 {step === "download" && "حمّل ملف التعريف للحصول على معرّف جهازك. يساعدنا هذا على تسجيل جهازك."}
-                {step === "install" && "اذهب إلى الإعدادات ← عام ← إدارة VPN والأجهزة وقم بتثبيت الملف الذي حمّلته."}
+                {step === "install" && isPolling && "تم استلام طلبك. إذا ظهرت رسالة خطأ في الإعدادات فلا تقلق — سيتم الكشف عن جهازك تلقائياً."}
+                {step === "install" && !isPolling && "اذهب إلى الإعدادات ← عام ← إدارة VPN والأجهزة وقم بتثبيت الملف الذي حمّلته."}
                 {step === "udid" && "تم الكشف عن معرّف جهازك الفريد. اضغط إرسال للتحقق من اشتراكك."}
               </Text>
             </View>
@@ -369,17 +396,30 @@ export default function OnboardingScreen() {
                 </TouchableOpacity>
               )}
 
-              {step === "install" && (
+              {step === "install" && isPolling && (
+                <View style={{ alignItems: "center", gap: 10 }}>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 10, opacity: 0.7 }}>
+                    <ActivityIndicator size="small" color={ORANGE} />
+                    <Text style={[styles.stepDesc, { fontFamily: fontAr("Regular"), marginBottom: 0 }]}>
+                      جارٍ الكشف عن معرّف جهازك...
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    style={[styles.actionBtn, { backgroundColor: DARK, marginTop: 4 }]}
+                    activeOpacity={0.85}
+                    onPress={() => transition("udid")}
+                  >
+                    <Feather name="check-circle" size={18} color={WHITE} style={{ marginLeft: 8 }} />
+                    <Text style={[styles.actionBtnText, { fontFamily: fontAr("Bold") }]}>تم التثبيت يدوياً</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+
+              {step === "install" && !isPolling && (
                 <TouchableOpacity
                   style={[styles.actionBtn, { backgroundColor: DARK }]}
                   activeOpacity={0.85}
-                  onPress={() => {
-                    if (udid) {
-                      transition("udid");
-                    } else {
-                      transition("udid");
-                    }
-                  }}
+                  onPress={() => transition("udid")}
                 >
                   <Feather name="check-circle" size={18} color={WHITE} style={{ marginLeft: 8 }} />
                   <Text style={[styles.actionBtnText, { fontFamily: fontAr("Bold") }]}>تم التثبيت</Text>
