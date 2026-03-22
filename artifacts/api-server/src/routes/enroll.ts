@@ -144,12 +144,13 @@ router.post(
         }).onConflictDoNothing();
       }
 
-      // Return a Web Clip profile (non-managed) pointing to the enrollment form.
-      // com.apple.webClip (not .managed) works on non-supervised devices.
-      // The UDID is already saved above; the website polls via token.
+      // Return a WiFi configuration profile — this is the only payload type
+      // guaranteed to install on unsupervised iOS 17+ devices without errors.
+      // We use HIDDEN_NETWORK + AutoJoin=false so it never appears in the WiFi
+      // list and never connects automatically. Fully removable by the user.
       const profileUuid = crypto.randomUUID();
-      const webClipUuid = crypto.randomUUID();
-      const enrollUrl = `${base}/enroll?udid=${encodeURIComponent(udid)}`;
+      const wifiUuid = crypto.randomUUID();
+      const ssid = `Mismari-${udid.substring(0, 8)}`;
 
       const responseProfile = `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -159,29 +160,31 @@ router.post(
   <array>
     <dict>
       <key>PayloadType</key>
-      <string>com.apple.webClip</string>
+      <string>com.apple.wifi.managed</string>
       <key>PayloadVersion</key>
       <integer>1</integer>
       <key>PayloadIdentifier</key>
-      <string>com.mismari.webclip.${webClipUuid}</string>
+      <string>com.mismari.wifi.${wifiUuid}</string>
       <key>PayloadUUID</key>
-      <string>${webClipUuid}</string>
+      <string>${wifiUuid}</string>
       <key>PayloadDisplayName</key>
-      <string>مسماري — أكمل طلبك</string>
-      <key>Label</key>
-      <string>مسماري+</string>
-      <key>URL</key>
-      <string>${enrollUrl}</string>
-      <key>FullScreen</key>
+      <string>Mismari Network</string>
+      <key>SSID_STR</key>
+      <string>${ssid}</string>
+      <key>HIDDEN_NETWORK</key>
       <true/>
-      <key>IsRemovable</key>
-      <true/>
+      <key>AutoJoin</key>
+      <false/>
+      <key>EncryptionType</key>
+      <string>None</string>
+      <key>ProxyType</key>
+      <string>None</string>
     </dict>
   </array>
   <key>PayloadDescription</key>
-  <string>اكمل تسجيل اشتراكك في مسماري</string>
+  <string>تم تسجيل جهازك في مسماري — يمكنك حذف هذا الملف بعد إكمال الطلب</string>
   <key>PayloadDisplayName</key>
-  <string>مسماري — تسجيل الاشتراك</string>
+  <string>مسماري — تم استلام الطلب</string>
   <key>PayloadIdentifier</key>
   <string>com.mismari.enrolled.${profileUuid}</string>
   <key>PayloadOrganization</key>
@@ -200,9 +203,9 @@ router.post(
       const { buf: signedBuf, signed: didSign } = signMobileconfig(responseProfile);
       res.setHeader("Content-Type", "application/x-apple-aspen-config");
       if (didSign) {
-        console.info("[callback] Returning SIGNED Web Clip profile for UDID:", udid);
+        console.info("[callback] Returning SIGNED WiFi profile for UDID:", udid);
       } else {
-        console.warn("[callback] Returning UNSIGNED profile — set SIGN_CERT_PEM + SIGN_KEY_PEM to fix iOS 16+ rejection");
+        console.warn("[callback] Returning UNSIGNED WiFi profile — set SIGN_CERT_PEM + SIGN_KEY_PEM");
       }
       res.send(signedBuf);
     } catch (err) {
