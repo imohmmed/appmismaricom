@@ -69,27 +69,22 @@ function AppListRow({ app, showDivider, onPress }: { app: ApiApp; showDivider: b
 }
 
 // ─── Stacked Section ──────────────────────────────────────────────────────────
-function StackedSection({ title, subtitle, apps, onAppPress, sectionType }: {
+function StackedSection({ title, subtitle, apps, onAppPress }: {
   title: string; subtitle: string; apps: ApiApp[];
-  onAppPress: (app: ApiApp) => void; sectionType: string;
+  onAppPress: (app: ApiApp) => void;
 }) {
   const { colors, fontAr, isArabic } = useSettings();
-  const router = useRouter();
   const pages = [];
   for (let i = 0; i < apps.length; i += 3) pages.push(apps.slice(i, i + 3));
   if (apps.length === 0) return null;
   return (
     <View style={styles.section}>
-      <Pressable
-        style={styles.sectionHeader}
-        onPress={() => router.push({ pathname: "/section/[type]", params: { type: sectionType, title } })}
-      >
-        <Feather name={isArabic ? "chevron-left" : "chevron-right"} size={18} color={colors.textSecondary} />
+      <View style={[styles.sectionHeader, isArabic && { justifyContent: "flex-end" }]}>
         <View style={isArabic ? { alignItems: "flex-end", flex: 1 } : { flex: 1 }}>
           <Text style={[styles.sectionTitle, { color: colors.text, fontFamily: fontAr("Bold") }]}>{title}</Text>
           <Text style={[styles.sectionSubtitle, { color: colors.textSecondary, fontFamily: fontAr("Regular") }]}>{subtitle}</Text>
         </View>
-      </Pressable>
+      </View>
       <FlatList
         data={pages}
         horizontal
@@ -371,9 +366,9 @@ export default function PlusScreen() {
         </View>
 
         {/* Sections — data from API */}
-        <StackedSection title={t("trending")} subtitle={t("trendingSub")} apps={hotApps} onAppPress={handleAppPress} sectionType="trending" />
-        <StackedSection title={t("mostDownloaded")} subtitle={t("mostDownloadedSub")} apps={mostDownloaded} onAppPress={handleAppPress} sectionType="mostDownloaded" />
-        <StackedSection title={t("recentlyAdded")} subtitle={t("recentlyAddedSub")} apps={newAdds} onAppPress={handleAppPress} sectionType="recentlyAdded" />
+        <StackedSection title={t("trending")} subtitle={t("trendingSub")} apps={hotApps} onAppPress={handleAppPress} />
+        <StackedSection title={t("mostDownloaded")} subtitle={t("mostDownloadedSub")} apps={mostDownloaded} onAppPress={handleAppPress} />
+        <StackedSection title={t("recentlyAdded")} subtitle={t("recentlyAddedSub")} apps={newAdds} onAppPress={handleAppPress} />
 
         {/* Categories grid — from API */}
         {categories.length > 0 && (
