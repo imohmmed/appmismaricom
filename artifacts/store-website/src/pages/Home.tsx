@@ -402,7 +402,7 @@ export default function Home() {
                 </div>
               ))}
             </div>
-            <button onClick={goToEnroll} className="block w-full py-3.5 rounded-2xl font-bold text-sm transition-all hover:opacity-90" style={{ background: PRIMARY, color: TEXT }}>
+            <button onClick={() => goToEnroll()} className="block w-full py-3.5 rounded-2xl font-bold text-sm transition-all hover:opacity-90" style={{ background: PRIMARY, color: TEXT }}>
               طلب اشتراك
             </button>
           </div>

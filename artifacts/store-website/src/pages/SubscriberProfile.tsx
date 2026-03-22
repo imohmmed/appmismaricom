@@ -45,7 +45,7 @@ export default function SubscriberProfile({ params }: { params: { code: string }
       })
       .catch(() => setError("تعذر تحميل البيانات"))
       .finally(() => setLoading(false));
-  }, [params.id]);
+  }, [params.code]);
 
   const isActive = sub?.isActive === "true";
   const isExpired = sub?.expiresAt ? new Date(sub.expiresAt) < new Date() : false;

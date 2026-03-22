@@ -1,8 +1,11 @@
 import { Router, type IRouter } from "express";
-import { eq, desc, sql, ilike, or, and } from "drizzle-orm";
+import { eq, desc, sql, ilike, or, and, ne } from "drizzle-orm";
 import fs from "fs";
 import path from "path";
-import { db, appsTable, categoriesTable, plansTable, subscriptionsTable, featuredBannersTable, settingsTable, groupsTable, notificationsTable } from "@workspace/db";
+import crypto from "crypto";
+import jwt from "jsonwebtoken";
+import rateLimit from "express-rate-limit";
+import { db, appsTable, categoriesTable, plansTable, subscriptionsTable, featuredBannersTable, settingsTable, groupsTable, notificationsTable, adminsTable } from "@workspace/db";
 import {
   AdminListAppsQueryParams,
   AdminListAppsResponse,
@@ -18,26 +21,157 @@ import {
   AdminLoginBody,
   AdminLoginResponse,
 } from "@workspace/api-zod";
+import { adminAuth, JWT_SECRET } from "../middleware/adminAuth";
 
 const router: IRouter = Router();
 
-const ADMIN_USERNAME = process.env.ADMIN_USERNAME || "admin";
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admin123";
+// ─── Helpers ─────────────────────────────────────────────────────────────────
 
-router.post("/admin/login", async (req, res): Promise<void> => {
-  const parsed = AdminLoginBody.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
+function hashPassword(password: string, salt: string): string {
+  return crypto.pbkdf2Sync(password, salt, 100000, 64, "sha512").toString("hex");
+}
+
+function generateSalt(): string {
+  return crypto.randomBytes(32).toString("hex");
+}
+
+// ─── Rate Limiter: max 10 login attempts per IP per 15 min ──────────────────
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "محاولات دخول كثيرة جداً — انتظر 15 دقيقة" },
+});
+
+// ─── CAPTCHA Generator ───────────────────────────────────────────────────────
+const CAPTCHA_SECRET = JWT_SECRET + "_captcha";
+const CAPTCHA_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+
+function generateCaptchaSvg(text: string): string {
+  const W = 200, H = 70;
+  const bgColors = ["#0a0a0a", "#111111"];
+  const lines: string[] = [];
+
+  // Noise dots
+  for (let i = 0; i < 80; i++) {
+    const x = Math.random() * W;
+    const y = Math.random() * H;
+    const r = Math.random() * 2 + 0.5;
+    lines.push(`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r.toFixed(1)}" fill="#9fbcff" opacity="${(Math.random() * 0.4 + 0.1).toFixed(2)}"/>`);
+  }
+
+  // Noise lines
+  for (let i = 0; i < 6; i++) {
+    const x1 = Math.random() * W, y1 = Math.random() * H;
+    const x2 = Math.random() * W, y2 = Math.random() * H;
+    lines.push(`<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="#9fbcff" stroke-width="${(Math.random() * 1.5 + 0.5).toFixed(1)}" opacity="0.3"/>`);
+  }
+
+  // Characters with rotation and offset
+  const charW = W / (text.length + 1);
+  for (let i = 0; i < text.length; i++) {
+    const x = charW * (i + 0.8) + (Math.random() * 6 - 3);
+    const y = H / 2 + (Math.random() * 10 - 5);
+    const rot = Math.random() * 30 - 15;
+    const size = Math.floor(Math.random() * 8 + 22);
+    const colors = ["#9fbcff", "#ffffff", "#c4d9ff", "#7da5ff"];
+    const color = colors[Math.floor(Math.random() * colors.length)];
+    lines.push(`<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" font-size="${size}" font-weight="bold" font-family="monospace" fill="${color}" transform="rotate(${rot.toFixed(1)},${x.toFixed(1)},${y.toFixed(1)})" opacity="0.95">${text[i]}</text>`);
+  }
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
+<rect width="${W}" height="${H}" fill="${bgColors[0]}" rx="8"/>
+<rect width="${W}" height="${H}" fill="url(#g)" rx="8"/>
+<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+<stop offset="0%" stop-color="#0d0d0d"/><stop offset="100%" stop-color="#1a1a2e"/>
+</linearGradient></defs>
+${lines.join("\n")}
+</svg>`;
+}
+
+// ─── GET /api/admin/captcha ──────────────────────────────────────────────────
+router.get("/admin/captcha", (_req, res): void => {
+  let code = "";
+  for (let i = 0; i < 6; i++) {
+    code += CAPTCHA_CHARS[Math.floor(Math.random() * CAPTCHA_CHARS.length)];
+  }
+  const svg = generateCaptchaSvg(code);
+  const imageData = `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`;
+  const token = jwt.sign({ code }, CAPTCHA_SECRET, { expiresIn: "5m" });
+  res.json({ imageData, token });
+});
+
+// ─── POST /api/admin/login ───────────────────────────────────────────────────
+router.post("/admin/login", loginLimiter, async (req, res): Promise<void> => {
+  const { username, password, captchaToken, captchaAnswer } = req.body as {
+    username?: string;
+    password?: string;
+    captchaToken?: string;
+    captchaAnswer?: string;
+  };
+
+  if (!username || !password) {
+    res.status(400).json({ error: "اسم المستخدم وكلمة المرور مطلوبان" });
     return;
   }
 
-  if (parsed.data.username === ADMIN_USERNAME && parsed.data.password === ADMIN_PASSWORD) {
-    const token = Buffer.from(`${parsed.data.username}:${Date.now()}`).toString("base64");
-    res.json(AdminLoginResponse.parse({ success: true, token }));
-  } else {
-    res.status(401).json(AdminLoginResponse.parse({ success: false, token: "" }));
+  // ── Validate CAPTCHA ──────────────────────────────────────────────────────
+  if (!captchaToken || !captchaAnswer) {
+    res.status(400).json({ error: "يرجى إدخال رمز التحقق" });
+    return;
+  }
+  try {
+    const payload = jwt.verify(captchaToken, CAPTCHA_SECRET) as { code: string };
+    if (payload.code.toUpperCase() !== captchaAnswer.toUpperCase().trim()) {
+      res.status(401).json({ error: "رمز التحقق غير صحيح" });
+      return;
+    }
+  } catch {
+    res.status(401).json({ error: "رمز التحقق منتهي الصلاحية — حدّث الصفحة" });
+    return;
+  }
+
+  // ── Find admin in DB ──────────────────────────────────────────────────────
+  try {
+    const [admin] = await db
+      .select()
+      .from(adminsTable)
+      .where(eq(adminsTable.username, username.trim()))
+      .limit(1);
+
+    if (!admin || !admin.isActive) {
+      res.status(401).json({ error: "اسم المستخدم أو كلمة المرور غير صحيحة" });
+      return;
+    }
+
+    const hash = hashPassword(password, admin.salt);
+    if (hash !== admin.passwordHash) {
+      res.status(401).json({ error: "اسم المستخدم أو كلمة المرور غير صحيحة" });
+      return;
+    }
+
+    // Update last login
+    await db.update(adminsTable)
+      .set({ lastLoginAt: new Date() })
+      .where(eq(adminsTable.id, admin.id));
+
+    const permissions: string[] = JSON.parse(admin.permissions || "[]");
+    const token = jwt.sign(
+      { adminId: admin.id, username: admin.username, role: admin.role, permissions },
+      JWT_SECRET,
+      { expiresIn: "12h" }
+    );
+
+    res.json({ success: true, token, username: admin.username, role: admin.role, permissions });
+  } catch (err) {
+    console.error("[admin/login] error:", err);
+    res.status(500).json({ error: "خطأ في السيرفر" });
   }
 });
+
+// ─── PROTECT all routes below this line ─────────────────────────────────────
+router.use(adminAuth);
 
 // ─── STATS ─────────────────────────────────────────────────────────────────
 
@@ -853,6 +987,112 @@ router.put("/admin/settings", async (req, res): Promise<void> => {
   }
   const updated = await db.select().from(settingsTable);
   res.json({ settings: updated });
+});
+
+// ─── ADMINS MANAGEMENT ──────────────────────────────────────────────────────
+
+router.get("/admin/admins", async (req, res): Promise<void> => {
+  const self = (req as any).admin;
+  if (self.role !== "superadmin") {
+    res.status(403).json({ error: "صلاحيات المسؤول الأعلى مطلوبة" }); return;
+  }
+  const admins = await db
+    .select({
+      id: adminsTable.id,
+      username: adminsTable.username,
+      email: adminsTable.email,
+      role: adminsTable.role,
+      permissions: adminsTable.permissions,
+      isActive: adminsTable.isActive,
+      createdAt: adminsTable.createdAt,
+      lastLoginAt: adminsTable.lastLoginAt,
+    })
+    .from(adminsTable)
+    .orderBy(adminsTable.createdAt);
+  res.json({ admins });
+});
+
+router.post("/admin/admins", async (req, res): Promise<void> => {
+  const self = (req as any).admin;
+  if (self.role !== "superadmin") {
+    res.status(403).json({ error: "صلاحيات المسؤول الأعلى مطلوبة" }); return;
+  }
+  const { username, email, password, role, permissions } = req.body as {
+    username?: string; email?: string; password?: string;
+    role?: string; permissions?: string[];
+  };
+  if (!username?.trim() || !password?.trim()) {
+    res.status(400).json({ error: "اسم المستخدم وكلمة المرور مطلوبان" }); return;
+  }
+  if (password.length < 8) {
+    res.status(400).json({ error: "كلمة المرور يجب أن تكون 8 أحرف على الأقل" }); return;
+  }
+  try {
+    const salt = generateSalt();
+    const passwordHash = hashPassword(password, salt);
+    const [admin] = await db.insert(adminsTable).values({
+      username: username.trim(),
+      email: email?.trim() || "",
+      passwordHash,
+      salt,
+      role: role || "admin",
+      permissions: JSON.stringify(permissions || []),
+      isActive: true,
+    }).returning({
+      id: adminsTable.id,
+      username: adminsTable.username,
+      email: adminsTable.email,
+      role: adminsTable.role,
+    });
+    res.json({ success: true, admin });
+  } catch (err: any) {
+    if (err.code === "23505") {
+      res.status(409).json({ error: "اسم المستخدم موجود مسبقاً" }); return;
+    }
+    res.status(500).json({ error: "فشل إنشاء المسؤول" });
+  }
+});
+
+router.put("/admin/admins/:id", async (req, res): Promise<void> => {
+  const self = (req as any).admin;
+  if (self.role !== "superadmin") {
+    res.status(403).json({ error: "صلاحيات المسؤول الأعلى مطلوبة" }); return;
+  }
+  const id = Number(req.params.id);
+  const { email, password, role, permissions, isActive } = req.body as {
+    email?: string; password?: string; role?: string;
+    permissions?: string[]; isActive?: boolean;
+  };
+
+  const updates: Record<string, any> = {};
+  if (email !== undefined) updates.email = email.trim();
+  if (role !== undefined) updates.role = role;
+  if (permissions !== undefined) updates.permissions = JSON.stringify(permissions);
+  if (isActive !== undefined) updates.isActive = isActive;
+  if (password?.trim()) {
+    if (password.length < 8) {
+      res.status(400).json({ error: "كلمة المرور يجب أن تكون 8 أحرف على الأقل" }); return;
+    }
+    const salt = generateSalt();
+    updates.salt = salt;
+    updates.passwordHash = hashPassword(password, salt);
+  }
+
+  await db.update(adminsTable).set(updates).where(eq(adminsTable.id, id));
+  res.json({ success: true });
+});
+
+router.delete("/admin/admins/:id", async (req, res): Promise<void> => {
+  const self = (req as any).admin;
+  if (self.role !== "superadmin") {
+    res.status(403).json({ error: "صلاحيات المسؤول الأعلى مطلوبة" }); return;
+  }
+  const id = Number(req.params.id);
+  if (id === self.adminId) {
+    res.status(400).json({ error: "لا يمكنك حذف حسابك الخاص" }); return;
+  }
+  await db.delete(adminsTable).where(eq(adminsTable.id, id));
+  res.json({ success: true });
 });
 
 export default router;
