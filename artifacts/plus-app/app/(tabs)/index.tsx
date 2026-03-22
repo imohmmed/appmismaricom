@@ -31,7 +31,9 @@ const PAGE_WIDTH = SCREEN_WIDTH - 80;
 function AppListRow({ app, showDivider, onPress }: { app: ApiApp; showDivider: boolean; onPress: () => void }) {
   const { colors, t, fontAr, isArabic } = useSettings();
   const tagColor = getTagColor(app.tag);
-  const desc = (isArabic ? app.descAr : null) || app.description || "";
+  const catLabel = isArabic
+    ? (app.categoryNameAr || app.categoryName || "")
+    : (app.categoryName || app.categoryNameAr || "");
   const textAlign = isArabic ? "right" : "left";
   return (
     <View>
@@ -43,7 +45,7 @@ function AppListRow({ app, showDivider, onPress }: { app: ApiApp; showDivider: b
             </View>
             <View style={[styles.listRowInfo, { alignItems: "flex-end" }]}>
               <Text style={[styles.listRowName, { color: colors.text, textAlign }]} numberOfLines={1}>{app.name}</Text>
-              <Text style={[styles.listRowDesc, { color: colors.textSecondary, fontFamily: fontAr("Regular"), textAlign }]} numberOfLines={1}>{desc}</Text>
+              <Text style={[styles.listRowDesc, { color: colors.textSecondary, fontFamily: fontAr("Regular"), textAlign }]} numberOfLines={1}>{catLabel}</Text>
             </View>
             <View style={[styles.listRowIcon, { backgroundColor: `${tagColor}15` }]}>
               <Feather name={(app.icon as any) || "box"} size={24} color={tagColor} />
@@ -56,7 +58,7 @@ function AppListRow({ app, showDivider, onPress }: { app: ApiApp; showDivider: b
             </View>
             <View style={[styles.listRowInfo, { alignItems: "flex-start" }]}>
               <Text style={[styles.listRowName, { color: colors.text, textAlign }]} numberOfLines={1}>{app.name}</Text>
-              <Text style={[styles.listRowDesc, { color: colors.textSecondary, fontFamily: fontAr("Regular"), textAlign }]} numberOfLines={1}>{desc}</Text>
+              <Text style={[styles.listRowDesc, { color: colors.textSecondary, fontFamily: fontAr("Regular"), textAlign }]} numberOfLines={1}>{catLabel}</Text>
             </View>
             <View style={[styles.listRowGetButton, { backgroundColor: colors.card }]}>
               <Text style={[styles.listRowGetText, { color: colors.tint, fontFamily: fontAr("Bold") }]}>{t("download")}</Text>
