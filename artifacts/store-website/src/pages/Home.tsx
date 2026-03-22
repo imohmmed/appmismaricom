@@ -198,8 +198,10 @@ const FEATURES = [
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 function goToEnroll(planName?: string) {
-  const url = `${BASE}enroll${planName ? `?plan=${encodeURIComponent(planName)}` : ""}`;
-  window.location.href = url;
+  const params = new URLSearchParams();
+  if (planName) params.set("plan", planName);
+  params.set("auto", "1");
+  window.location.href = `${BASE}enroll?${params.toString()}`;
 }
 
 interface ActivateResult {

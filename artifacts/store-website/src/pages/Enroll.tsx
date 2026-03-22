@@ -29,8 +29,9 @@ function getOrCreateToken(): string {
 export default function Enroll() {
   const urlUdid = new URLSearchParams(window.location.search).get("udid") || "";
   const urlPlan = new URLSearchParams(window.location.search).get("plan") || "";
+  const autoDownload = new URLSearchParams(window.location.search).get("auto") === "1";
 
-  const [step, setStep] = useState<Step>(urlUdid ? "form" : "download");
+  const [step, setStep] = useState<Step>(urlUdid ? "form" : (autoDownload ? "waiting" : "download"));
   const [token] = useState(() => getOrCreateToken());
   const [plans, setPlans] = useState<Plan[]>([]);
   const [udid, setUdid] = useState(urlUdid);
@@ -45,6 +46,7 @@ export default function Enroll() {
 
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const foundRef = useRef(!!urlUdid);
+  const autoTriggeredRef = useRef(false);
 
   useEffect(() => {
     fetch(`${API}/api/subscriptions/plans`)
@@ -64,6 +66,17 @@ export default function Enroll() {
       setUdid(savedUdid);
       foundRef.current = true;
       setStep("form");
+      return;
+    }
+
+    if (autoDownload && !autoTriggeredRef.current) {
+      autoTriggeredRef.current = true;
+      const url = `${API}/api/profile/enroll?source=web&token=${encodeURIComponent(token)}${urlPlan ? `&plan=${encodeURIComponent(urlPlan)}` : ""}`;
+      const a = document.createElement("a");
+      a.href = url;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
     }
   }, []);
 
@@ -268,7 +281,7 @@ export default function Enroll() {
             <div className="bg-[#0a0a0a] border border-white/10 rounded-2xl p-4">
               <p className="text-xs text-white/30 mb-2.5">نوع الجهاز</p>
               <div className="flex gap-2">
-                {["iPhone", "iPad", "Mac"].map(type => (
+                {["iPhone", "iPad"].map(type => (
                   <button key={type} type="button" onClick={() => setDeviceType(type)}
                     className="flex-1 py-2.5 rounded-xl text-sm font-medium border transition-all"
                     style={deviceType === type
