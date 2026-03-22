@@ -7,10 +7,14 @@ import { execFile } from "child_process";
 import { promisify } from "util";
 import plist from "plist";
 import AdmZip from "adm-zip";
+import pLimit from "p-limit";
 import { db, subscriptionsTable, groupsTable, appsTable } from "@workspace/db";
 
 const execFileAsync = promisify(execFile);
 const router: IRouter = Router();
+
+// ─── Concurrency limiter: max 2 zsign operations at once ───────────────────
+const signLimit = pLimit(2);
 
 const ZSIGN_BIN = path.join(process.cwd(), "bin", "zsign");
 const SIGNED_DIR = path.join(process.cwd(), "uploads", "Signed");
@@ -60,10 +64,22 @@ function loadToken(token: string): TokenMeta | null {
 
 function cleanupExpiredTokens() {
   try {
-    const files = fs.readdirSync(SIGNED_DIR).filter(f => f.endsWith(".json"));
-    for (const f of files) {
-      const token = f.replace(".json", "");
-      loadToken(token);
+    const all = fs.readdirSync(SIGNED_DIR);
+    const jsonFiles = all.filter(f => f.endsWith(".json"));
+    const ipaFiles  = all.filter(f => f.endsWith(".ipa"));
+
+    // Delete expired tokens (loadToken already removes expired files)
+    for (const f of jsonFiles) {
+      loadToken(f.replace(".json", ""));
+    }
+
+    // Delete orphaned IPAs (IPA with no matching JSON)
+    const jsonTokens = new Set(jsonFiles.map(f => f.replace(".json", "")));
+    for (const f of ipaFiles) {
+      const token = f.replace(".ipa", "");
+      if (!jsonTokens.has(token)) {
+        fs.rmSync(path.join(SIGNED_DIR, f), { force: true });
+      }
     }
   } catch {}
 }
@@ -77,31 +93,43 @@ async function signIpa(opts: {
   bundleId?: string;
   bundleName?: string;
 }): Promise<void> {
-  const tmpDir = fs.mkdtempSync("/tmp/zsign-");
-  try {
-    const p12Path = path.join(tmpDir, "cert.p12");
-    const mpPath = path.join(tmpDir, "app.mobileprovision");
-    fs.writeFileSync(p12Path, Buffer.from(opts.p12Base64, "base64"));
-    fs.writeFileSync(mpPath, Buffer.from(opts.mpBase64, "base64"));
+  // ── Wrap in p-limit: max 2 concurrent zsign processes ──────────────────
+  await signLimit(async () => {
+    const tmpDir = fs.mkdtempSync("/tmp/zsign-");
+    try {
+      const p12Path = path.join(tmpDir, "cert.p12");
+      const mpPath = path.join(tmpDir, "app.mobileprovision");
+      fs.writeFileSync(p12Path, Buffer.from(opts.p12Base64, "base64"));
+      fs.writeFileSync(mpPath, Buffer.from(opts.mpBase64, "base64"));
 
-    const args: string[] = [
-      "-k", p12Path,
-      "-p", opts.p12Password || "",
-      "-m", mpPath,
-      "-o", opts.outputPath,
-      "-z", "6",
-    ];
-    if (opts.bundleId) { args.push("-b", opts.bundleId); }
-    if (opts.bundleName) { args.push("-n", opts.bundleName); }
-    args.push(opts.inputPath);
+      const args: string[] = [
+        "-k", p12Path,
+        "-p", opts.p12Password || "",
+        "-m", mpPath,
+        "-o", opts.outputPath,
+        "-z", "6",
+      ];
+      if (opts.bundleId)   { args.push("-b", opts.bundleId); }
+      if (opts.bundleName) { args.push("-n", opts.bundleName); }
+      args.push(opts.inputPath);
 
-    await execFileAsync(ZSIGN_BIN, args, {
-      timeout: 5 * 60 * 1000,
-      maxBuffer: 10 * 1024 * 1024,
-    });
-  } finally {
-    fs.rmSync(tmpDir, { recursive: true, force: true });
-  }
+      await execFileAsync(ZSIGN_BIN, args, {
+        timeout: 10 * 60 * 1000,   // 10 min — covers large 2GB+ IPAs
+        maxBuffer: 10 * 1024 * 1024,
+      });
+    } finally {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+}
+
+// ─── Stable suffix for clone Bundle IDs ──────────────────────────────────────
+// Same code+appId always → same suffix → user keeps clone data after reinstall
+function stableCloneSuffix(code: string, appId: number): string {
+  const hash = crypto.createHash("sha256").update(`${code}:${appId}`).digest("hex");
+  // Convert first 4 hex chars to a 2-digit number (10–99)
+  const num = (parseInt(hash.slice(0, 4), 16) % 90) + 10;
+  return `m${num}`;
 }
 
 function resolveLocalPath(storedPath: string): string {
@@ -196,8 +224,9 @@ function buildManifestPlist(opts: {
   return plist.build(data);
 }
 
-// ─── Cleanup expired tokens every 30 min ────────────────────────────────────
-setInterval(cleanupExpiredTokens, 30 * 60 * 1000);
+// ─── Cleanup expired tokens every 10 min ────────────────────────────────────
+cleanupExpiredTokens();                           // run once at startup
+setInterval(cleanupExpiredTokens, 10 * 60 * 1000);
 
 // ─── GET /api/sign/manifest/:token.plist ────────────────────────────────────
 router.get("/sign/manifest/:token.plist", (req, res): void => {
@@ -378,8 +407,8 @@ router.post("/sign/clone/:code/:appId", async (req, res): Promise<void> => {
     }
 
     const appInfo = readIpaInfo(inputPath);
-    const rand = Math.floor(Math.random() * 90) + 10;
-    const newBundleId = `${app.bundleId || appInfo.bundleId}.m${rand}`;
+    const suffix = stableCloneSuffix(code, appIdNum);
+    const newBundleId = `${app.bundleId || appInfo.bundleId}.${suffix}`;
     const cloneName = newName?.trim() || `${app.name || appInfo.name} 2`;
 
     const token = randomHex(16);

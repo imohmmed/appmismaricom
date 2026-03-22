@@ -71,10 +71,14 @@ export function useSign() {
     setResult(null);
 
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10 * 60 * 1000); // 10 min
       const resp = await fetch(`${base}/sign/app/${encodeURIComponent(subscriptionCode)}/${appId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        signal: controller.signal,
       });
+      clearTimeout(timeoutId);
       const data = await resp.json();
       if (!resp.ok) {
         setError(data.error || "فشل التوقيع");
@@ -114,11 +118,15 @@ export function useSign() {
     setResult(null);
 
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10 * 60 * 1000);
       const resp = await fetch(`${base}/sign/clone/${encodeURIComponent(subscriptionCode)}/${appId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ newName: newName?.trim() || undefined }),
+        signal: controller.signal,
       });
+      clearTimeout(timeoutId);
       const data = await resp.json();
       if (!resp.ok) {
         setError(data.error || "فشل التكرار");
@@ -154,10 +162,14 @@ export function useSign() {
     setResult(null);
 
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10 * 60 * 1000);
       const resp = await fetch(`${base}/sign/store/${encodeURIComponent(subscriptionCode)}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        signal: controller.signal,
       });
+      clearTimeout(timeoutId);
       const data = await resp.json();
       if (!resp.ok) {
         setError(data.error || "فشل تحميل المتجر");
