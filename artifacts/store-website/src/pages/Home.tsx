@@ -250,16 +250,14 @@ export default function Home() {
         className="flex flex-col items-center justify-center text-center px-5 py-20"
         style={{ background: `radial-gradient(ellipse 80% 60% at 50% 0%, ${PRIMARY}22 0%, transparent 70%)` }}
       >
-        <div
-          aria-label="مسماري"
+        <img
+          src={`${import.meta.env.BASE_URL}mismari-logo-final.png`}
+          alt="مسماري"
           className="mb-6"
           style={{
-            width: "160px",
-            height: "160px",
-            backgroundImage: `url(${import.meta.env.BASE_URL}mismari-logo-final.png)`,
-            backgroundSize: "contain",
-            backgroundRepeat: "no-repeat",
-            backgroundPosition: "center",
+            maxWidth: "200px",
+            height: "auto",
+            objectFit: "contain",
             filter: "drop-shadow(0 4px 12px rgba(0,0,0,0.10))",
           }}
         />

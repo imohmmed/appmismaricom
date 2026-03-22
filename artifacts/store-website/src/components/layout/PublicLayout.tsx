@@ -81,17 +81,10 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
       <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-xl border-b border-black/8 shadow-sm">
         <div className="flex items-center justify-between px-5 py-3 max-w-5xl mx-auto" style={{ minHeight: "68px" }}>
           <a href="/" className="flex items-center flex-shrink-0">
-            <div
-              aria-label="مسماري"
-              style={{
-                width: "62px",
-                height: "62px",
-                backgroundImage: `url(${import.meta.env.BASE_URL}mismari-logo-final.png)`,
-                backgroundSize: "contain",
-                backgroundRepeat: "no-repeat",
-                backgroundPosition: "center",
-                flexShrink: 0,
-              }}
+            <img
+              src={`${import.meta.env.BASE_URL}mismari-logo-final.png`}
+              alt="مسماري"
+              style={{ height: "62px", width: "auto", objectFit: "contain", flexShrink: 0 }}
             />
           </a>
 
@@ -144,16 +137,10 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
 
       <footer className="border-t border-black/8 py-10 px-5 text-center" style={{ background: `${PRIMARY}08` }}>
         <a href="/" className="inline-flex items-center justify-center mb-5">
-          <div
-            aria-label="مسماري"
-            style={{
-              width: "100px",
-              height: "100px",
-              backgroundImage: `url(${import.meta.env.BASE_URL}mismari-logo-final.png)`,
-              backgroundSize: "contain",
-              backgroundRepeat: "no-repeat",
-              backgroundPosition: "center",
-            }}
+          <img
+            src={`${import.meta.env.BASE_URL}mismari-logo-final.png`}
+            alt="مسماري"
+            style={{ maxHeight: "100px", width: "auto", objectFit: "contain" }}
           />
         </a>
         <div className="flex flex-wrap justify-center gap-6 mb-5 text-sm" style={{ color: `${TEXT}88` }}>
