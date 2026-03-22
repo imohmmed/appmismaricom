@@ -62,26 +62,54 @@ function loadToken(token: string): TokenMeta | null {
   }
 }
 
-function cleanupExpiredTokens() {
+async function cleanupExpiredTokens() {
   try {
     const all = fs.readdirSync(SIGNED_DIR);
     const jsonFiles = all.filter(f => f.endsWith(".json"));
     const ipaFiles  = all.filter(f => f.endsWith(".ipa"));
+    let deletedCount = 0;
+    let freedBytes   = 0;
 
-    // Delete expired tokens (loadToken already removes expired files)
+    // 1. Expire JSON tokens (sync read, async delete)
+    const expiredTokens = new Set<string>();
     for (const f of jsonFiles) {
-      loadToken(f.replace(".json", ""));
-    }
-
-    // Delete orphaned IPAs (IPA with no matching JSON)
-    const jsonTokens = new Set(jsonFiles.map(f => f.replace(".json", "")));
-    for (const f of ipaFiles) {
-      const token = f.replace(".ipa", "");
-      if (!jsonTokens.has(token)) {
-        fs.rmSync(path.join(SIGNED_DIR, f), { force: true });
+      const token    = f.replace(".json", "");
+      const metaPath = path.join(SIGNED_DIR, f);
+      try {
+        const meta = JSON.parse(fs.readFileSync(metaPath, "utf8")) as TokenMeta;
+        if (Date.now() > meta.expiresAt) {
+          expiredTokens.add(token);
+          await fs.promises.unlink(metaPath).catch(() => {});
+          deletedCount++;
+        }
+      } catch {
+        expiredTokens.add(token);
+        await fs.promises.unlink(metaPath).catch(() => {});
       }
     }
-  } catch {}
+
+    // 2. Delete IPA files whose token expired or has no JSON (async — non-blocking)
+    const jsonValid = new Set(jsonFiles.map(f => f.replace(".json", "")));
+    for (const f of ipaFiles) {
+      const token   = f.replace(".ipa", "");
+      const ipaPath = path.join(SIGNED_DIR, f);
+      if (expiredTokens.has(token) || !jsonValid.has(token)) {
+        try {
+          const stat = fs.statSync(ipaPath);
+          freedBytes += stat.size;
+        } catch {}
+        await fs.promises.unlink(ipaPath).catch(() => {});
+        deletedCount++;
+      }
+    }
+
+    if (deletedCount > 0) {
+      const freedMB = (freedBytes / 1024 / 1024).toFixed(1);
+      console.log(`[sign/cleanup] Deleted ${deletedCount} files, freed ${freedMB} MB`);
+    }
+  } catch (e) {
+    console.error("[sign/cleanup] Error:", e);
+  }
 }
 
 async function signIpa(opts: {
@@ -225,8 +253,18 @@ function buildManifestPlist(opts: {
 }
 
 // ─── Cleanup expired tokens every 10 min ────────────────────────────────────
-cleanupExpiredTokens();                           // run once at startup
-setInterval(cleanupExpiredTokens, 10 * 60 * 1000);
+cleanupExpiredTokens();
+setInterval(() => { cleanupExpiredTokens().catch(() => {}); }, 10 * 60 * 1000);
+
+// ─── GET /api/sign/status — queue depth for frontend polling ────────────────
+router.get("/sign/status", (_req, res): void => {
+  res.json({
+    active:  signLimit.activeCount,
+    pending: signLimit.pendingCount,
+    // position = how many are ahead (active + pending); 0 means start immediately
+    ahead: signLimit.activeCount + signLimit.pendingCount,
+  });
+});
 
 // ─── GET /api/sign/manifest/:token.plist ────────────────────────────────────
 router.get("/sign/manifest/:token.plist", (req, res): void => {

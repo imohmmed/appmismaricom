@@ -194,7 +194,7 @@ export default function AppDetailPanel({ app, onClose, onCategoryPress, relatedA
   const { colors, t, fontAr, isArabic, subscriptionCode, setSubscriptionCode } = useSettings();
   const tagColor = getTagColor(app.tag, colors);
   const scrollY = useRef(new Animated.Value(0)).current;
-  const { signAndInstall, cloneAndInstall, isLoading, error: signError, state: signState, reset: resetSign } = useSign();
+  const { signAndInstall, cloneAndInstall, isLoading, error: signError, state: signState, reset: resetSign, queuePosition } = useSign();
 
   const mockUser = isArabic ? MOCK_USER_AR : MOCK_USER_EN;
   const [descExpanded, setDescExpanded] = useState(false);
@@ -250,8 +250,13 @@ export default function AppDetailPanel({ app, onClose, onCategoryPress, relatedA
     cloneAndInstall(subscriptionCode, app.id, cloneName);
   };
 
-  const downloadBtnLabel = signState === "signing" ? t("signing") : signState === "opening" ? t("installing") : t("download");
-  const cloneBtnLabel = signState === "signing" ? t("signing") : signState === "opening" ? t("installing") : t("retry");
+  const queueText = queuePosition > 2
+    ? `${isArabic ? "في الطابور — رقمك" : "Queue position:"} ${queuePosition}`
+    : null;
+
+  const signingLabel = queueText ?? (isArabic ? "جارٍ التوقيع..." : "Signing...");
+  const downloadBtnLabel = signState === "signing" ? signingLabel : signState === "opening" ? t("installing") : t("download");
+  const cloneBtnLabel    = signState === "signing" ? signingLabel : signState === "opening" ? t("installing") : t("retry");
 
   const appDesc = isArabic ? (app.descAr || app.desc || "") : (app.descEn || app.desc || "");
   const catName = app.category || (app as any).categoryName || "";

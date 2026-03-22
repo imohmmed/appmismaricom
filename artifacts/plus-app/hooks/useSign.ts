@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { Linking, Alert, Platform } from "react-native";
 
 const getBase = () => {
@@ -21,11 +21,39 @@ export function useSign() {
   const [state, setState] = useState<SignState>("idle");
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<SignResult | null>(null);
+  const [queuePosition, setQueuePosition] = useState<number>(0);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // ── Poll queue status while signing ────────────────────────────────────────
+  useEffect(() => {
+    if (state === "signing") {
+      const base = getBase();
+      if (!base) return;
+      const poll = () => {
+        fetch(`${base}/sign/status`)
+          .then(r => r.json())
+          .then(data => setQueuePosition(data.ahead ?? 0))
+          .catch(() => {});
+      };
+      poll();
+      pollRef.current = setInterval(poll, 3000);
+    } else {
+      if (pollRef.current) {
+        clearInterval(pollRef.current);
+        pollRef.current = null;
+      }
+      if (state !== "idle") setQueuePosition(0);
+    }
+    return () => {
+      if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
+    };
+  }, [state]);
 
   const reset = useCallback(() => {
     setState("idle");
     setError(null);
     setResult(null);
+    setQueuePosition(0);
   }, []);
 
   const openItmsUrl = useCallback(async (itmsUrl: string) => {
@@ -196,5 +224,6 @@ export function useSign() {
     cloneAndInstall,
     signStore,
     isLoading: state === "signing" || state === "opening",
+    queuePosition,
   };
 }
