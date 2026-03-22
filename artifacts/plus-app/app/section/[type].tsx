@@ -15,6 +15,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useSettings } from "@/contexts/SettingsContext";
 import { useApps, getTagColor, type ApiApp } from "@/hooks/useAppData";
 import AppDetailPanel from "@/components/AppDetailPanel";
+import SlidePanel from "@/components/SlidePanel";
 
 const SECTION_EMOJI: Record<string, string> = {
   trending: "🔥",
@@ -125,9 +126,9 @@ export default function SectionDetailScreen() {
         </ScrollView>
       )}
 
-      {/* App Detail Overlay — opens on top of this screen */}
-      {selectedApp && (
-        <View style={StyleSheet.absoluteFillObject}>
+      {/* App Detail — slides in on top with swipe-to-dismiss */}
+      <SlidePanel visible={selectedApp !== null} onClose={() => setSelectedApp(null)}>
+        {selectedApp && (
           <AppDetailPanel
             app={apiAppToDetail(selectedApp)}
             onClose={() => setSelectedApp(null)}
@@ -137,8 +138,8 @@ export default function SectionDetailScreen() {
               if (found) setSelectedApp(found);
             }}
           />
-        </View>
-      )}
+        )}
+      </SlidePanel>
     </View>
   );
 }

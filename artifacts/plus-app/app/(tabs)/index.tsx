@@ -205,6 +205,7 @@ export default function PlusScreen() {
   const { colors, t, fontAr, isArabic } = useSettings();
   const [activeCat, setActiveCat] = useState<ApiCategory | null>(null);
   const [selectedApp, setSelectedApp] = useState<ApiApp | null>(null);
+  const [catSelectedApp, setCatSelectedApp] = useState<ApiApp | null>(null);
   const [showAccount, setShowAccount] = useState(false);
   const scrollX = useRef(new Animated.Value(0)).current;
   const catToAppTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -342,16 +343,25 @@ export default function PlusScreen() {
           <CategoryPageContent
             cat={activeCat}
             onClose={() => setActiveCat(null)}
-            onAppPress={(app) => {
-              setActiveCat(null);
-              if (catToAppTimer.current) clearTimeout(catToAppTimer.current);
-              catToAppTimer.current = setTimeout(() => setSelectedApp(app), 300);
-            }}
+            onAppPress={(app) => setCatSelectedApp(app)}
           />
         )}
       </SlidePanel>
 
-      {/* App detail panel */}
+      {/* App detail inside category — stacks on top of category panel */}
+      <SlidePanel visible={catSelectedApp !== null} onClose={() => setCatSelectedApp(null)}>
+        {catSelectedApp && (
+          <AppDetailPanel
+            app={catSelectedApp as any}
+            onClose={() => setCatSelectedApp(null)}
+            onCategoryPress={() => setCatSelectedApp(null)}
+            relatedApps={[]}
+            onRelatedAppPress={(a) => setCatSelectedApp(a as any)}
+          />
+        )}
+      </SlidePanel>
+
+      {/* App detail from home sections */}
       <SlidePanel visible={selectedApp !== null} onClose={() => setSelectedApp(null)}>
         {selectedApp && (
           <AppDetailPanel
