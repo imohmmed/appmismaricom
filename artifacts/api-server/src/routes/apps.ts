@@ -54,6 +54,7 @@ router.get("/apps", async (req, res): Promise<void> => {
       iconUrl: appsTable.icon,
       categoryId: appsTable.categoryId,
       categoryName: categoriesTable.name,
+      categoryNameAr: categoriesTable.nameAr,
       tag: appsTable.tag,
       version: appsTable.version,
       size: appsTable.size,
@@ -76,7 +77,7 @@ router.get("/apps", async (req, res): Promise<void> => {
 
   res.json(
     ListAppsResponse.parse({
-      apps: apps.map((a) => ({ ...a, categoryName: a.categoryName ?? "Unknown" })),
+      apps: apps.map((a) => ({ ...a, categoryName: a.categoryName ?? "Unknown", categoryNameAr: a.categoryNameAr ?? undefined })),
       total: count,
       page,
       limit,
