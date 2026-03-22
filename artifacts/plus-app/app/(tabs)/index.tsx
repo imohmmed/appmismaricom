@@ -203,7 +203,6 @@ function FeaturedCard({ item }: { item: { id: number; title: string; subtitle: s
 export default function PlusScreen() {
   const insets = useSafeAreaInsets();
   const { colors, t, fontAr, isArabic } = useSettings();
-  const router = useRouter();
   const [activeCat, setActiveCat] = useState<ApiCategory | null>(null);
   const [selectedApp, setSelectedApp] = useState<ApiApp | null>(null);
   const [showAccount, setShowAccount] = useState(false);
@@ -265,19 +264,6 @@ export default function PlusScreen() {
           contentContainerStyle={[styles.categoryRow, isArabic && { paddingRight: 16, paddingLeft: 32 }]}
           style={[styles.categoryScrollView, isArabic && { transform: [{ scaleX: -1 }] }]}
         >
-          {/* Search pill — merged at the start */}
-          <View style={isArabic ? { transform: [{ scaleX: -1 }] } : undefined}>
-            <Pressable
-              onPress={() => router.push("/(tabs)/search")}
-              style={[styles.categoryPill, styles.searchPill, { backgroundColor: colors.card }]}
-            >
-              <Feather name="search" size={14} color={colors.tint} style={{ marginRight: 5 }} />
-              <Text style={[styles.categoryPillText, { color: colors.tint, fontFamily: fontAr("SemiBold") }]}>
-                {t("headerSearch" as any) || "بحث"}
-              </Text>
-            </Pressable>
-          </View>
-
           {/* Category pills from API */}
           {categories.map((cat) => (
             <View key={cat.id} style={isArabic ? { transform: [{ scaleX: -1 }] } : undefined}>
@@ -423,10 +409,6 @@ const styles = StyleSheet.create({
       android: { elevation: 3 },
       web: { boxShadow: "0 1px 4px rgba(0,0,0,0.12)" },
     }),
-  },
-  searchPill: {
-    borderWidth: 1,
-    borderColor: "rgba(159,188,255,0.3)",
   },
   catPillEmoji: { fontSize: 13, marginRight: 2 },
   categoryPillText: { fontSize: 14 },
