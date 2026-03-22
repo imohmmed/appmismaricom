@@ -1,12 +1,15 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import {
   Plus, Loader2, RefreshCw, X, Eye, EyeOff,
   Smartphone, Tablet, Monitor, Key,
   Shield, Trash2, Edit2, Check, Clock, AlertTriangle,
   ChevronDown, ChevronUp, Zap, Info, Code2, Copy,
-  RotateCcw, CheckCircle,
+  RotateCcw, CheckCircle, FlaskConical, Upload,
+  Calendar, Users, Tag, Globe, Bell, CheckCircle2,
+  XCircle, FileText, Download, ChevronRight,
 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 const API = import.meta.env.VITE_API_URL || "";
 const A = "#9fbcff";
@@ -26,9 +29,19 @@ async function adminFetch(path: string, opts?: RequestInit) {
   return res;
 }
 
+async function adminUpload(path: string, formData: FormData) {
+  const token = localStorage.getItem("adminToken") || "";
+  return fetch(`${API}/api${path}`, {
+    method: "POST",
+    headers: { "x-admin-token": token },
+    body: formData,
+  });
+}
+
 interface GroupRecord {
   id: number;
   certName: string;
+  groupType: string;
   issuerId: string;
   keyId: string;
   privateKey: string;
@@ -42,6 +55,45 @@ interface GroupRecord {
   pendingCount: number;
   activeCount: number;
   totalDevices: number;
+  // Test certificate fields
+  certCommonName?: string | null;
+  teamId?: string | null;
+  teamName?: string | null;
+  certExpiresAt?: string | null;
+  bundleId?: string | null;
+  provisionName?: string | null;
+  provisionedUdidCount?: number | null;
+}
+
+interface AnalysisResult {
+  mobileprovision?: {
+    name: string;
+    teamId: string;
+    teamName: string;
+    appIdName: string;
+    bundleId: string;
+    expirationDate: string | null;
+    creationDate: string | null;
+    udidCount: number;
+    udids: string[];
+    isWildcard: boolean;
+    platform: unknown;
+    entitlements: {
+      pushNotifications: boolean;
+      iCloud: boolean;
+      groupContainers: boolean;
+      appGroups: string[];
+      apsEnvironment: string | null;
+    };
+  };
+  mobileprovisionError?: string;
+  p12?: {
+    commonName: string;
+    issuer: string;
+    notBefore: string;
+    notAfter: string;
+  };
+  p12Error?: string;
 }
 
 interface Device {
@@ -435,6 +487,433 @@ function DevicesModal({ group, onClose }: { group: GroupRecord; onClose: () => v
   );
 }
 
+// ─── Test Group Modal ─────────────────────────────────────────────────────────
+function TestGroupModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
+  const { toast } = useToast();
+  const p12Ref = useRef<HTMLInputElement>(null);
+  const provRef = useRef<HTMLInputElement>(null);
+
+  const [step, setStep] = useState<"upload" | "analyzing" | "results" | "saving">("upload");
+  const [p12File, setP12File] = useState<File | null>(null);
+  const [provFile, setProvFile] = useState<File | null>(null);
+  const [password, setPassword] = useState("");
+  const [showPass, setShowPass] = useState(false);
+  const [result, setResult] = useState<AnalysisResult | null>(null);
+  const [error, setError] = useState("");
+  const [certName, setCertName] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [showAllUdids, setShowAllUdids] = useState(false);
+
+  const analyze = async () => {
+    if (!p12File) { setError("يرجى اختيار ملف الشهادة (.p12)"); return; }
+    if (!provFile) { setError("يرجى اختيار ملف الوصف (.mobileprovision)"); return; }
+    setError("");
+    setStep("analyzing");
+
+    const fd = new FormData();
+    fd.append("p12", p12File);
+    fd.append("mobileprovision", provFile);
+    fd.append("password", password);
+
+    try {
+      const res = await adminUpload("/admin/groups/test-analyze", fd);
+      const data: AnalysisResult = await res.json();
+      setResult(data);
+      if (data.mobileprovision) setCertName(data.mobileprovision.name || "");
+      setStep("results");
+    } catch {
+      setError("حدث خطأ أثناء التحليل");
+      setStep("upload");
+    }
+  };
+
+  const save = async () => {
+    if (!certName.trim()) { toast({ title: "اسم المجموعة مطلوب", variant: "destructive" }); return; }
+    setSaving(true);
+    setStep("saving");
+
+    const fd = new FormData();
+    fd.append("certName", certName.trim());
+    fd.append("password", password);
+    if (p12File) fd.append("p12", p12File);
+    if (provFile) fd.append("mobileprovision", provFile);
+    if (result?.mobileprovision) {
+      const mp = result.mobileprovision;
+      fd.append("certCommonName", result.p12?.commonName || "");
+      fd.append("teamId", mp.teamId || "");
+      fd.append("teamName", mp.teamName || "");
+      fd.append("certExpiresAt", mp.expirationDate || "");
+      fd.append("bundleId", mp.bundleId || "");
+      fd.append("provisionName", mp.name || "");
+      fd.append("udids", JSON.stringify(mp.udids || []));
+    }
+
+    try {
+      const res = await adminUpload("/admin/groups/test-create", fd);
+      if (res.ok) {
+        toast({ title: "تم حفظ المجموعة التجريبية بنجاح" });
+        onSaved();
+        onClose();
+      } else {
+        const d = await res.json();
+        toast({ title: d.error || "حدث خطأ", variant: "destructive" });
+        setStep("results");
+      }
+    } catch {
+      toast({ title: "حدث خطأ أثناء الحفظ", variant: "destructive" });
+      setStep("results");
+    }
+    setSaving(false);
+  };
+
+  const copyUdid = (udid: string) => { navigator.clipboard.writeText(udid); };
+
+  const mp = result?.mobileprovision;
+  const p12 = result?.p12;
+  const certExpired = mp?.expirationDate ? new Date(mp.expirationDate) < new Date() : false;
+  const daysLeft = mp?.expirationDate
+    ? Math.ceil((new Date(mp.expirationDate).getTime() - Date.now()) / 86400000)
+    : null;
+
+  const inp = "w-full bg-[#0a0a0a] border border-white/10 rounded-lg px-3 py-2.5 text-white text-sm placeholder:text-white/20 focus:outline-none focus:border-[#9fbcff]/50 transition-colors";
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/85 flex items-center justify-center p-4 backdrop-blur-sm">
+      <div className="bg-[#111111] border border-white/10 rounded-2xl w-full max-w-2xl max-h-[92vh] flex flex-col shadow-2xl" dir="rtl">
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-white/8 shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: "#f59e0b18" }}>
+              <FlaskConical className="w-4 h-4 text-yellow-400" />
+            </div>
+            <div>
+              <h3 className="text-white font-bold text-sm">إضافة مجموعة تجريبية</h3>
+              <p className="text-white/30 text-xs mt-0.5">
+                {step === "upload" ? "رفع شهادة .p12 + ملف .mobileprovision"
+                  : step === "analyzing" ? "جاري تحليل الشهادة..."
+                  : step === "results" || step === "saving" ? "نتائج التحليل — راجع البيانات قبل الحفظ"
+                  : ""}
+              </p>
+            </div>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-white/5 text-white/40 hover:text-white transition-colors">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="overflow-y-auto flex-1 p-5 space-y-4">
+
+          {/* ── Upload Step ────────────────────────────────────────────── */}
+          {(step === "upload") && (
+            <>
+              {/* p12 */}
+              <div>
+                <label className="text-white/60 text-xs mb-2 block flex items-center gap-1.5">
+                  <Key className="w-3.5 h-3.5" />
+                  ملف الشهادة (.p12) <span className="text-red-400">*</span>
+                </label>
+                <button
+                  type="button"
+                  onClick={() => p12Ref.current?.click()}
+                  className="w-full border border-dashed border-white/15 rounded-xl py-5 flex flex-col items-center gap-2 hover:border-[#9fbcff]/40 hover:bg-[#9fbcff]/4 transition-all"
+                  style={p12File ? { borderColor: "#9fbcff40", background: "#9fbcff06" } : {}}
+                >
+                  {p12File ? (
+                    <>
+                      <FileText className="w-6 h-6" style={{ color: A }} />
+                      <span className="text-sm font-medium" style={{ color: A }}>{p12File.name}</span>
+                      <span className="text-white/30 text-xs">{(p12File.size / 1024).toFixed(1)} KB</span>
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-6 h-6 text-white/25" />
+                      <span className="text-white/40 text-sm">اضغط لرفع ملف .p12</span>
+                    </>
+                  )}
+                </button>
+                <input ref={p12Ref} type="file" accept=".p12" className="hidden"
+                  onChange={e => e.target.files?.[0] && setP12File(e.target.files[0])} />
+              </div>
+
+              {/* password */}
+              <div>
+                <label className="text-white/60 text-xs mb-2 block flex items-center gap-1.5">
+                  <Shield className="w-3.5 h-3.5" />
+                  كلمة مرور الشهادة
+                </label>
+                <div className="relative">
+                  <input
+                    type={showPass ? "text" : "password"}
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    placeholder="كلمة مرور ملف .p12"
+                    className={inp}
+                    dir="ltr"
+                  />
+                  <button type="button" onClick={() => setShowPass(v => !v)}
+                    className="absolute top-1/2 -translate-y-1/2 left-3 p-1 rounded text-white/30 hover:text-white/70">
+                    {showPass ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* mobileprovision */}
+              <div>
+                <label className="text-white/60 text-xs mb-2 block flex items-center gap-1.5">
+                  <FileText className="w-3.5 h-3.5" />
+                  ملف الوصف (.mobileprovision) <span className="text-red-400">*</span>
+                </label>
+                <button
+                  type="button"
+                  onClick={() => provRef.current?.click()}
+                  className="w-full border border-dashed border-white/15 rounded-xl py-5 flex flex-col items-center gap-2 hover:border-[#9fbcff]/40 hover:bg-[#9fbcff]/4 transition-all"
+                  style={provFile ? { borderColor: "#9fbcff40", background: "#9fbcff06" } : {}}
+                >
+                  {provFile ? (
+                    <>
+                      <FileText className="w-6 h-6" style={{ color: A }} />
+                      <span className="text-sm font-medium" style={{ color: A }}>{provFile.name}</span>
+                      <span className="text-white/30 text-xs">{(provFile.size / 1024).toFixed(1)} KB</span>
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-6 h-6 text-white/25" />
+                      <span className="text-white/40 text-sm">اضغط لرفع ملف .mobileprovision</span>
+                    </>
+                  )}
+                </button>
+                <input ref={provRef} type="file" accept=".mobileprovision" className="hidden"
+                  onChange={e => e.target.files?.[0] && setProvFile(e.target.files[0])} />
+              </div>
+
+              {error && (
+                <div className="flex items-center gap-2 text-red-400 text-xs bg-red-400/10 rounded-lg px-3 py-2.5">
+                  <AlertTriangle className="w-3.5 h-3.5 shrink-0" />{error}
+                </div>
+              )}
+            </>
+          )}
+
+          {/* ── Analyzing ──────────────────────────────────────────────── */}
+          {step === "analyzing" && (
+            <div className="py-16 text-center">
+              <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-yellow-400/60" />
+              <p className="text-white/50 text-sm">جاري تحليل الملفات...</p>
+              <p className="text-white/25 text-xs mt-1">استخراج البيانات من الشهادة</p>
+            </div>
+          )}
+
+          {/* ── Results ────────────────────────────────────────────────── */}
+          {(step === "results" || step === "saving") && result && (
+            <>
+              {/* Status Row */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className={`flex items-center gap-2 rounded-xl px-4 py-3 border ${mp ? "bg-green-500/8 border-green-500/20" : "bg-red-500/8 border-red-500/20"}`}>
+                  {mp ? <CheckCircle2 className="w-4 h-4 text-green-400 shrink-0" /> : <XCircle className="w-4 h-4 text-red-400 shrink-0" />}
+                  <div>
+                    <p className={`text-xs font-bold ${mp ? "text-green-400" : "text-red-400"}`}>
+                      {mp ? "✓ Mobileprovision" : "✗ Mobileprovision"}
+                    </p>
+                    <p className="text-white/30 text-xs">{mp ? "تم التحليل بنجاح" : result.mobileprovisionError}</p>
+                  </div>
+                </div>
+                <div className={`flex items-center gap-2 rounded-xl px-4 py-3 border ${p12 ? "bg-green-500/8 border-green-500/20" : "bg-red-500/8 border-red-500/20"}`}>
+                  {p12 ? <CheckCircle2 className="w-4 h-4 text-green-400 shrink-0" /> : <XCircle className="w-4 h-4 text-red-400 shrink-0" />}
+                  <div>
+                    <p className={`text-xs font-bold ${p12 ? "text-green-400" : "text-red-400"}`}>
+                      {p12 ? "✓ شهادة P12" : "✗ شهادة P12"}
+                    </p>
+                    <p className="text-white/30 text-xs">{p12 ? "تم فك التشفير" : result.p12Error}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Mobileprovision Info */}
+              {mp && (
+                <div className="bg-[#0a0a0a] rounded-xl border border-white/5 overflow-hidden">
+                  <div className="px-4 py-3 border-b border-white/5 flex items-center gap-2">
+                    <FileText className="w-3.5 h-3.5 text-yellow-400" />
+                    <span className="text-white/70 text-xs font-bold">ملف الوصف (Provisioning Profile)</span>
+                    {mp.isWildcard && (
+                      <span className="mr-auto px-2 py-0.5 rounded-full text-xs bg-yellow-500/15 text-yellow-400">Wildcard</span>
+                    )}
+                  </div>
+                  <div className="divide-y divide-white/5 text-xs">
+                    {[
+                      { icon: <Tag className="w-3 h-3" />, label: "اسم البروفايل", val: mp.name },
+                      { icon: <Globe className="w-3 h-3" />, label: "Bundle ID", val: mp.bundleId, mono: true },
+                      { icon: <Shield className="w-3 h-3" />, label: "Team ID", val: mp.teamId, mono: true },
+                      { icon: <Users className="w-3 h-3" />, label: "Team Name", val: mp.teamName },
+                    ].map(r => (
+                      <div key={r.label} className="flex items-center justify-between px-4 py-2.5 gap-3">
+                        <span className="flex items-center gap-1.5 text-white/30 shrink-0">{r.icon}{r.label}</span>
+                        <span className={`text-white/75 text-left break-all ${r.mono ? "font-mono" : ""}`}>{r.val || "—"}</span>
+                      </div>
+                    ))}
+                    {/* Expiration */}
+                    <div className="flex items-center justify-between px-4 py-2.5 gap-3">
+                      <span className="flex items-center gap-1.5 text-white/30 shrink-0">
+                        <Calendar className="w-3 h-3" />تاريخ الانتهاء
+                      </span>
+                      <span className={`font-medium ${certExpired ? "text-red-400" : daysLeft && daysLeft < 30 ? "text-yellow-400" : "text-green-400"}`}>
+                        {mp.expirationDate
+                          ? new Date(mp.expirationDate).toLocaleDateString("ar-SA")
+                          : "—"}
+                        {daysLeft !== null && !certExpired && (
+                          <span className="text-white/30 font-normal mr-1">({daysLeft} يوم)</span>
+                        )}
+                        {certExpired && <span className="mr-1">(منتهية!)</span>}
+                      </span>
+                    </div>
+                    {/* Entitlements */}
+                    <div className="px-4 py-2.5">
+                      <p className="text-white/30 mb-2 flex items-center gap-1.5">
+                        <Bell className="w-3 h-3" />الصلاحيات (Entitlements)
+                      </p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {[
+                          { label: "Push Notifications", active: mp.entitlements.pushNotifications },
+                          { label: "iCloud", active: mp.entitlements.iCloud },
+                          { label: "App Groups", active: mp.entitlements.groupContainers },
+                        ].map(e => (
+                          <span key={e.label}
+                            className={`px-2 py-0.5 rounded-full text-xs ${e.active ? "bg-green-500/15 text-green-400" : "bg-white/5 text-white/20"}`}>
+                            {e.active ? "✓" : "✗"} {e.label}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* P12 Info */}
+              {p12 && (
+                <div className="bg-[#0a0a0a] rounded-xl border border-white/5 overflow-hidden">
+                  <div className="px-4 py-3 border-b border-white/5 flex items-center gap-2">
+                    <Key className="w-3.5 h-3.5" style={{ color: A }} />
+                    <span className="text-white/70 text-xs font-bold">شهادة P12 (الهوية الرقمية)</span>
+                  </div>
+                  <div className="divide-y divide-white/5 text-xs">
+                    {[
+                      { label: "الاسم (CN)", val: p12.commonName },
+                      { label: "الجهة المُصدِرة", val: p12.issuer },
+                      { label: "تاريخ الإصدار", val: p12.notBefore },
+                      { label: "تاريخ الانتهاء", val: p12.notAfter },
+                    ].map(r => (
+                      <div key={r.label} className="flex items-start justify-between px-4 py-2.5 gap-3">
+                        <span className="text-white/30 shrink-0">{r.label}</span>
+                        <span className="text-white/75 text-left break-all font-mono text-xs">{r.val || "—"}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* UDIDs Section */}
+              {mp && mp.udidCount > 0 && (
+                <div className="bg-[#0a0a0a] rounded-xl border border-white/5 overflow-hidden">
+                  <div className="px-4 py-3 border-b border-white/5 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Smartphone className="w-3.5 h-3.5 text-white/40" />
+                      <span className="text-white/70 text-xs font-bold">الأجهزة المُدرَجة في البروفايل</span>
+                    </div>
+                    <span className="px-2.5 py-0.5 rounded-full text-xs font-bold" style={{ background: `${A}20`, color: A }}>
+                      {mp.udidCount} جهاز
+                    </span>
+                  </div>
+                  <div className="p-2 max-h-48 overflow-y-auto">
+                    {(showAllUdids ? mp.udids : mp.udids.slice(0, 8)).map((udid, i) => (
+                      <div key={udid} className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-white/3 group">
+                        <span className="text-white/15 text-xs w-5 shrink-0 text-center">{i + 1}</span>
+                        <span className="font-mono text-xs text-white/45 flex-1 truncate">{udid}</span>
+                        <button onClick={() => copyUdid(udid)}
+                          className="opacity-0 group-hover:opacity-100 p-0.5 text-white/30 hover:text-white transition-all">
+                          <Copy className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                    {mp.udids.length > 8 && (
+                      <button onClick={() => setShowAllUdids(v => !v)}
+                        className="w-full py-2 text-xs text-center transition-colors"
+                        style={{ color: A }}>
+                        {showAllUdids ? "إخفاء" : `عرض ${mp.udids.length - 8} UDID إضافي`}
+                      </button>
+                    )}
+                  </div>
+                  <div className="px-4 py-2.5 border-t border-white/5 bg-yellow-500/4">
+                    <p className="text-yellow-400/70 text-xs flex items-start gap-1.5">
+                      <AlertTriangle className="w-3 h-3 shrink-0 mt-0.5" />
+                      هذه الأجهزة لن تُضاف تلقائياً للمشتركين — يمكنك إضافتهم يدوياً لاحقاً
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Group Name Input for saving */}
+              <div className="border-t border-white/8 pt-4">
+                <label className="text-white/60 text-xs mb-2 block font-medium">
+                  اسم المجموعة (للحفظ) <span className="text-red-400">*</span>
+                </label>
+                <input
+                  value={certName}
+                  onChange={e => setCertName(e.target.value)}
+                  placeholder="مثال: TestCert_Mohammed"
+                  className={inp}
+                />
+                <p className="text-white/20 text-xs mt-1">معرّف داخلي فريد — يُربط به المشتركون لاحقاً</p>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="px-5 py-4 border-t border-white/8 flex gap-3 shrink-0">
+          {step === "upload" && (
+            <>
+              <button
+                onClick={analyze}
+                disabled={!p12File || !provFile}
+                className="flex-1 py-2.5 rounded-xl text-sm font-bold text-black disabled:opacity-40 flex items-center justify-center gap-2"
+                style={{ background: "#f59e0b" }}
+              >
+                <FlaskConical className="w-4 h-4" />
+                تحليل الشهادة
+              </button>
+              <button onClick={onClose} className="px-4 py-2.5 rounded-xl text-sm text-white/50 hover:text-white hover:bg-white/5 transition-colors">
+                إلغاء
+              </button>
+            </>
+          )}
+          {(step === "results") && (
+            <>
+              <button
+                onClick={save}
+                disabled={saving || !certName.trim() || (!mp && !p12)}
+                className="flex-1 py-2.5 rounded-xl text-sm font-bold text-[#0a0a0a] disabled:opacity-40 flex items-center justify-center gap-2"
+                style={{ background: A }}
+              >
+                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                حفظ المجموعة
+              </button>
+              <button onClick={() => setStep("upload")} className="px-4 py-2.5 rounded-xl text-sm text-white/50 hover:text-white hover:bg-white/5 transition-colors">
+                تحليل مجدداً
+              </button>
+            </>
+          )}
+          {step === "saving" && (
+            <div className="flex-1 flex items-center justify-center py-2.5">
+              <Loader2 className="w-4 h-4 animate-spin text-white/40" />
+              <span className="text-white/40 text-sm mr-2">جاري الحفظ...</span>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Group Form Modal ─────────────────────────────────────────────────────────
 function GroupFormModal({ group, onClose, onSaved }: { group?: GroupRecord; onClose: () => void; onSaved: () => void }) {
   const isEdit = !!group;
@@ -588,17 +1067,28 @@ function GroupCard({ group, onDelete, onEdit, onViewDevices, onRefresh }: {
         {/* Header */}
         <div className="flex items-start justify-between gap-2 mb-4">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="relative w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: `${A}15` }}>
-              <Shield className="w-5 h-5" style={{ color: A }} />
-              {bypassActive && (
+            <div className="relative w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+              style={{ background: group.groupType === "test_certificate" ? "#f59e0b18" : `${A}15` }}>
+              {group.groupType === "test_certificate"
+                ? <FlaskConical className="w-5 h-5 text-yellow-400" />
+                : <Shield className="w-5 h-5" style={{ color: A }} />}
+              {bypassActive && group.groupType !== "test_certificate" && (
                 <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-yellow-400 flex items-center justify-center">
                   <Zap className="w-2.5 h-2.5 text-black" />
                 </span>
               )}
             </div>
             <div className="min-w-0">
-              <h3 className="text-white font-bold text-sm truncate">{group.certName}</h3>
-              {group.email && <p className="text-white/30 text-xs truncate">{group.email}</p>}
+              <div className="flex items-center gap-2 mb-0.5">
+                <h3 className="text-white font-bold text-sm truncate">{group.certName}</h3>
+                {group.groupType === "test_certificate" && (
+                  <span className="px-1.5 py-0.5 rounded-md text-xs font-bold shrink-0"
+                    style={{ background: "#f59e0b18", color: "#f59e0b" }}>تجريبية</span>
+                )}
+              </div>
+              {group.groupType === "test_certificate"
+                ? <p className="text-white/30 text-xs truncate">{group.certCommonName || group.teamName || "—"}</p>
+                : group.email && <p className="text-white/30 text-xs truncate">{group.email}</p>}
             </div>
           </div>
           <div className="flex items-center gap-1 shrink-0">
@@ -701,41 +1191,71 @@ function GroupCard({ group, onDelete, onEdit, onViewDevices, onRefresh }: {
       {/* Expanded Technical Details */}
       {expanded && (
         <div className="border-t border-white/5 px-5 py-4 bg-[#0d0d0d]">
-          <h4 className="text-white/40 text-xs font-semibold mb-3 flex items-center gap-2">
-            <Key className="w-3.5 h-3.5" />معلومات تقنية
-          </h4>
-          {[
-            { l: "Issuer ID", v: group.issuerId, mono: true },
-            { l: "Key ID", v: group.keyId, mono: true },
-            { l: "Private Key", v: "••••••••••••••", mono: true },
-            { l: "البريد", v: group.email || "—" },
-            { l: "تاريخ الإضافة", v: new Date(group.createdAt).toLocaleDateString("ar-SA") },
-            ...(group.lastSyncNote ? [{ l: "ملاحظة المزامنة", v: group.lastSyncNote }] : []),
-          ].map(r => (
-            <div key={r.l} className="flex items-start justify-between gap-3 py-1.5 border-b border-white/5 last:border-0">
-              <span className="text-white/25 text-xs shrink-0">{r.l}</span>
-              <span className={`text-white/55 text-xs text-left break-all ${r.mono ? "font-mono" : ""}`}>{r.v}</span>
-            </div>
-          ))}
-
-          <div className="mt-4 pt-3 border-t border-white/5">
-            <h4 className="text-white/40 text-xs font-semibold mb-2 flex items-center gap-2">
-              <Info className="w-3.5 h-3.5" />متى يتصل السيرفر بأبل؟
-            </h4>
-            <div className="space-y-1.5 text-xs text-white/25 leading-relaxed">
+          {group.groupType === "test_certificate" ? (
+            <>
+              <h4 className="text-white/40 text-xs font-semibold mb-3 flex items-center gap-2">
+                <FlaskConical className="w-3.5 h-3.5 text-yellow-400" />تفاصيل الشهادة التجريبية
+              </h4>
               {[
-                ["✅", "عند تسجيل مشترك جديد (Registration)"],
-                ["🔘", "عند ضغط زر التحديث اليدوي فقط"],
-                ["📄", "عند طلب توقيع التطبيق (Signing)"],
-                ["⏰", "Cron Job يومي الساعة 4 فجراً (Audit)"],
-                ["🚫", "لا يتصل تلقائياً عند فتح الصفحة"],
-              ].map(([icon, text]) => (
-                <div key={text} className="flex items-start gap-2">
-                  <span>{icon}</span><span>{text}</span>
+                { l: "الاسم (CN)", v: group.certCommonName || "—", mono: true },
+                { l: "Team ID", v: group.teamId || "—", mono: true },
+                { l: "Team Name", v: group.teamName || "—" },
+                { l: "Bundle ID", v: group.bundleId || "—", mono: true },
+                { l: "البروفايل", v: group.provisionName || "—" },
+                {
+                  l: "تاريخ الانتهاء",
+                  v: group.certExpiresAt
+                    ? new Date(group.certExpiresAt).toLocaleDateString("ar-SA") +
+                      (new Date(group.certExpiresAt) < new Date() ? " ⚠️ منتهية" : "")
+                    : "—"
+                },
+                { l: "أجهزة البروفايل", v: group.provisionedUdidCount ? `${group.provisionedUdidCount} جهاز` : "—" },
+                { l: "تاريخ الإضافة", v: new Date(group.createdAt).toLocaleDateString("ar-SA") },
+              ].map(r => (
+                <div key={r.l} className="flex items-start justify-between gap-3 py-1.5 border-b border-white/5 last:border-0">
+                  <span className="text-white/25 text-xs shrink-0">{r.l}</span>
+                  <span className={`text-white/55 text-xs text-left break-all ${r.mono ? "font-mono" : ""}`}>{r.v}</span>
                 </div>
               ))}
-            </div>
-          </div>
+            </>
+          ) : (
+            <>
+              <h4 className="text-white/40 text-xs font-semibold mb-3 flex items-center gap-2">
+                <Key className="w-3.5 h-3.5" />معلومات تقنية
+              </h4>
+              {[
+                { l: "Issuer ID", v: group.issuerId, mono: true },
+                { l: "Key ID", v: group.keyId, mono: true },
+                { l: "Private Key", v: "••••••••••••••", mono: true },
+                { l: "البريد", v: group.email || "—" },
+                { l: "تاريخ الإضافة", v: new Date(group.createdAt).toLocaleDateString("ar-SA") },
+                ...(group.lastSyncNote ? [{ l: "ملاحظة المزامنة", v: group.lastSyncNote }] : []),
+              ].map(r => (
+                <div key={r.l} className="flex items-start justify-between gap-3 py-1.5 border-b border-white/5 last:border-0">
+                  <span className="text-white/25 text-xs shrink-0">{r.l}</span>
+                  <span className={`text-white/55 text-xs text-left break-all ${r.mono ? "font-mono" : ""}`}>{r.v}</span>
+                </div>
+              ))}
+              <div className="mt-4 pt-3 border-t border-white/5">
+                <h4 className="text-white/40 text-xs font-semibold mb-2 flex items-center gap-2">
+                  <Info className="w-3.5 h-3.5" />متى يتصل السيرفر بأبل؟
+                </h4>
+                <div className="space-y-1.5 text-xs text-white/25 leading-relaxed">
+                  {[
+                    ["✅", "عند تسجيل مشترك جديد (Registration)"],
+                    ["🔘", "عند ضغط زر التحديث اليدوي فقط"],
+                    ["📄", "عند طلب توقيع التطبيق (Signing)"],
+                    ["⏰", "Cron Job يومي الساعة 4 فجراً (Audit)"],
+                    ["🚫", "لا يتصل تلقائياً عند فتح الصفحة"],
+                  ].map(([icon, text]) => (
+                    <div key={text} className="flex items-start gap-2">
+                      <span>{icon}</span><span>{text}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
         </div>
       )}
     </div>
@@ -747,6 +1267,7 @@ export default function AdminGroups() {
   const [groups, setGroups] = useState<GroupRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
+  const [showTestAdd, setShowTestAdd] = useState(false);
   const [editGroup, setEditGroup] = useState<GroupRecord | null>(null);
   const [devicesGroup, setDevicesGroup] = useState<GroupRecord | null>(null);
   const [showCode, setShowCode] = useState(false);
@@ -790,6 +1311,11 @@ export default function AdminGroups() {
             </button>
             <button onClick={fetchGroups} className="p-2 rounded-lg text-white/40 hover:text-white hover:bg-white/5 transition-colors">
               <RefreshCw className="w-4 h-4" />
+            </button>
+            <button onClick={() => setShowTestAdd(true)}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold hover:opacity-90 border"
+              style={{ background: "#f59e0b18", color: "#f59e0b", borderColor: "#f59e0b30" }}>
+              <FlaskConical className="w-4 h-4" />إضافة مجموعة تجريبية
             </button>
             <button onClick={() => setShowAdd(true)}
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold text-[#0a0a0a] hover:opacity-90"
@@ -905,6 +1431,7 @@ export default function AdminGroups() {
       </div>
 
       {showAdd && <GroupFormModal onClose={() => setShowAdd(false)} onSaved={fetchGroups} />}
+      {showTestAdd && <TestGroupModal onClose={() => setShowTestAdd(false)} onSaved={fetchGroups} />}
       {editGroup && <GroupFormModal group={editGroup} onClose={() => setEditGroup(null)} onSaved={fetchGroups} />}
       {devicesGroup && <DevicesModal group={devicesGroup} onClose={() => setDevicesGroup(null)} />}
       {showCode && <CodeModal onClose={() => setShowCode(false)} />}

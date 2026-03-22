@@ -6,6 +6,7 @@ import subscriptionsRouter from "./subscriptions";
 import adminRouter from "./admin";
 import ipaRouter from "./ipa";
 import enrollRouter from "./enroll";
+import testGroupsRouter from "./test-groups";
 
 const router: IRouter = Router();
 
@@ -16,5 +17,6 @@ router.use(subscriptionsRouter);
 router.use(adminRouter);
 router.use(ipaRouter);
 router.use(enrollRouter);
+router.use(testGroupsRouter);
 
 export default router;
