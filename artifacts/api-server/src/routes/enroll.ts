@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import { eq } from "drizzle-orm";
 import { db, subscriptionsTable, enrollmentRequestsTable, plansTable } from "@workspace/db";
+import { signMobileconfig } from "../sign-profile.js";
 
 const router: IRouter = Router();
 
@@ -91,9 +92,13 @@ router.get("/profile/enroll", (req, res): void => {
 </dict>
 </plist>`;
 
-  res.setHeader("Content-Type", "application/x-apple-aspen-config; charset=utf-8");
+  const { buf, signed } = signMobileconfig(profile);
+  res.setHeader("Content-Type", "application/x-apple-aspen-config");
   res.setHeader("Content-Disposition", 'attachment; filename="mismari-enroll.mobileconfig"');
-  res.send(profile);
+  if (signed) {
+    console.info("[enroll] Serving SIGNED profile for UDID enrollment");
+  }
+  res.send(buf);
 });
 
 // ─── Profile callback: extract UDID ──────────────────────────────────────────
@@ -185,8 +190,14 @@ router.post(
 </dict>
 </plist>`;
 
-      res.setHeader("Content-Type", "application/x-apple-aspen-config; charset=utf-8");
-      res.send(responseProfile);
+      const { buf: signedBuf, signed: didSign } = signMobileconfig(responseProfile);
+      res.setHeader("Content-Type", "application/x-apple-aspen-config");
+      if (didSign) {
+        console.info("[callback] Returning SIGNED Web Clip profile for UDID:", udid);
+      } else {
+        console.warn("[callback] Returning UNSIGNED profile — set SIGN_CERT_PEM + SIGN_KEY_PEM to fix iOS 16+ rejection");
+      }
+      res.send(signedBuf);
     } catch (err) {
       console.error("Profile callback error:", err);
       res.status(500).send("Server error");
