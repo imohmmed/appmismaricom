@@ -1,9 +1,11 @@
 import { Feather } from "@expo/vector-icons";
-import React, { useState } from "react";
+import { useNavigation } from "expo-router";
+import React, { useState, useEffect, useRef } from "react";
 import {
   FlatList,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -27,7 +29,16 @@ const SMM_APPS = [
 
 export default function SmmScreen() {
   const insets = useSafeAreaInsets();
+  const navigation = useNavigation();
   const isWeb = Platform.OS === "web";
+  const scrollRef = useRef<FlatList>(null);
+
+  useEffect(() => {
+    const unsub = navigation.addListener("tabPress" as any, () => {
+      scrollRef.current?.scrollToOffset({ offset: 0, animated: true });
+    });
+    return unsub;
+  }, [navigation]);
   const { colors, t, fontAr, isArabic } = useSettings();
   const [showAccount, setShowAccount] = useState(false);
 

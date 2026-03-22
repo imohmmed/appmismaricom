@@ -1,6 +1,6 @@
 import { Feather } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import React, { useState, useRef, useCallback } from "react";
+import { useNavigation, useRouter } from "expo-router";
+import React, { useState, useRef, useCallback, useEffect } from "react";
 import {
   Dimensions,
   Platform,
@@ -21,11 +21,27 @@ const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
 export default function SearchScreen() {
   const insets = useSafeAreaInsets();
+  const navigation = useNavigation();
   const isWeb = Platform.OS === "web";
   const [query, setQuery] = useState("");
   const inputRef = useRef<TextInput>(null);
   const { colors, t, fontAr, isArabic } = useSettings();
   const router = useRouter();
+
+  useEffect(() => {
+    const unsub = navigation.addListener("tabPress" as any, () => {
+      setQuery("");
+      setTimeout(() => inputRef.current?.focus(), 100);
+    });
+    return unsub;
+  }, [navigation]);
+
+  useEffect(() => {
+    const unsub = navigation.addListener("focus" as any, () => {
+      setTimeout(() => inputRef.current?.focus(), 100);
+    });
+    return unsub;
+  }, [navigation]);
 
   // ── API data ──────────────────────────────────────────────────────────────
   const { categories, loading: catsLoading } = useCategories();

@@ -1,5 +1,6 @@
 import { Feather } from "@expo/vector-icons";
-import React, { useState } from "react";
+import { useNavigation } from "expo-router";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Platform,
   ScrollView,
@@ -23,9 +24,19 @@ const TOP_APPS = [
 
 export default function NumbersScreen() {
   const insets = useSafeAreaInsets();
+  const navigation = useNavigation();
   const isWeb = Platform.OS === "web";
   const { colors, t, fontAr, isArabic } = useSettings();
   const [showAccount, setShowAccount] = useState(false);
+  const scrollRef = useRef<ScrollView>(null);
+
+  useEffect(() => {
+    const unsub = navigation.addListener("tabPress" as any, () => {
+      setShowAccount(false);
+      scrollRef.current?.scrollTo({ y: 0, animated: true });
+    });
+    return unsub;
+  }, [navigation]);
 
   const STATS = [
     { label: t("totalApps"), value: "+8,000", icon: "smartphone", color: colors.tint },

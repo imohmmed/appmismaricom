@@ -37,7 +37,13 @@ export default function MismariTabBar({ state, navigation }: BottomTabBarProps) 
         return (
           <Pressable
             key={tab.name}
-            onPress={() => navigation.navigate(tab.name)}
+            onPress={() => {
+              const route = state.routes.find(r => r.name === tab.name);
+              if (route) {
+                navigation.emit({ type: "tabPress", target: route.key, canPreventDefault: true });
+              }
+              navigation.navigate(tab.name);
+            }}
             style={s.tabItem}
           >
             <Feather

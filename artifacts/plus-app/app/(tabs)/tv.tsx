@@ -1,9 +1,11 @@
 import { Feather } from "@expo/vector-icons";
-import React, { useState } from "react";
+import { useNavigation } from "expo-router";
+import React, { useState, useEffect, useRef } from "react";
 import {
   FlatList,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -27,9 +29,19 @@ const TV_APPS = [
 
 export default function TvScreen() {
   const insets = useSafeAreaInsets();
+  const navigation = useNavigation();
   const isWeb = Platform.OS === "web";
   const { colors, t, fontAr, isArabic } = useSettings();
   const [showAccount, setShowAccount] = useState(false);
+  const scrollRef = useRef<FlatList>(null);
+
+  useEffect(() => {
+    const unsub = navigation.addListener("tabPress" as any, () => {
+      setShowAccount(false);
+      scrollRef.current?.scrollToOffset({ offset: 0, animated: true });
+    });
+    return unsub;
+  }, [navigation]);
 
   function getTagColor(tag: string) {
     switch (tag) {

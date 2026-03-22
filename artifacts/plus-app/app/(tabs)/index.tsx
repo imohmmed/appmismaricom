@@ -1,5 +1,5 @@
 import { Feather } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useNavigation, useRouter } from "expo-router";
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import {
   Animated,
@@ -207,6 +207,7 @@ function FeaturedCard({ item, index }: { item: ApiBanner; index: number }) {
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function PlusScreen() {
   const insets = useSafeAreaInsets();
+  const navigation = useNavigation();
   const { colors, t, fontAr, isArabic } = useSettings();
   const [activeCat, setActiveCat] = useState<ApiCategory | null>(null);
   const [selectedApp, setSelectedApp] = useState<ApiApp | null>(null);
@@ -216,6 +217,7 @@ export default function PlusScreen() {
   const catToAppTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const featuredRef = useRef<FlatList>(null);
   const featuredIndex = useRef(0);
+  const mainScrollRef = useRef<ScrollView>(null);
   const isWeb = Platform.OS === "web";
 
   // ── Fetch from API ──────────────────────────────────────────────────────────
@@ -224,6 +226,17 @@ export default function PlusScreen() {
   const { apps: mostDownloaded } = useApps({ section: "most_downloaded", limit: 30 });
   const { apps: newAdds }      = useApps({ section: "latest",         limit: 15 });
   const { banners } = useBanners();
+
+  useEffect(() => {
+    const unsub = navigation.addListener("tabPress" as any, () => {
+      setCatSelectedApp(null);
+      setSelectedApp(null);
+      setActiveCat(null);
+      setShowAccount(false);
+      mainScrollRef.current?.scrollTo({ y: 0, animated: true });
+    });
+    return unsub;
+  }, [navigation]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -284,6 +297,7 @@ export default function PlusScreen() {
       </View>
 
       <ScrollView
+        ref={mainScrollRef}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: isWeb ? 34 : 80 }}
         contentInsetAdjustmentBehavior="automatic"
