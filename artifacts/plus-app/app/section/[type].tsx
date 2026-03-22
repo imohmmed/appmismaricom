@@ -1,7 +1,8 @@
 import { Feather } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React from "react";
+import React, { useState } from "react";
 import {
+  ActivityIndicator,
   Platform,
   Pressable,
   ScrollView,
@@ -12,34 +13,8 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useSettings } from "@/contexts/SettingsContext";
-import { ALL_APPS } from "@/constants/apps";
-
-const ICON_COLORS: Record<string, string> = {
-  "message-circle": "#25D366",
-  camera: "#FFFC00",
-  instagram: "#E1306C",
-  video: "#010101",
-  send: "#0088CC",
-  twitter: "#1DA1F2",
-  cpu: "#10A37F",
-  zap: "#7B61FF",
-  star: "#4285F4",
-  scissors: "#000000",
-  edit: "#00C4CC",
-  aperture: "#31A8FF",
-  crosshair: "#F2A900",
-  box: "#62B47A",
-  play: "#E2231A",
-  youtube: "#FF0000",
-  music: "#1DB954",
-  headphones: "#FF5500",
-  film: "#E50914",
-  "play-circle": "#113CCF",
-  tv: "#00B140",
-  terminal: "#147EFB",
-  code: "#333333",
-  "file-text": "#3776AB",
-};
+import { useApps, getTagColor, type ApiApp } from "@/hooks/useAppData";
+import AppDetailPanel from "@/components/AppDetailPanel";
 
 const SECTION_EMOJI: Record<string, string> = {
   trending: "🔥",
@@ -47,17 +22,27 @@ const SECTION_EMOJI: Record<string, string> = {
   recentlyAdded: "🆕",
 };
 
-function getAppsForSection(type: string) {
+function sectionTypeToApi(type: string): "trending" | "most_downloaded" | "latest" | undefined {
   switch (type) {
-    case "trending":
-      return ALL_APPS.filter((a) => a.isHot);
-    case "mostDownloaded":
-      return [...ALL_APPS].sort((a, b) => b.downloadCount - a.downloadCount).slice(0, 30);
-    case "recentlyAdded":
-      return [...ALL_APPS].sort((a, b) => new Date(b.dateAdded).getTime() - new Date(a.dateAdded).getTime()).slice(0, 10);
-    default:
-      return [];
+    case "trending":      return "trending";
+    case "mostDownloaded": return "most_downloaded";
+    case "recentlyAdded": return "latest";
+    default:              return undefined;
   }
+}
+
+function apiAppToDetail(app: ApiApp) {
+  return {
+    id: app.id,
+    name: app.name,
+    descAr: app.descAr ?? undefined,
+    descEn: app.description ?? undefined,
+    desc: app.description ?? undefined,
+    category: app.categoryName,
+    tag: app.tag,
+    icon: app.icon || "box",
+    catKey: app.categoryName?.toLowerCase(),
+  };
 }
 
 export default function SectionDetailScreen() {
@@ -67,8 +52,15 @@ export default function SectionDetailScreen() {
   const { colors, t, fontAr, isArabic } = useSettings();
   const isWeb = Platform.OS === "web";
 
-  const apps = getAppsForSection(type);
+  const apiSection = sectionTypeToApi(type);
+  const { apps, loading } = useApps({ section: apiSection, limit: 50 });
+  const [selectedApp, setSelectedApp] = useState<ApiApp | null>(null);
+
   const emoji = SECTION_EMOJI[type] || "";
+
+  const relatedApps = selectedApp
+    ? apps.filter(a => a.id !== selectedApp.id).slice(0, 9).map(apiAppToDetail)
+    : [];
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background, paddingTop: isWeb ? 20 : insets.top }]}>
@@ -82,37 +74,71 @@ export default function SectionDetailScreen() {
         <View style={{ width: 40 }} />
       </View>
 
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: isWeb ? 34 : 100 }}
-      >
-        <View style={[styles.listCard, { backgroundColor: colors.card }]}>
-          {apps.map((app, index) => {
-            const iconColor = ICON_COLORS[app.icon] || colors.tint;
-            return (
-              <View key={app.id}>
-                <Pressable style={[styles.appRow, isArabic && { flexDirection: "row-reverse" }]}>
-                  <View style={[styles.appIcon, { backgroundColor: `${iconColor}15` }]}>
-                    <Feather name={app.icon as any} size={22} color={iconColor} />
-                  </View>
-                  <View style={[styles.appInfo, isArabic && { alignItems: "flex-end" }]}>
-                    <Text style={[styles.appName, { color: colors.text }]}>{app.name}</Text>
-                    <Text style={[styles.appDesc, { color: colors.textSecondary, fontFamily: fontAr("Regular") }]}>
-                      {isArabic ? app.descAr : app.descEn}
-                    </Text>
-                  </View>
-                  <Pressable style={[styles.getButton, { backgroundColor: colors.background }]}>
-                    <Text style={[styles.getButtonText, { color: colors.tint, fontFamily: fontAr("Bold") }]}>
-                      {t("download")}
-                    </Text>
-                  </Pressable>
-                </Pressable>
-                {index < apps.length - 1 && <View style={[styles.divider, { backgroundColor: colors.separator }]} />}
-              </View>
-            );
-          })}
+      {loading ? (
+        <View style={styles.loadingCenter}>
+          <ActivityIndicator color={colors.tint} size="large" />
         </View>
-      </ScrollView>
+      ) : (
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: isWeb ? 34 : 100 }}
+        >
+          <View style={[styles.listCard, { backgroundColor: colors.card }]}>
+            {apps.map((app, index) => {
+              const tc = getTagColor(app.tag);
+              const desc = (isArabic ? app.descAr : null) || app.description || "";
+              return (
+                <View key={app.id}>
+                  <Pressable
+                    style={[styles.appRow, isArabic && { flexDirection: "row-reverse" }]}
+                    onPress={() => setSelectedApp(app)}
+                  >
+                    <View style={[styles.appIcon, { backgroundColor: `${tc}15` }]}>
+                      <Feather name={(app.icon as any) || "box"} size={22} color={tc} />
+                    </View>
+                    <View style={[styles.appInfo, isArabic && { alignItems: "flex-end" }]}>
+                      <Text style={[styles.appName, { color: colors.text }]}>{app.name}</Text>
+                      <Text style={[styles.appDesc, { color: colors.textSecondary, fontFamily: fontAr("Regular") }]}>
+                        {desc}
+                      </Text>
+                    </View>
+                    <View style={[styles.getButton, { backgroundColor: colors.background }]}>
+                      <Text style={[styles.getButtonText, { color: colors.tint, fontFamily: fontAr("Bold") }]}>
+                        {t("download")}
+                      </Text>
+                    </View>
+                  </Pressable>
+                  {index < apps.length - 1 && <View style={[styles.divider, { backgroundColor: colors.separator }]} />}
+                </View>
+              );
+            })}
+
+            {apps.length === 0 && (
+              <View style={styles.emptyState}>
+                <Feather name="inbox" size={40} color={colors.textSecondary} />
+                <Text style={[{ color: colors.textSecondary, fontFamily: fontAr("Medium"), marginTop: 12, fontSize: 15 }]}>
+                  لا توجد تطبيقات
+                </Text>
+              </View>
+            )}
+          </View>
+        </ScrollView>
+      )}
+
+      {/* App Detail Overlay — opens on top of this screen */}
+      {selectedApp && (
+        <View style={StyleSheet.absoluteFillObject}>
+          <AppDetailPanel
+            app={apiAppToDetail(selectedApp)}
+            onClose={() => setSelectedApp(null)}
+            relatedApps={relatedApps}
+            onRelatedAppPress={(a) => {
+              const found = apps.find(x => x.id === a.id);
+              if (found) setSelectedApp(found);
+            }}
+          />
+        </View>
+      )}
     </View>
   );
 }
@@ -138,6 +164,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     textAlign: "center",
   },
+  loadingCenter: { flex: 1, alignItems: "center", justifyContent: "center" },
   listCard: {
     marginHorizontal: 16,
     borderRadius: 16,
@@ -179,5 +206,10 @@ const styles = StyleSheet.create({
   divider: {
     height: StyleSheet.hairlineWidth,
     marginLeft: 66,
+  },
+  emptyState: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 60,
   },
 });

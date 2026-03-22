@@ -1,6 +1,6 @@
 import { Feather } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React from "react";
+import React, { useState } from "react";
 import {
   ActivityIndicator,
   Dimensions,
@@ -14,9 +14,24 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useSettings } from "@/contexts/SettingsContext";
-import { useApps, getTagColor } from "@/hooks/useAppData";
+import { useApps, getTagColor, type ApiApp } from "@/hooks/useAppData";
+import AppDetailPanel from "@/components/AppDetailPanel";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
+
+function apiAppToDetail(app: ApiApp) {
+  return {
+    id: app.id,
+    name: app.name,
+    descAr: app.descAr ?? undefined,
+    descEn: app.description ?? undefined,
+    desc: app.description ?? undefined,
+    category: app.categoryName,
+    tag: app.tag,
+    icon: app.icon || "box",
+    catKey: app.categoryName?.toLowerCase(),
+  };
+}
 
 export default function CategoryDetailScreen() {
   const { id, name, color } = useLocalSearchParams<{ id: string; name: string; color: string }>();
@@ -25,8 +40,8 @@ export default function CategoryDetailScreen() {
   const { colors, t, fontAr, isArabic } = useSettings();
   const isWeb = Platform.OS === "web";
 
-  // ── Fetch all apps for this category from the API ─────────────────────────
   const { apps, loading } = useApps({ categoryId: Number(id), limit: 100 });
+  const [selectedApp, setSelectedApp] = useState<ApiApp | null>(null);
 
   const tileColor = color || "#9fbcff";
 
@@ -34,12 +49,19 @@ export default function CategoryDetailScreen() {
   const byDownloads = [...apps].sort((a, b) => b.downloads - a.downloads);
   const recent      = [...apps].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 10);
 
-  const renderAppRow = (app: typeof apps[0], index: number, list: typeof apps) => {
+  const relatedApps = selectedApp
+    ? apps.filter(a => a.id !== selectedApp.id).slice(0, 9).map(apiAppToDetail)
+    : [];
+
+  const renderAppRow = (app: ApiApp, index: number, list: ApiApp[]) => {
     const tc = getTagColor(app.tag);
     const desc = (isArabic ? app.descAr : null) || app.description || "";
     return (
       <View key={app.id}>
-        <Pressable style={[styles.appRow, isArabic && { flexDirection: "row-reverse" }]}>
+        <Pressable
+          style={[styles.appRow, isArabic && { flexDirection: "row-reverse" }]}
+          onPress={() => setSelectedApp(app)}
+        >
           <View style={[styles.appIcon, { backgroundColor: `${tc}15` }]}>
             <Feather name={(app.icon as any) || "box"} size={22} color={tc} />
           </View>
@@ -49,11 +71,11 @@ export default function CategoryDetailScreen() {
               {desc}
             </Text>
           </View>
-          <Pressable style={[styles.getButton, { backgroundColor: colors.card }]}>
+          <View style={[styles.getButton, { backgroundColor: colors.card }]}>
             <Text style={[styles.getButtonText, { color: colors.tint, fontFamily: fontAr("Bold") }]}>
               {t("download")}
             </Text>
-          </Pressable>
+          </View>
         </Pressable>
         {index < list.length - 1 && <View style={[styles.divider, { backgroundColor: colors.separator }]} />}
       </View>
@@ -90,7 +112,6 @@ export default function CategoryDetailScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: isWeb ? 34 : 100 }}
         >
-          {/* Trending */}
           {trending.length > 0 && (
             <View style={styles.section}>
               {renderSectionHeader(t("trending"), "🔥")}
@@ -100,7 +121,6 @@ export default function CategoryDetailScreen() {
             </View>
           )}
 
-          {/* Most Downloaded */}
           {byDownloads.length > 0 && (
             <View style={styles.section}>
               {renderSectionHeader(t("mostDownloaded"), "📥")}
@@ -110,7 +130,6 @@ export default function CategoryDetailScreen() {
             </View>
           )}
 
-          {/* Recently Added */}
           {recent.length > 0 && (
             <View style={styles.section}>
               {renderSectionHeader(t("recentlyAdded"), "🆕")}
@@ -129,6 +148,21 @@ export default function CategoryDetailScreen() {
             </View>
           )}
         </ScrollView>
+      )}
+
+      {/* App Detail Overlay — opens on top of this screen */}
+      {selectedApp && (
+        <View style={StyleSheet.absoluteFillObject}>
+          <AppDetailPanel
+            app={apiAppToDetail(selectedApp)}
+            onClose={() => setSelectedApp(null)}
+            relatedApps={relatedApps}
+            onRelatedAppPress={(a) => {
+              const found = apps.find(x => x.id === a.id);
+              if (found) setSelectedApp(found);
+            }}
+          />
+        </View>
       )}
     </View>
   );
