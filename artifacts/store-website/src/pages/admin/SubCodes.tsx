@@ -24,6 +24,8 @@ interface Sub {
   id: number;
   code: string;
   subscriberName: string | null;
+  phone: string | null;
+  email: string | null;
   planNameAr: string | null;
   planName: string | null;
   deviceType: string | null;
@@ -190,23 +192,26 @@ export default function AdminSubCodes() {
                   </th>
                   <th className="px-3 py-3 text-xs font-medium text-white/40">كود الاشتراك</th>
                   <th className="px-3 py-3 text-xs font-medium text-white/40">المشترك</th>
-                  <th className="px-3 py-3 text-xs font-medium text-white/40">الباقة</th>
+                  <th className="px-3 py-3 text-xs font-medium text-white/40">رقم الهاتف</th>
+                  <th className="px-3 py-3 text-xs font-medium text-white/40">البريد</th>
+                  <th className="px-3 py-3 text-xs font-medium text-white/40">UDID</th>
                   <th className="px-3 py-3 text-xs font-medium text-white/40">الجهاز</th>
                   <th className="px-3 py-3 text-xs font-medium text-white/40">المجموعة</th>
+                  <th className="px-3 py-3 text-xs font-medium text-white/40">الباقة</th>
                   <th className="px-3 py-3 text-xs font-medium text-white/40">الحالة</th>
-                  <th className="px-3 py-3 text-xs font-medium text-white/40">UDID</th>
                   <th className="px-3 py-3 text-xs font-medium text-white/40">تاريخ الإنشاء</th>
                   <th className="px-3 py-3 w-10" />
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan={10} className="p-8 text-center text-white/40"><Loader2 className="w-5 h-5 animate-spin inline" /></td></tr>
+                  <tr><td colSpan={12} className="p-8 text-center text-white/40"><Loader2 className="w-5 h-5 animate-spin inline" /></td></tr>
                 ) : filtered.length === 0 ? (
-                  <tr><td colSpan={10} className="p-8 text-center text-white/30">لا توجد أكواد</td></tr>
+                  <tr><td colSpan={12} className="p-8 text-center text-white/30">لا توجد أكواد</td></tr>
                 ) : filtered.map(sub => (
                   <tr key={sub.id} className="border-b border-white/5 hover:bg-white/2 group">
                     <td className="px-3 py-3"><button onClick={() => toggle(sub.id)}>{selectedIds.has(sub.id) ? <CheckSquare className="w-4 h-4" style={{ color: A }} /> : <Square className="w-4 h-4 text-white/30" />}</button></td>
+                    {/* Code */}
                     <td className="px-3 py-3">
                       <div className="flex items-center gap-2">
                         <code className="text-sm font-mono font-bold" style={{ color: A }}>{sub.code}</code>
@@ -215,26 +220,49 @@ export default function AdminSubCodes() {
                         </button>
                       </div>
                     </td>
-                    <td className="px-3 py-3 text-white text-sm">{sub.subscriberName || <span className="text-white/30">-</span>}</td>
-                    <td className="px-3 py-3">
-                      <span className="px-2 py-0.5 rounded-full text-xs" style={{ background: `${A}20`, color: A }}>
-                        {sub.planNameAr || sub.planName || "-"}
-                      </span>
+                    {/* Name */}
+                    <td className="px-3 py-3 text-white text-sm whitespace-nowrap">{sub.subscriberName || <span className="text-white/30">—</span>}</td>
+                    {/* Phone */}
+                    <td className="px-3 py-3 text-white/60 text-xs font-mono whitespace-nowrap">{sub.phone || <span className="text-white/20">—</span>}</td>
+                    {/* Email */}
+                    <td className="px-3 py-3 text-white/50 text-xs max-w-[140px]">
+                      <span className="truncate block">{sub.email || <span className="text-white/20">—</span>}</span>
                     </td>
+                    {/* UDID */}
+                    <td className="px-3 py-3">
+                      <div className="flex items-center gap-1">
+                        <span className="text-white/30 text-xs font-mono">{sub.udid ? sub.udid.slice(0, 14) + "…" : "—"}</span>
+                        {sub.udid && (
+                          <button onClick={() => { navigator.clipboard.writeText(sub.udid!); toast({ title: "تم نسخ UDID" }); }} className="opacity-0 group-hover:opacity-100 p-0.5 rounded text-white/30 hover:text-white">
+                            <Copy className="w-3 h-3" />
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                    {/* Device */}
                     <td className="px-3 py-3">
                       <span className="flex items-center gap-1 text-white/60 text-xs whitespace-nowrap">
                         {sub.deviceType === "iPad" ? <Tablet className="w-3 h-3" /> : sub.deviceType ? <Smartphone className="w-3 h-3" /> : null}
-                        {sub.deviceType || "-"}
+                        {sub.deviceType || "—"}
                       </span>
                     </td>
-                    <td className="px-3 py-3 text-white/40 text-xs whitespace-nowrap">{sub.groupName || "-"}</td>
+                    {/* Group */}
+                    <td className="px-3 py-3 text-white/40 text-xs whitespace-nowrap">{sub.groupName || "—"}</td>
+                    {/* Plan */}
+                    <td className="px-3 py-3">
+                      <span className="px-2 py-0.5 rounded-full text-xs" style={{ background: `${A}20`, color: A }}>
+                        {sub.planNameAr || sub.planName || "—"}
+                      </span>
+                    </td>
+                    {/* Status */}
                     <td className="px-3 py-3">
                       <span className={`px-2 py-0.5 rounded-full text-xs ${sub.isActive === "true" ? "bg-green-500/20 text-green-400" : "bg-white/10 text-white/40"}`}>
                         {sub.isActive === "true" ? "مفعّل" : "غير مفعّل"}
                       </span>
                     </td>
-                    <td className="px-3 py-3 text-white/30 text-xs font-mono">{sub.udid ? sub.udid.slice(0, 14) + "…" : "-"}</td>
-                    <td className="px-3 py-3 text-white/40 text-xs">{new Date(sub.createdAt).toLocaleDateString("ar-IQ")}</td>
+                    {/* Date */}
+                    <td className="px-3 py-3 text-white/40 text-xs whitespace-nowrap">{new Date(sub.createdAt).toLocaleDateString("ar-IQ")}</td>
+                    {/* Delete */}
                     <td className="px-3 py-3">
                       <button onClick={() => handleDelete(sub.id)} className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 text-white/40 hover:text-red-400 hover:bg-red-500/10 transition-all">
                         <Trash2 className="w-3.5 h-3.5" />

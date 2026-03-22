@@ -71,9 +71,9 @@ router.post("/subscriptions/activate", async (req, res): Promise<void> => {
 });
 
 // ─── PUBLIC SUBSCRIBER PROFILE (no auth) ──────────────────────────────────
-router.get("/subscriber/:id", async (req, res): Promise<void> => {
-  const id = Number(req.params.id);
-  if (!id) { res.status(400).json({ error: "Invalid ID" }); return; }
+router.get("/subscriber/:code", async (req, res): Promise<void> => {
+  const code = req.params.code;
+  if (!code) { res.status(400).json({ error: "Invalid code" }); return; }
 
   const [sub] = await db
     .select({
@@ -91,7 +91,7 @@ router.get("/subscriber/:id", async (req, res): Promise<void> => {
       createdAt: subscriptionsTable.createdAt,
     })
     .from(subscriptionsTable)
-    .where(eq(subscriptionsTable.id, id));
+    .where(eq(subscriptionsTable.code, code));
 
   if (!sub) { res.status(404).json({ error: "غير موجود" }); return; }
 

@@ -56,7 +56,7 @@ function Router() {
       <Route path="/admin/apps/add-url" component={AdminAddByUrl} />
       <Route path="/admin/apps/add-file" component={AdminAddByFile} />
 
-      <Route path="/subscriber/:id" component={SubscriberProfile} />
+      <Route path="/subscriber/:code" component={SubscriberProfile} />
       <Route path="/enroll" component={Enroll} />
       <Route path="/activate" component={Activate} />
 

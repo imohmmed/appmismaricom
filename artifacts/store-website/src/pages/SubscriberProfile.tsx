@@ -31,13 +31,13 @@ function InfoRow({ icon, label, value, mono }: { icon: React.ReactNode; label: s
   );
 }
 
-export default function SubscriberProfile({ params }: { params: { id: string } }) {
+export default function SubscriberProfile({ params }: { params: { code: string } }) {
   const [sub, setSub] = useState<Subscriber | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    fetch(`${API}/api/subscriber/${params.id}`)
+    fetch(`${API}/api/subscriber/${params.code}`)
       .then(r => r.json())
       .then(d => {
         if (d.error) setError(d.error);

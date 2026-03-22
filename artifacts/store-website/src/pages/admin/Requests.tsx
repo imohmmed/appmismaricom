@@ -262,17 +262,14 @@ function RequestRow({ req, onApprove, onReject, onDelete }: {
         className="border-b border-white/5 hover:bg-white/[0.02] cursor-pointer group"
         onClick={() => setExpanded(e => !e)}
       >
-        {/* Name + status */}
-        <td className="px-4 py-3">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-white/5 flex items-center justify-center shrink-0 text-white/30">
-              {deviceIcon}
-            </div>
-            <div>
-              <p className="text-white text-sm font-medium leading-tight">{req.name || <span className="text-white/30">—</span>}</p>
-              <p className="text-white/30 text-xs">{req.phone || "—"}</p>
-            </div>
-          </div>
+        {/* Name */}
+        <td className="px-4 py-3 whitespace-nowrap">
+          <p className="text-white text-sm font-medium">{req.name || <span className="text-white/30">—</span>}</p>
+        </td>
+
+        {/* Phone */}
+        <td className="px-4 py-3 text-white/60 font-mono text-xs whitespace-nowrap">
+          {req.phone || <span className="text-white/20">—</span>}
         </td>
 
         {/* Email */}
@@ -291,6 +288,13 @@ function RequestRow({ req, onApprove, onReject, onDelete }: {
               <Copy className="w-3 h-3" />
             </button>
           </div>
+        </td>
+
+        {/* Device */}
+        <td className="px-4 py-3">
+          <span className="flex items-center gap-1 text-white/50 text-xs whitespace-nowrap">
+            {deviceIcon}{req.deviceType || <span className="text-white/20">—</span>}
+          </span>
         </td>
 
         {/* Package */}
@@ -352,7 +356,7 @@ function RequestRow({ req, onApprove, onReject, onDelete }: {
       {/* Expanded row */}
       {expanded && (
         <tr className="bg-[#0a0a0a]">
-          <td colSpan={7} className="px-6 py-4">
+          <td colSpan={9} className="px-6 py-4">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
               <div>
                 <p className="text-white/30 mb-1">UDID كامل</p>
@@ -497,8 +501,10 @@ export default function AdminRequests() {
               <thead className="bg-[#0a0a0a] border-b border-white/5">
                 <tr>
                   <th className="px-4 py-3 text-xs font-medium text-white/40">المشترك</th>
+                  <th className="px-4 py-3 text-xs font-medium text-white/40">رقم الهاتف</th>
                   <th className="px-4 py-3 text-xs font-medium text-white/40">البريد</th>
                   <th className="px-4 py-3 text-xs font-medium text-white/40">UDID</th>
+                  <th className="px-4 py-3 text-xs font-medium text-white/40">الجهاز</th>
                   <th className="px-4 py-3 text-xs font-medium text-white/40">الباقة</th>
                   <th className="px-4 py-3 text-xs font-medium text-white/40">الحالة</th>
                   <th className="px-4 py-3 text-xs font-medium text-white/40">تاريخ الطلب</th>
@@ -508,14 +514,14 @@ export default function AdminRequests() {
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={7} className="p-12 text-center text-white/30">
+                    <td colSpan={9} className="p-12 text-center text-white/30">
                       <Loader2 className="w-5 h-5 animate-spin inline mb-2" />
                       <p className="text-sm">جارٍ التحميل...</p>
                     </td>
                   </tr>
                 ) : filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="p-12 text-center">
+                    <td colSpan={9} className="p-12 text-center">
                       <ClipboardList className="w-10 h-10 text-white/10 mx-auto mb-3" />
                       <p className="text-white/30 text-sm">لا توجد طلبات</p>
                       {filter !== "all" && (

@@ -152,7 +152,8 @@ function SubModal({ sub, plans, onClose, onSaved }: { sub?: Sub; plans: Plan[]; 
     setError("");
     try {
       if (sub) {
-        await adminFetch(`/admin/subscriptions/${sub.id}`, { method: "PUT", body: JSON.stringify({ ...form, planId: Number(form.planId) }) });
+        const { udid: _udid, ...editFields } = form;
+        await adminFetch(`/admin/subscriptions/${sub.id}`, { method: "PUT", body: JSON.stringify({ ...editFields, planId: Number(form.planId) }) });
         toast({ title: "تم تحديث الاشتراك" });
       } else {
         await adminFetch("/admin/subscriptions", { method: "POST", body: JSON.stringify({ ...form, planId: Number(form.planId) }) });
@@ -198,7 +199,16 @@ function SubModal({ sub, plans, onClose, onSaved }: { sub?: Sub; plans: Plan[]; 
               </FieldGroup>
             </div>
             <FieldGroup label="UDID">
-              <Input dir="ltr" value={form.udid} onChange={e => setForm({ ...form, udid: e.target.value })} placeholder="00000000-0000-0000-0000-000000000000" />
+              {sub ? (
+                <>
+                  <div className="w-full bg-black/40 border border-white/5 rounded-lg py-2 px-3 text-sm text-white/40 font-mono break-all cursor-not-allowed select-all" dir="ltr">
+                    {form.udid || <span className="text-white/20">—</span>}
+                  </div>
+                  <p className="text-[11px] text-white/25 mt-1">لا يمكن تعديل UDID بعد الإضافة — تم رفعه إلى شهادة Apple</p>
+                </>
+              ) : (
+                <Input dir="ltr" value={form.udid} onChange={e => setForm({ ...form, udid: e.target.value })} placeholder="00000000-0000-0000-0000-000000000000" />
+              )}
             </FieldGroup>
             <FieldGroup label="نوع الجهاز">
               <Select value={form.deviceType} onChange={e => setForm({ ...form, deviceType: e.target.value })}>
@@ -367,6 +377,7 @@ export default function AdminSubscribers() {
                     </button>
                   </th>
                   <th className="px-3 py-3 font-medium text-white/40 text-xs whitespace-nowrap">المشترك</th>
+                  <th className="px-3 py-3 font-medium text-white/40 text-xs whitespace-nowrap">رقم الهاتف</th>
                   <th className="px-3 py-3 font-medium text-white/40 text-xs whitespace-nowrap">البريد</th>
                   <th className="px-3 py-3 font-medium text-white/40 text-xs whitespace-nowrap">UDID</th>
                   <th className="px-3 py-3 font-medium text-white/40 text-xs whitespace-nowrap">الجهاز</th>
@@ -380,9 +391,9 @@ export default function AdminSubscribers() {
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan={11} className="p-8 text-center text-white/40"><Loader2 className="w-5 h-5 animate-spin inline" /></td></tr>
+                  <tr><td colSpan={12} className="p-8 text-center text-white/40"><Loader2 className="w-5 h-5 animate-spin inline" /></td></tr>
                 ) : filtered.length === 0 ? (
-                  <tr><td colSpan={11} className="p-8 text-center text-white/40">لا يوجد مشتركين</td></tr>
+                  <tr><td colSpan={12} className="p-8 text-center text-white/40">لا يوجد مشتركين</td></tr>
                 ) : filtered.map(sub => (
                   <tr key={sub.id} className="border-b border-white/5 hover:bg-white/2 transition-colors group">
                     <td className="px-3 py-3">
@@ -390,11 +401,12 @@ export default function AdminSubscribers() {
                         {selectedIds.has(sub.id) ? <CheckSquare className="w-4 h-4" style={{ color: A }} /> : <Square className="w-4 h-4 text-white/30" />}
                       </button>
                     </td>
-                    {/* Name + Phone */}
+                    {/* Name */}
                     <td className="px-3 py-3 whitespace-nowrap">
                       <p className="font-medium text-white text-sm">{sub.subscriberName || <span className="text-white/30">—</span>}</p>
-                      <p className="text-white/40 text-xs font-mono">{sub.phone || "—"}</p>
                     </td>
+                    {/* Phone */}
+                    <td className="px-3 py-3 text-white/60 text-xs font-mono whitespace-nowrap">{sub.phone || <span className="text-white/20">—</span>}</td>
                     {/* Email */}
                     <td className="px-3 py-3 text-white/50 text-xs max-w-[150px]">
                       <span className="truncate block">{sub.email || <span className="text-white/20">—</span>}</span>
@@ -456,7 +468,7 @@ export default function AdminSubscribers() {
                           title="نسخ رابط الإحالة"
                           onClick={() => {
                             const base = window.location.origin + import.meta.env.BASE_URL;
-                            navigator.clipboard.writeText(`${base}subscriber/${sub.id}`);
+                            navigator.clipboard.writeText(`${base}subscriber/${sub.code}`);
                             toast({ title: "تم نسخ الرابط" });
                           }}
                           className="p-1.5 rounded-lg text-white/40 hover:text-[#9fbcff] hover:bg-[#9fbcff]/10"
