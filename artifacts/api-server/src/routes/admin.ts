@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { eq, desc, sql, ilike, or } from "drizzle-orm";
-import { db, appsTable, categoriesTable, plansTable, subscriptionsTable, featuredBannersTable, settingsTable } from "@workspace/db";
+import { db, appsTable, categoriesTable, plansTable, subscriptionsTable, featuredBannersTable, settingsTable, groupsTable } from "@workspace/db";
 import {
   AdminListAppsQueryParams,
   AdminListAppsResponse,
@@ -385,27 +385,6 @@ router.post("/admin/subscriptions/bulk-delete", async (req, res): Promise<void> 
   res.json({ deleted: ids.length });
 });
 
-// Get unique groups
-router.get("/admin/groups", async (_req, res): Promise<void> => {
-  const rows = await db
-    .selectDistinct({ groupName: subscriptionsTable.groupName })
-    .from(subscriptionsTable)
-    .where(sql`${subscriptionsTable.groupName} IS NOT NULL AND ${subscriptionsTable.groupName} != ''`)
-    .orderBy(subscriptionsTable.groupName);
-
-  const groups = rows.map(r => r.groupName).filter(Boolean);
-  const counts = await Promise.all(
-    groups.map(async (g) => {
-      const [{ count }] = await db
-        .select({ count: sql<number>`count(*)::int` })
-        .from(subscriptionsTable)
-        .where(eq(subscriptionsTable.groupName, g!));
-      return { name: g!, count };
-    })
-  );
-  res.json({ groups: counts });
-});
-
 // ─── FEATURED BANNERS ──────────────────────────────────────────────────────
 
 router.get("/admin/featured", async (_req, res): Promise<void> => {
@@ -445,6 +424,82 @@ router.put("/admin/featured/:id", async (req, res): Promise<void> => {
 router.delete("/admin/featured/:id", async (req, res): Promise<void> => {
   const id = Number(req.params.id);
   await db.delete(featuredBannersTable).where(eq(featuredBannersTable.id, id));
+  res.sendStatus(204);
+});
+
+// ─── GROUPS ────────────────────────────────────────────────────────────────
+
+router.get("/admin/groups", async (_req, res): Promise<void> => {
+  const groups = await db.select().from(groupsTable).orderBy(desc(groupsTable.createdAt));
+  const result = await Promise.all(groups.map(async (g) => {
+    const [{ total }] = await db
+      .select({ total: sql<number>`count(*)::int` })
+      .from(subscriptionsTable)
+      .where(eq(subscriptionsTable.groupName, g.certName));
+    const pending = await db
+      .select({ total: sql<number>`count(*)::int` })
+      .from(subscriptionsTable)
+      .where(eq(subscriptionsTable.groupName, g.certName));
+    return {
+      ...g,
+      privateKey: g.privateKey ? "••••••••" : "",
+      deviceCount: total,
+      pendingCount: 0,
+    };
+  }));
+  res.json({ groups: result });
+});
+
+router.get("/admin/groups/:id/devices", async (req, res): Promise<void> => {
+  const id = Number(req.params.id);
+  const [group] = await db.select().from(groupsTable).where(eq(groupsTable.id, id));
+  if (!group) { res.status(404).json({ error: "Not found" }); return; }
+  const devices = await db
+    .select()
+    .from(subscriptionsTable)
+    .where(eq(subscriptionsTable.groupName, group.certName))
+    .orderBy(desc(subscriptionsTable.createdAt));
+  res.json({ devices, certName: group.certName });
+});
+
+router.post("/admin/groups", async (req, res): Promise<void> => {
+  const { certName, issuerId, keyId, privateKey, email } = req.body;
+  if (!certName || !issuerId || !keyId || !privateKey) {
+    res.status(400).json({ error: "certName, issuerId, keyId, privateKey are required" });
+    return;
+  }
+  const existing = await db.select().from(groupsTable).where(eq(groupsTable.certName, certName));
+  if (existing.length > 0) {
+    res.status(409).json({ error: "اسم الشهادة مستخدم مسبقاً" });
+    return;
+  }
+  const [group] = await db.insert(groupsTable).values({
+    certName,
+    issuerId,
+    keyId,
+    privateKey,
+    email: email || "",
+  }).returning();
+  res.status(201).json({ ...group, privateKey: "••••••••" });
+});
+
+router.put("/admin/groups/:id", async (req, res): Promise<void> => {
+  const id = Number(req.params.id);
+  const { certName, issuerId, keyId, privateKey, email } = req.body;
+  const updateData: Record<string, string> = {};
+  if (certName !== undefined) updateData.certName = certName;
+  if (issuerId !== undefined) updateData.issuerId = issuerId;
+  if (keyId !== undefined) updateData.keyId = keyId;
+  if (privateKey && privateKey !== "••••••••") updateData.privateKey = privateKey;
+  if (email !== undefined) updateData.email = email;
+  const [group] = await db.update(groupsTable).set(updateData).where(eq(groupsTable.id, id)).returning();
+  if (!group) { res.status(404).json({ error: "Not found" }); return; }
+  res.json({ ...group, privateKey: "••••••••" });
+});
+
+router.delete("/admin/groups/:id", async (req, res): Promise<void> => {
+  const id = Number(req.params.id);
+  await db.delete(groupsTable).where(eq(groupsTable.id, id));
   res.sendStatus(204);
 });
 
