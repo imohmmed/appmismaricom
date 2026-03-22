@@ -39,7 +39,9 @@ router.get("/profile/enroll", (req, res): void => {
   const source = (req.query.source as string) || "web";
   const plan = (req.query.plan as string) || "";
   const token = (req.query.token as string) || "";
-  const callbackUrl = `${base}/api/profile/callback?source=${encodeURIComponent(source)}${token ? `&token=${encodeURIComponent(token)}` : ""}`;
+  // Use &amp; in XML — raw & is invalid XML and causes "Invalid Profile"
+  const callbackParams = `source=${encodeURIComponent(source)}${token ? `&amp;token=${encodeURIComponent(token)}` : ""}`;
+  const callbackUrl = `${base}/api/profile/callback?${callbackParams}`;
 
   // Two modes:
   // 1. "app" source = activation (تفعيل اشتراك) — from Mismari+ app onboarding
