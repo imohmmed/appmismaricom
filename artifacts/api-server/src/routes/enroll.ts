@@ -131,17 +131,39 @@ router.post(
         }).onConflictDoNothing();
       }
 
-      // iOS REQUIRES a valid mobileconfig response — HTML/redirect causes "Invalid Profile"
-      // Return a minimal empty profile (no payloads). iOS installs it silently.
+      // Return a non-empty profile with a single WiFi payload.
+      // iOS 17+ rejects empty profiles ("Empty profile" error).
+      // A WiFi payload with a placeholder SSID is harmless — iOS just ignores
+      // it if the network doesn't exist, and the profile appears in Settings.
       const profileUuid = crypto.randomUUID();
-      const emptyProfile = `<?xml version="1.0" encoding="UTF-8"?>
+      const payloadUuid = crypto.randomUUID();
+      const responseProfile = `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
   <key>PayloadContent</key>
-  <array/>
+  <array>
+    <dict>
+      <key>PayloadType</key>
+      <string>com.apple.wifi.managed</string>
+      <key>PayloadVersion</key>
+      <integer>1</integer>
+      <key>PayloadIdentifier</key>
+      <string>com.mismari.wifi.${payloadUuid}</string>
+      <key>PayloadUUID</key>
+      <string>${payloadUuid}</string>
+      <key>PayloadDisplayName</key>
+      <string>Mismari Network</string>
+      <key>SSID_STR</key>
+      <string>Mismari</string>
+      <key>EncryptionType</key>
+      <string>None</string>
+      <key>AutoJoin</key>
+      <false/>
+    </dict>
+  </array>
   <key>PayloadDescription</key>
-  <string>Mismari device registration complete</string>
+  <string>Mismari device registration</string>
   <key>PayloadDisplayName</key>
   <string>Mismari</string>
   <key>PayloadIdentifier</key>
@@ -158,7 +180,7 @@ router.post(
 </plist>`;
 
       res.setHeader("Content-Type", "application/x-apple-aspen-config; charset=utf-8");
-      res.send(emptyProfile);
+      res.send(responseProfile);
     } catch (err) {
       console.error("Profile callback error:", err);
       res.status(500).send("Server error");
@@ -168,6 +190,10 @@ router.post(
 
 // ─── Poll for UDID by token (app polls this after profile install) ────────────
 router.get("/profile/udid-check", (req, res): void => {
+  // Must disable all caching — stale 304s prevent the app from detecting UDID
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
+  res.setHeader("Pragma", "no-cache");
+
   const token = (req.query.token as string) || "";
   if (!token) { res.status(400).json({ error: "token required" }); return; }
 
