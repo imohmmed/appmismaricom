@@ -91,17 +91,22 @@ export default function CategoryDetailScreen() {
     </View>
   );
 
+  const appCountText = loading ? "..." : `${apps.length}`; 
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background, paddingTop: isWeb ? 20 : insets.top }]}>
-      {/* Header */}
-      <View style={[styles.header, isArabic && { flexDirection: "row-reverse" }]}>
+      {/* Back button */}
+      <View style={styles.header}>
         <Pressable onPress={() => router.back()} style={[styles.backButton, { backgroundColor: colors.card }]}>
           <Feather name={isArabic ? "chevron-right" : "chevron-left"} size={22} color={colors.text} />
         </Pressable>
-        <View style={[styles.headerTitleWrap, { backgroundColor: tileColor }]}>
-          <Text style={[styles.headerTitle, { fontFamily: fontAr("Bold") }]}>{name}</Text>
-        </View>
-        <View style={{ width: 40 }} />
+      </View>
+      {/* Banner */}
+      <View style={[styles.catBanner, { backgroundColor: tileColor }]}>
+        <Text style={[styles.catBannerName, { fontFamily: fontAr("Bold") }]}>{name}</Text>
+        <Text style={[styles.catBannerCount, { fontFamily: fontAr("Regular") }]}>
+          {appCountText} {isArabic ? "تطبيق" : "app"}
+        </Text>
       </View>
 
       {loading ? (
@@ -175,12 +180,20 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    gap: 12,
+    paddingVertical: 10,
   },
   backButton: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center" },
-  headerTitleWrap: { flex: 1, borderRadius: 12, paddingVertical: 10, alignItems: "center" },
-  headerTitle: { fontSize: 18, color: "#FFF" },
+  catBanner: {
+    marginHorizontal: 16,
+    borderRadius: 16,
+    paddingVertical: 24,
+    paddingHorizontal: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 8,
+  },
+  catBannerName: { fontSize: 22, color: "#FFF", textAlign: "center" },
+  catBannerCount: { fontSize: 13, color: "rgba(255,255,255,0.7)", marginTop: 4, textAlign: "center" },
   loadingCenter: { flex: 1, alignItems: "center", justifyContent: "center" },
   section: { marginTop: 20, paddingHorizontal: 16 },
   sectionHeader: { flexDirection: "row", alignItems: "center", marginBottom: 12 },

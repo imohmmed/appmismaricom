@@ -105,17 +105,19 @@ function CategoryPageContent({ cat, onClose, onAppPress }: {
   const tagColor = getCategoryColor(cat.id);
   const desc = (app: ApiApp) => app.description || "";
 
+  const appCountText = `${cat.appCount}`;
+
   return (
     <View style={[styles.container, { paddingTop: isWeb ? 67 : insets.top, backgroundColor: colors.background }]}>
       <View style={styles.catPageHeader}>
         <GlassBackButton onPress={onClose} />
       </View>
-      <View style={styles.catPageTitleRow}>
-        <Text style={[styles.headerTitle, { color: colors.text, fontFamily: fontAr("Bold") }]}>
+      <View style={[styles.catBanner, { backgroundColor: tagColor }]}>
+        <Text style={[styles.catBannerName, { fontFamily: fontAr("Bold") }]}>
           {cat.nameAr || cat.name}
         </Text>
-        <Text style={[styles.catAppCount, { color: colors.textSecondary, fontFamily: fontAr("Regular") }]}>
-          {cat.appCount} {t("app" as any) || "تطبيق"}
+        <Text style={[styles.catBannerCount, { fontFamily: fontAr("Regular") }]}>
+          {appCountText} {t("app" as any) || "تطبيق"}
         </Text>
       </View>
       {loading ? (
@@ -483,8 +485,17 @@ const styles = StyleSheet.create({
   catCardEmoji: { fontSize: 28 },
   catCardLabel: { fontSize: 16, color: "#FFF" },
   catPageHeader: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 10 },
-  catPageTitleRow: { paddingHorizontal: 20, paddingBottom: 8 },
-  catAppCount: { fontSize: 14, marginTop: 2 },
+  catBanner: {
+    marginHorizontal: 16,
+    borderRadius: 16,
+    paddingVertical: 24,
+    paddingHorizontal: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 8,
+  },
+  catBannerName: { fontSize: 22, color: "#FFF", textAlign: "center" },
+  catBannerCount: { fontSize: 13, color: "rgba(255,255,255,0.7)", marginTop: 4, textAlign: "center" },
   loadingCenter: { flex: 1, alignItems: "center", justifyContent: "center", paddingTop: 60 },
   emptyState: { alignItems: "center", paddingTop: 60 },
 });
