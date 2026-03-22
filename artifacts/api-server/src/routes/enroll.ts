@@ -2,6 +2,7 @@ import { Router, type IRouter } from "express";
 import { eq } from "drizzle-orm";
 import { db, subscriptionsTable, enrollmentRequestsTable, plansTable } from "@workspace/db";
 import { signMobileconfig } from "../sign-profile.js";
+import { registerDeviceWithApple } from "../apple-connect.js";
 
 const router: IRouter = Router();
 
@@ -396,6 +397,27 @@ router.post("/admin/enroll-requests/:id/approve", async (req, res): Promise<void
       code = randomCode(10);
     }
 
+    // ── Determine Apple platform via smart routing ──────────────────────────
+    let applePlatform = "IOS";
+    let appleStatus = "PROCESSING";
+    let appleDeviceId: string | null = null;
+    let appleMessage = "";
+
+    if (row.udid && row.udid.length > 10) {
+      const deviceTypeForApple = (row.deviceType === "iPad" ? "iPad" : "iPhone") as "iPhone" | "iPad";
+      const appleResult = await registerDeviceWithApple({
+        certName: groupName.trim(),
+        udid: row.udid,
+        deviceType: deviceTypeForApple,
+        deviceName: row.name ? `Mismari_${row.name.replace(/\s+/g, "_").substring(0, 20)}` : undefined,
+      });
+      applePlatform = appleResult.platform;
+      appleStatus = appleResult.appleStatus;
+      appleDeviceId = appleResult.appleDeviceId || null;
+      appleMessage = appleResult.message;
+      console.log(`[approve] Apple registration: ${appleMessage}`);
+    }
+
     // Create subscription
     const [sub] = await db.insert(subscriptionsTable).values({
       code,
@@ -409,6 +431,9 @@ router.post("/admin/enroll-requests/:id/approve", async (req, res): Promise<void
       sourceType: "enrollment_request",
       isActive: "true",
       activatedAt: new Date(),
+      applePlatform,
+      appleStatus,
+      appleDeviceId,
     }).returning();
 
     // Update enrollment request status to approved
@@ -417,7 +442,7 @@ router.post("/admin/enroll-requests/:id/approve", async (req, res): Promise<void
       .set({ status: "approved" })
       .where(eq(enrollmentRequestsTable.id, id));
 
-    res.status(201).json({ success: true, subscription: sub });
+    res.status(201).json({ success: true, subscription: sub, appleMessage });
   } catch (err) {
     console.error("Admin enroll approve error:", err);
     res.status(500).json({ error: "حدث خطأ أثناء الموافقة" });
