@@ -12,6 +12,7 @@ import { useSettings } from "@/contexts/SettingsContext";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.3;
+const EDGE_WIDTH = 40;
 
 type SlidePanelProps = {
   visible: boolean;
@@ -25,6 +26,8 @@ export default function SlidePanel({ visible, onClose, children }: SlidePanelPro
   const [mounted, setMounted] = useState(false);
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
+
+  const touchStartX = useRef(0);
 
   useEffect(() => {
     if (visible) {
@@ -48,9 +51,16 @@ export default function SlidePanel({ visible, onClose, children }: SlidePanelPro
 
   const panResponder = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder: () => false,
+      onStartShouldSetPanResponder: (evt) => {
+        touchStartX.current = evt.nativeEvent.pageX;
+        return false;
+      },
       onMoveShouldSetPanResponder: (_, gestureState) => {
-        return gestureState.dx > 15 && Math.abs(gestureState.dy) < Math.abs(gestureState.dx);
+        const startedAtEdge = touchStartX.current <= EDGE_WIDTH;
+        const swipingRight = gestureState.dx > 10;
+        const moreHorizontalThanVertical =
+          Math.abs(gestureState.dy) < Math.abs(gestureState.dx);
+        return startedAtEdge && swipingRight && moreHorizontalThanVertical;
       },
       onPanResponderMove: (_, gestureState) => {
         if (gestureState.dx > 0) {
@@ -113,6 +123,6 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: "#FFFFFF", // overridden dynamically
+    backgroundColor: "#FFFFFF",
   },
 });
