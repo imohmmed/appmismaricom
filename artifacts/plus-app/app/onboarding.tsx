@@ -43,40 +43,44 @@ const WORDS = [
 ];
 
 const WORD_HEIGHT = 72;
-const VISIBLE_COUNT = 5;
+const VISIBLE_COUNT = 3; // 1 above + active + 1 below
 
-// Words slide DOWN: new word enters from TOP, old exits at BOTTOM
-// Word n is at absolute track position: top = -n * WORD_HEIGHT
-// translateY = activeWord * WORD_HEIGHT + (VISIBLE_COUNT/2 | 0) * WORD_HEIGHT
-// → word n appears at container y = -n*WH + activeWord*WH + 2*WH = (activeWord-n+2)*WH
-// → active word (n=activeWord) always at 2*WH = center
+// Words slide DOWN: new word enters from TOP
+// Word n at track pos: top = -n * WORD_HEIGHT
+// translateY = activeWord * WH + 1 * WH  (center offset = 1 for 3-slot)
+// Container y of word n = (activeWord - n + 1) * WH → active always at 1*WH (center)
 function ScrollingWords({ activeWord, fontAr: fontArFn }: { activeWord: number; fontAr: (w: string) => string }) {
-  const scrollY = useRef(new Animated.Value(WORD_HEIGHT * 2)).current;
+  const scrollY = useRef(new Animated.Value(WORD_HEIGHT)).current;
 
   useEffect(() => {
     Animated.timing(scrollY, {
-      toValue: activeWord * WORD_HEIGHT + WORD_HEIGHT * 2,
-      duration: 650,
+      toValue: activeWord * WORD_HEIGHT + WORD_HEIGHT,
+      duration: 600,
       easing: Easing.inOut(Easing.cubic),
       useNativeDriver: true,
     }).start();
   }, [activeWord]);
 
   const slots = [];
-  for (let n = activeWord - 2; n <= activeWord + 3; n++) {
+  for (let n = activeWord - 2; n <= activeWord + 2; n++) {
     const wIdx = ((n % WORDS.length) + WORDS.length) % WORDS.length;
     slots.push({ ...WORDS[wIdx], n });
   }
 
   return (
     <View style={styles.scrollContainer}>
-      {/* Track: absolute children, track itself has 0 height — clipped by scrollContainer */}
+      {/* Top separator line */}
+      <View style={styles.scrollLineTop} pointerEvents="none" />
+      {/* Bottom separator line */}
+      <View style={styles.scrollLineBottom} pointerEvents="none" />
+
+      {/* Track: absolute-positioned words, clipped by scrollContainer overflow:hidden */}
       <Animated.View style={[styles.scrollTrack, { transform: [{ translateY: scrollY }] }]}>
         {slots.map((w) => {
           const distance = Math.abs(w.n - activeWord);
           const isActive = distance === 0;
-          const opacity = isActive ? 1 : distance === 1 ? 0.28 : 0.1;
-          const scl = isActive ? 1 : distance === 1 ? 0.86 : 0.76;
+          const opacity = isActive ? 1 : 0.22;
+          const scl = isActive ? 1 : 0.82;
 
           return (
             <View
@@ -107,16 +111,6 @@ function ScrollingWords({ activeWord, fontAr: fontArFn }: { activeWord: number; 
           );
         })}
       </Animated.View>
-      <LinearGradient
-        colors={["#f2f2f7", "#f2f2f700"]}
-        style={styles.scrollFadeTop}
-        pointerEvents="none"
-      />
-      <LinearGradient
-        colors={["#f2f2f700", "#f2f2f7"]}
-        style={styles.scrollFadeBottom}
-        pointerEvents="none"
-      />
     </View>
   );
 }
@@ -536,21 +530,23 @@ const styles = StyleSheet.create({
   scrollTrack: {
     alignItems: "center",
   },
-  scrollFadeTop: {
+  scrollLineTop: {
     position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    height: WORD_HEIGHT * 1.2,
-    zIndex: 2,
+    top: WORD_HEIGHT,
+    left: 32,
+    right: 32,
+    height: 1.5,
+    backgroundColor: DARK + "18",
+    zIndex: 10,
   },
-  scrollFadeBottom: {
+  scrollLineBottom: {
     position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: WORD_HEIGHT * 1.2,
-    zIndex: 2,
+    top: WORD_HEIGHT * 2,
+    left: 32,
+    right: 32,
+    height: 1.5,
+    backgroundColor: DARK + "18",
+    zIndex: 10,
   },
   wordRow: {
     justifyContent: "center",
