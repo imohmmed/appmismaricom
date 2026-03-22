@@ -40,6 +40,8 @@ function apiAppToDetail(app: ApiApp) {
     descEn: app.description ?? undefined,
     desc: app.description ?? undefined,
     category: app.categoryName,
+    categoryNameAr: app.categoryNameAr ?? undefined,
+    categoryId: app.categoryId,
     tag: app.tag,
     icon: app.icon || "box",
     catKey: app.categoryName?.toLowerCase(),
@@ -59,8 +61,13 @@ export default function SectionDetailScreen() {
 
   const emoji = SECTION_EMOJI[type] || "";
 
+  const { apps: relatedCategoryApps } = useApps({
+    categoryId: selectedApp?.categoryId,
+    limit: 31,
+    skip: !selectedApp?.categoryId,
+  });
   const relatedApps = selectedApp
-    ? apps.filter(a => a.id !== selectedApp.id).slice(0, 9).map(apiAppToDetail)
+    ? relatedCategoryApps.filter(a => a.id !== selectedApp.id).slice(0, 30).map(apiAppToDetail)
     : [];
 
   return (

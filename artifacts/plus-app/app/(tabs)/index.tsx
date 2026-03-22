@@ -260,6 +260,14 @@ export default function PlusScreen() {
   const { apps: newAdds }      = useApps({ section: "latest",         limit: 15 });
   const { banners } = useBanners();
 
+  const activeDetailApp = selectedApp || catSelectedApp;
+  const { apps: relatedCategoryApps } = useApps({
+    categoryId: activeDetailApp?.categoryId,
+    limit: 31,
+    skip: !activeDetailApp?.categoryId,
+  });
+  const relatedApps = relatedCategoryApps.filter(a => a.id !== activeDetailApp?.id).slice(0, 30);
+
   useEffect(() => {
     const unsub = navigation.addListener("tabPress" as any, () => {
       setCatSelectedApp(null);
@@ -403,7 +411,7 @@ export default function PlusScreen() {
             app={catSelectedApp as any}
             onClose={() => setCatSelectedApp(null)}
             onCategoryPress={() => setCatSelectedApp(null)}
-            relatedApps={[]}
+            relatedApps={relatedApps as any}
             onRelatedAppPress={(a) => setCatSelectedApp(a as any)}
           />
         )}
@@ -423,7 +431,7 @@ export default function PlusScreen() {
                 catToAppTimer.current = setTimeout(() => setActiveCat(cat), 300);
               }
             }}
-            relatedApps={[]}
+            relatedApps={relatedApps as any}
             onRelatedAppPress={(a) => setSelectedApp(a as any)}
           />
         )}

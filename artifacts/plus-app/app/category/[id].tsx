@@ -28,6 +28,8 @@ function apiAppToDetail(app: ApiApp) {
     descEn: app.description ?? undefined,
     desc: app.description ?? undefined,
     category: app.categoryName,
+    categoryNameAr: app.categoryNameAr ?? undefined,
+    categoryId: app.categoryId,
     tag: app.tag,
     icon: app.icon || "box",
     catKey: app.categoryName?.toLowerCase(),
@@ -47,7 +49,7 @@ export default function CategoryDetailScreen() {
   const tileColor = color || "#9fbcff";
 
   const relatedApps = selectedApp
-    ? apps.filter(a => a.id !== selectedApp.id).slice(0, 9).map(apiAppToDetail)
+    ? apps.filter(a => a.id !== selectedApp.id).slice(0, 30).map(apiAppToDetail)
     : [];
 
   const renderAppRow = (app: ApiApp, index: number, list: ApiApp[]) => {

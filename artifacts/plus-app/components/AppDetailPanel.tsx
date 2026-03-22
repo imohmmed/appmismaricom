@@ -28,9 +28,11 @@ type AppData = {
   descEn?: string;
   desc?: string;
   category: string;
+  categoryNameAr?: string;
   tag: string;
   icon: string;
   catKey?: string;
+  categoryId?: number;
 };
 
 type Review = {
@@ -110,7 +112,7 @@ function chunkArray<T>(arr: T[], size: number): T[][] {
 
 function RelatedAppsRow({ apps, onPress }: { apps: AppData[]; onPress?: (app: AppData) => void }) {
   const { colors, t, fontAr, isArabic } = useSettings();
-  const pages = chunkArray(apps.slice(0, 9), 3);
+  const pages = chunkArray(apps.slice(0, 30), 3);
   const pageW = SCREEN_WIDTH - 80;
   return (
     <FlatList
@@ -183,8 +185,10 @@ export default function AppDetailPanel({ app, onClose, onCategoryPress, relatedA
   const [reviewRating, setReviewRating] = useState(0);
 
   const appDesc = isArabic ? (app.descAr || app.desc || "") : (app.descEn || app.desc || "");
-  const catTransKey = CAT_TRANSLATION_KEY[app.catKey || ""] || CAT_TRANSLATION_KEY[app.category] || app.category;
-  const catLabel = t(catTransKey as any) || app.category;
+  const catName = app.category || (app as any).categoryName || "";
+  const catNameAr = app.categoryNameAr || (app as any).categoryNameAr || "";
+  const catTransKey = CAT_TRANSLATION_KEY[app.catKey || ""] || CAT_TRANSLATION_KEY[catName] || catName;
+  const catLabel = isArabic ? (catNameAr || t(catTransKey as any) || catName) : (t(catTransKey as any) || catName);
 
   const fullDescAr = `${app.descAr || app.desc}. هذا إصدار ${app.tag === "tweaked" ? "بلس" : app.tag === "modded" ? "معدّل" : "مهكر"} من ${app.name} مع ميزات بريميوم مفعّلة. التثبيت مباشر بدون جيلبريك. تحديثات مستمرة ودعم فني مع اشتراكك. متوافق مع أحدث إصدارات iOS. بدون إلغاء - نحافظ على الشهادات محدّثة.`;
   const fullDescEn = `${app.descEn || app.desc}. This is a ${app.tag} version of ${app.name} with premium features unlocked. Direct install without jailbreak. Continuous updates and support with your subscription. Compatible with latest iOS versions. No revokes - certificates kept up to date.`;
@@ -276,7 +280,7 @@ export default function AppDetailPanel({ app, onClose, onCategoryPress, relatedA
           <View style={[st.infoBoxDivider, { backgroundColor: colors.separator }]} />
           <Pressable
             style={st.infoBox}
-            onPress={() => app.catKey && onCategoryPress?.(app.catKey)}
+            onPress={() => (app.catKey || app.categoryId) && onCategoryPress?.(app.catKey || String(app.categoryId || ""))}
           >
             <Text style={[st.infoBoxLabel, { color: colors.textSecondary, fontFamily: fontAr("SemiBold") }]}>{t("category")}</Text>
             <Feather name="grid" size={18} color={colors.tint} style={{ marginVertical: 2 }} />
@@ -290,51 +294,53 @@ export default function AppDetailPanel({ app, onClose, onCategoryPress, relatedA
           </View>
         </View>
 
-        <View style={st.section}>
-          <Text style={[st.sectionTitle, { color: colors.text, fontFamily: fontAr("Bold") }]}>{t("description")}</Text>
-          <Text style={[st.descText, { color: colors.textSecondary, fontFamily: fontAr("Regular") }]} numberOfLines={descExpanded ? undefined : 3}>
+        <View style={[st.section, isArabic && { alignItems: "flex-end" }]}>
+          <Text style={[st.sectionTitle, { color: colors.text, fontFamily: fontAr("Bold"), textAlign: isArabic ? "right" : "left", alignSelf: "stretch" }]}>{t("description")}</Text>
+          <Text style={[st.descText, { color: colors.textSecondary, fontFamily: fontAr("Regular"), textAlign: isArabic ? "right" : "left", alignSelf: "stretch", writingDirection: isArabic ? "rtl" : "ltr" }]} numberOfLines={descExpanded ? undefined : 3}>
             {fullDesc}
           </Text>
-          <Pressable onPress={() => setDescExpanded(!descExpanded)}>
+          <Pressable onPress={() => setDescExpanded(!descExpanded)} style={{ alignSelf: isArabic ? "flex-end" : "flex-start" }}>
             <Text style={[st.readMore, { color: colors.tint, fontFamily: fontAr("SemiBold") }]}>{descExpanded ? t("showLess") : t("readMore")}</Text>
           </Pressable>
         </View>
 
         <View style={[st.dividerFull, { backgroundColor: colors.separator }]} />
 
-        <View style={st.section}>
-          <Text style={[st.sectionTitle, { color: colors.text, fontFamily: fontAr("Bold") }]}>{t("ratingsReviews")}</Text>
-          <View style={st.ratingOverview}>
+        <View style={[st.section, isArabic && { alignItems: "flex-end" }]}>
+          <Text style={[st.sectionTitle, { color: colors.text, fontFamily: fontAr("Bold"), textAlign: isArabic ? "right" : "left", alignSelf: "stretch" }]}>{t("ratingsReviews")}</Text>
+          <View style={[st.ratingOverview, isArabic && { flexDirection: "row-reverse", alignSelf: "flex-end" }]}>
             <Text style={[st.bigRating, { color: colors.text }]}>{avgRating}</Text>
-            <View style={{ gap: 4 }}>
+            <View style={[{ gap: 4 }, isArabic && { alignItems: "flex-end" }]}>
               <StarRow rating={Math.round(Number(avgRating))} size={18} />
               <Text style={[st.ratingCount, { color: colors.textSecondary, fontFamily: fontAr("Regular") }]}>{reviews.length} {t("reviews")}</Text>
             </View>
           </View>
 
           {reviews.map((review) => (
-            <View key={review.id} style={[st.reviewCard, { backgroundColor: colors.card }]}>
-              <View style={st.reviewHeader}>
+            <View key={review.id} style={[st.reviewCard, { backgroundColor: colors.card, alignSelf: "stretch" }]}>
+              <View style={[st.reviewHeader, isArabic && { flexDirection: "row-reverse" }]}>
                 <View style={[st.reviewerAvatar, { backgroundColor: colors.tint }]}>
                   <Text style={st.reviewerInitial}>{review.name[0]}</Text>
                 </View>
-                <View style={{ flex: 1 }}>
+                <View style={[{ flex: 1 }, isArabic && { alignItems: "flex-end" }]}>
                   <Text style={[st.reviewerName, { color: colors.text, fontFamily: fontAr("SemiBold") }]}>{review.name}</Text>
                   <Text style={[st.reviewerPhone, { color: colors.textSecondary }]}>{maskPhone(review.phone)}</Text>
                 </View>
                 <Text style={[st.reviewDate, { color: colors.textSecondary, fontFamily: fontAr("Regular") }]}>{review.date}</Text>
               </View>
-              <StarRow rating={review.rating} size={12} />
-              <Text style={[st.reviewText, { color: colors.text, fontFamily: fontAr("Regular") }]}>{review.text}</Text>
+              <View style={isArabic ? { alignItems: "flex-end" } : undefined}>
+                <StarRow rating={review.rating} size={12} />
+              </View>
+              <Text style={[st.reviewText, { color: colors.text, fontFamily: fontAr("Regular"), textAlign: isArabic ? "right" : "left", writingDirection: isArabic ? "rtl" : "ltr" }]}>{review.text}</Text>
             </View>
           ))}
 
           <TapToRate onRate={setReviewRating} />
 
-          <View style={st.writeReviewSection}>
-            <Text style={[st.writeReviewTitle, { color: colors.text, fontFamily: fontAr("Bold") }]}>{t("writeReview")}</Text>
+          <View style={[st.writeReviewSection, { alignSelf: "stretch" }]}>
+            <Text style={[st.writeReviewTitle, { color: colors.text, fontFamily: fontAr("Bold"), textAlign: isArabic ? "right" : "left" }]}>{t("writeReview")}</Text>
             <TextInput
-              style={[st.input, { height: 80, textAlignVertical: "top", backgroundColor: colors.card, color: colors.text, fontFamily: fontAr("Regular"), textAlign: "left" }]}
+              style={[st.input, { height: 80, textAlignVertical: "top", backgroundColor: colors.card, color: colors.text, fontFamily: fontAr("Regular"), textAlign: isArabic ? "right" : "left", writingDirection: isArabic ? "rtl" : "ltr" }]}
               placeholder={t("reviewPlaceholder")}
               placeholderTextColor={colors.textSecondary}
               value={reviewText}
@@ -350,11 +356,8 @@ export default function AppDetailPanel({ app, onClose, onCategoryPress, relatedA
         {relatedApps.length > 0 && (
           <>
             <View style={[st.dividerFull, { backgroundColor: colors.separator }]} />
-            <View style={st.section}>
-              <View style={st.sectionHeaderRow}>
-                <Text style={[st.sectionTitle, { color: colors.text, fontFamily: fontAr("Bold"), writingDirection: "ltr" }]}>{t("youMayLike")}</Text>
-                <Feather name="chevron-right" size={18} color={colors.textSecondary} />
-              </View>
+            <View style={[st.section, isArabic && { alignItems: "flex-end" }]}>
+              <Text style={[st.sectionTitle, { color: colors.text, fontFamily: fontAr("Bold"), textAlign: isArabic ? "right" : "left", alignSelf: "stretch" }]}>{t("youMayLike")}</Text>
             </View>
             <RelatedAppsRow apps={relatedApps} onPress={onRelatedAppPress} />
           </>

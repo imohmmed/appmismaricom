@@ -21,6 +21,7 @@ export interface ApiApp {
   icon: string;
   categoryId: number;
   categoryName: string;
+  categoryNameAr?: string | null;
   tag: string;
   version: string | null;
   size: string | null;

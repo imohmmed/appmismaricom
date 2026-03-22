@@ -94,6 +94,7 @@ router.get("/apps/featured", async (_req, res): Promise<void> => {
       icon: appsTable.icon,
       categoryId: appsTable.categoryId,
       categoryName: categoriesTable.name,
+      categoryNameAr: categoriesTable.nameAr,
       tag: appsTable.tag,
       version: appsTable.version,
       size: appsTable.size,
@@ -110,7 +111,7 @@ router.get("/apps/featured", async (_req, res): Promise<void> => {
 
   res.json(
     ListFeaturedAppsResponse.parse({
-      apps: apps.map((a) => ({ ...a, categoryName: a.categoryName ?? "Unknown" })),
+      apps: apps.map((a) => ({ ...a, categoryName: a.categoryName ?? "Unknown", categoryNameAr: a.categoryNameAr ?? undefined })),
       total: apps.length,
     })
   );
@@ -125,6 +126,7 @@ router.get("/apps/hot", async (_req, res): Promise<void> => {
       icon: appsTable.icon,
       categoryId: appsTable.categoryId,
       categoryName: categoriesTable.name,
+      categoryNameAr: categoriesTable.nameAr,
       tag: appsTable.tag,
       version: appsTable.version,
       size: appsTable.size,
@@ -141,7 +143,7 @@ router.get("/apps/hot", async (_req, res): Promise<void> => {
 
   res.json(
     ListHotAppsResponse.parse({
-      apps: apps.map((a) => ({ ...a, categoryName: a.categoryName ?? "Unknown" })),
+      apps: apps.map((a) => ({ ...a, categoryName: a.categoryName ?? "Unknown", categoryNameAr: a.categoryNameAr ?? undefined })),
       total: apps.length,
     })
   );
@@ -162,6 +164,7 @@ router.get("/apps/:id", async (req, res): Promise<void> => {
       icon: appsTable.icon,
       categoryId: appsTable.categoryId,
       categoryName: categoriesTable.name,
+      categoryNameAr: categoriesTable.nameAr,
       tag: appsTable.tag,
       version: appsTable.version,
       size: appsTable.size,
@@ -179,7 +182,7 @@ router.get("/apps/:id", async (req, res): Promise<void> => {
     return;
   }
 
-  res.json(GetAppResponse.parse({ ...app, categoryName: app.categoryName ?? "Unknown" }));
+  res.json(GetAppResponse.parse({ ...app, categoryName: app.categoryName ?? "Unknown", categoryNameAr: app.categoryNameAr ?? undefined }));
 });
 
 // ─── PUBLIC SETTINGS ──────────────────────────────────────────────────────
