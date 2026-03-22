@@ -61,9 +61,6 @@ export default function ExpiredSubscriptionOverlay({ visible }: { visible: boole
           {/* Language toggle */}
           <TouchableOpacity style={styles.langBtn} onPress={toggleLang} activeOpacity={0.7}>
             <Feather name="globe" size={20} color="rgba(255,255,255,0.7)" />
-            <Text style={[styles.langText, { fontFamily: isArabic ? fontAr("SemiBold") : "Inter_600SemiBold" }]}>
-              {isArabic ? "EN" : "عر"}
-            </Text>
           </TouchableOpacity>
 
           {/* Icon */}
@@ -145,6 +142,7 @@ const styles = StyleSheet.create({
   langText: {
     color: "rgba(255,255,255,0.7)",
     fontSize: 13,
+    display: "none",
   },
   iconWrap: {
     width: 80,

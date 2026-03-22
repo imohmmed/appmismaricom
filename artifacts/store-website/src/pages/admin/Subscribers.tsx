@@ -2,7 +2,8 @@ import { useState, useEffect, useMemo } from "react";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import {
   Search, Plus, X, Trash2, Edit2, CheckSquare, Square,
-  Loader2, AlertCircle, Copy, RefreshCw, Bell, Link2
+  Loader2, AlertCircle, Copy, RefreshCw, Bell, Link2,
+  PauseCircle, PlayCircle
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -286,6 +287,24 @@ export default function AdminSubscribers() {
     fetchData();
   };
 
+  const handleToggleActive = async (sub: Sub) => {
+    const newActive = sub.isActive === "true" ? "false" : "true";
+    try {
+      await adminFetch(`/admin/subscriptions/${sub.id}`, {
+        method: "PUT",
+        body: JSON.stringify({ isActive: newActive }),
+      });
+      toast({
+        title: newActive === "false"
+          ? `تم إيقاف اشتراك ${sub.subscriberName || sub.code}`
+          : `تم تفعيل اشتراك ${sub.subscriberName || sub.code}`,
+      });
+      fetchData();
+    } catch {
+      toast({ title: "حدث خطأ", variant: "destructive" });
+    }
+  };
+
   const handleBulkDelete = async () => {
     if (!confirm(`هل أنت متأكد من حذف ${selectedIds.size} اشتراك؟`)) return;
     setDeleting(true);
@@ -419,6 +438,20 @@ export default function AdminSubscribers() {
                     </td>
                     <td className="px-3 py-3">
                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {/* Toggle active/suspend */}
+                        <button
+                          title={sub.isActive === "true" ? "إيقاف الاشتراك" : "تفعيل الاشتراك"}
+                          onClick={() => handleToggleActive(sub)}
+                          className={`p-1.5 rounded-lg transition-colors ${
+                            sub.isActive === "true"
+                              ? "text-orange-400/60 hover:text-orange-400 hover:bg-orange-500/10"
+                              : "text-green-400/60 hover:text-green-400 hover:bg-green-500/10"
+                          }`}
+                        >
+                          {sub.isActive === "true"
+                            ? <PauseCircle className="w-3.5 h-3.5" />
+                            : <PlayCircle className="w-3.5 h-3.5" />}
+                        </button>
                         <button
                           title="نسخ رابط الإحالة"
                           onClick={() => {

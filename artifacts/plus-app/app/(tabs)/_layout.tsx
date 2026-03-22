@@ -79,7 +79,7 @@ export default function TabLayout() {
       }
       const sub = data.subscriber;
       const expired =
-        sub.isActive === false ||
+        sub.isActive === "false" ||
         (sub.expiresAt && new Date(sub.expiresAt) < new Date());
       setSubscriptionExpired(expired);
     } catch {
