@@ -423,13 +423,16 @@ router.get("/admin/featured", async (_req, res): Promise<void> => {
 });
 
 router.post("/admin/featured", async (req, res): Promise<void> => {
-  const { title, description, image, link, isActive } = req.body;
+  const { title, titleEn, description, descriptionEn, image, imageEn, link, isActive } = req.body;
   const [count] = await db.select({ c: sql<number>`count(*)::int` }).from(featuredBannersTable);
   const [banner] = await db.insert(featuredBannersTable).values({
     title: title || "",
-    description: description || "",
-    image: image || "",
-    link: link || "",
+    titleEn: titleEn || null,
+    description: description || null,
+    descriptionEn: descriptionEn || null,
+    image: image || null,
+    imageEn: imageEn || null,
+    link: link || null,
     sortOrder: (count?.c || 0) + 1,
     isActive: isActive !== false,
   }).returning();
@@ -438,11 +441,14 @@ router.post("/admin/featured", async (req, res): Promise<void> => {
 
 router.put("/admin/featured/:id", async (req, res): Promise<void> => {
   const id = Number(req.params.id);
-  const { title, description, image, link, isActive, sortOrder } = req.body;
+  const { title, titleEn, description, descriptionEn, image, imageEn, link, isActive, sortOrder } = req.body;
   const [banner] = await db.update(featuredBannersTable).set({
     ...(title !== undefined && { title }),
+    ...(titleEn !== undefined && { titleEn }),
     ...(description !== undefined && { description }),
+    ...(descriptionEn !== undefined && { descriptionEn }),
     ...(image !== undefined && { image }),
+    ...(imageEn !== undefined && { imageEn }),
     ...(link !== undefined && { link }),
     ...(isActive !== undefined && { isActive }),
     ...(sortOrder !== undefined && { sortOrder }),

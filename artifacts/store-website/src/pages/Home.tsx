@@ -135,7 +135,7 @@ function AppsRow({ title, section, onAppClick }: { title: string; section: strin
       <div className="px-5 mb-4">
         <h3 className="text-base font-black" style={{ color: TEXT }}>{title}</h3>
       </div>
-      <div className="flex overflow-x-auto gap-4 px-5 pb-2 hide-scrollbar snap-x snap-mandatory">
+      <div className="flex overflow-x-auto gap-4 px-5 pb-2 hide-scrollbar">
         {loading
           ? Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className="flex flex-col items-center gap-2 min-w-[80px]">

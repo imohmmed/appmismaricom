@@ -5,8 +5,11 @@ import { z } from "zod/v4";
 export const featuredBannersTable = pgTable("featured_banners", {
   id: serial("id").primaryKey(),
   title: text("title").notNull(),
+  titleEn: text("title_en"),
   description: text("description"),
+  descriptionEn: text("description_en"),
   image: text("image"),
+  imageEn: text("image_en"),
   link: text("link"),
   sortOrder: integer("sort_order").notNull().default(0),
   isActive: boolean("is_active").notNull().default(true),

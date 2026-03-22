@@ -26,11 +26,11 @@ router.get("/apps", async (req, res): Promise<void> => {
   const conditions = [eq(appsTable.isHidden, false)];
   if (categoryId) conditions.push(eq(appsTable.categoryId, categoryId));
   if (section === "most_downloaded") {
-    // no extra filter, sort by downloads
+    // no extra filter, sort by downloads desc
   } else if (section === "trending") {
-    conditions.push(eq(appsTable.isHot, true));
+    // show apps ordered by downloads, prefer isHot if any, otherwise all
   } else if (section === "latest") {
-    conditions.push(sql`${appsTable.createdAt} > NOW() - INTERVAL '60 days'`);
+    // show most recently added apps (no date filter)
   } else if (filter && filter !== "all") {
     if (filter === "hot") conditions.push(eq(appsTable.isHot, true));
     else if (filter === "new") conditions.push(sql`${appsTable.createdAt} > NOW() - INTERVAL '30 days'`);
@@ -42,7 +42,7 @@ router.get("/apps", async (req, res): Promise<void> => {
   const orderClause = section === "most_downloaded"
     ? desc(appsTable.downloads)
     : section === "trending"
-    ? desc(appsTable.downloads)
+    ? desc(appsTable.isHot)
     : desc(appsTable.createdAt);
 
   const apps = await db
