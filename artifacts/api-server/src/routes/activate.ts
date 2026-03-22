@@ -4,6 +4,7 @@ import path from "path";
 import fs from "fs";
 import multer from "multer";
 import { db, subscriptionsTable, groupsTable, plansTable } from "@workspace/db";
+import { registerDeviceWithApple } from "../apple-connect";
 
 const router: IRouter = Router();
 
@@ -219,14 +220,18 @@ router.post("/activate/complete", async (req, res): Promise<void> => {
   }
 
   const now = new Date();
+  const finalUdid = udid?.trim() || sub.udid || null;
+  const finalDeviceType = deviceType?.trim() || sub.deviceType || null;
+
+  // ─── Save user info first ───────────────────────────────────────────────────
   const [updated] = await db
     .update(subscriptionsTable)
     .set({
       subscriberName: name.trim(),
       phone: phone.trim(),
       email: email?.trim() || sub.email || null,
-      udid: udid?.trim() || sub.udid || null,
-      deviceType: deviceType?.trim() || sub.deviceType || null,
+      udid: finalUdid,
+      deviceType: finalDeviceType,
       activatedAt: sub.activatedAt || now,
       sourceType: "subscription_code",
       isActive: "true",
@@ -234,14 +239,51 @@ router.post("/activate/complete", async (req, res): Promise<void> => {
     .where(eq(subscriptionsTable.id, Number(subscriptionId)))
     .returning();
 
-  // Get plan info for response
+  // ─── Get plan info ──────────────────────────────────────────────────────────
   const [plan] = await db
     .select({ name: plansTable.name, nameAr: plansTable.nameAr })
     .from(plansTable)
     .where(eq(plansTable.id, updated.planId))
     .limit(1);
 
-  // Get group store IPA link for response
+  // ─── Register device with Apple if UDID + group available ──────────────────
+  let appleMessage: string | null = null;
+  if (finalUdid && updated.groupName) {
+    try {
+      const dt = (finalDeviceType === "iPad") ? "iPad" : "iPhone";
+      const appleResult = await registerDeviceWithApple({
+        certName: updated.groupName,
+        udid: finalUdid,
+        deviceType: dt,
+        deviceName: name.trim(),
+      });
+
+      if (appleResult.success) {
+        await db
+          .update(subscriptionsTable)
+          .set({
+            applePlatform: appleResult.platform ?? null,
+            appleDeviceId: appleResult.deviceId ?? null,
+            appleStatus: "registered",
+          })
+          .where(eq(subscriptionsTable.id, updated.id));
+
+        appleMessage = appleResult.platform === "MAC"
+          ? "تم تسجيل الجهاز (Mac bypass)"
+          : "تم تسجيل الجهاز مع Apple";
+      } else {
+        await db
+          .update(subscriptionsTable)
+          .set({ appleStatus: "failed" })
+          .where(eq(subscriptionsTable.id, updated.id));
+        console.error("[activate/complete] Apple registration failed:", appleResult.error);
+      }
+    } catch (err) {
+      console.error("[activate/complete] Apple registration error:", err);
+    }
+  }
+
+  // ─── Get group store IPA link ───────────────────────────────────────────────
   let storeDownloadLink: string | null = null;
   if (updated.groupName) {
     const [group] = await db
@@ -257,6 +299,7 @@ router.post("/activate/complete", async (req, res): Promise<void> => {
 
   res.json({
     success: true,
+    appleMessage,
     subscriber: {
       id: updated.id,
       code: updated.code,
