@@ -25,7 +25,21 @@ function randomCode(len = 10): string {
 router.get("/profile/enroll", (req, res): void => {
   const base = getBaseUrl(req);
   const source = (req.query.source as string) || "web";
+  const plan = (req.query.plan as string) || "";
   const callbackUrl = `${base}/api/profile/callback?source=${encodeURIComponent(source)}`;
+
+  // Two modes:
+  // 1. "app" source = activation (تفعيل اشتراك) — from Mismari+ app onboarding
+  // 2. "web" source = enrollment request (طلب اشتراك) — from website
+  const isActivation = source === "app";
+
+  const displayName = "Mismari App";
+  const subtitle = isActivation
+    ? "تفعيل إشتراك"
+    : plan ? `باقة ${plan}` : "طلب إشتراك";
+  const description = isActivation
+    ? "يتيح لك هذا الملف بتفعيل اشتراكك للحصول على تطبيق مسماري"
+    : "يتيح لك هذا الملف بتسجيل طلب اشتراك للحصول على تطبيق مسماري";
 
   const profile = `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -44,11 +58,11 @@ router.get("/profile/enroll", (req, res): void => {
     </array>
   </dict>
   <key>PayloadOrganization</key>
-  <string>Mismari</string>
+  <string>Mismari App</string>
   <key>PayloadDisplayName</key>
-  <string>تسجيل جهازك</string>
+  <string>${displayName}</string>
   <key>PayloadDescription</key>
-  <string>يتيح لك هذا الملف تسجيل جهازك للاشتراك في مسماري+</string>
+  <string>${subtitle}\n${description}</string>
   <key>PayloadVersion</key>
   <integer>1</integer>
   <key>PayloadUUID</key>
