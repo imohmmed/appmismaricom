@@ -22,6 +22,7 @@ import { useSettings } from "@/contexts/SettingsContext";
 const { width: SW, height: SH } = Dimensions.get("window");
 
 const BLUE = "#9fbcff";
+const ACCENT = BLUE;
 const BLUE_DARK = "#6fa8ff";
 const ORANGE = "#FF8A50";
 const ORANGE_DARK = "#E67A3C";
