@@ -7,7 +7,7 @@ import {
   Plus, Search, X, Upload, Link2, MoreVertical,
   Copy, Edit2, EyeOff, FlaskConical, Trash2, CheckSquare, Square,
   Loader2, AlertCircle, CheckCircle2, RefreshCw, FileArchive, Globe, Bell,
-  Flame, ArrowUpCircle, Languages
+  Flame, ArrowUpCircle, Languages, GitFork, AlertTriangle, PackageCheck
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { App } from "@workspace/api-client-react";
@@ -758,6 +758,173 @@ function UpdateAppModal({ app, onClose, onDone }: { app: App; onClose: () => voi
   );
 }
 
+// ─── Clone Modal ─────────────────────────────────────────────────────────────
+type CloneStage = "idle" | "unzip" | "patch" | "save" | "done" | "error";
+
+const CLONE_STAGES: { id: CloneStage; label: string }[] = [
+  { id: "unzip", label: "فتح ملف IPA وقراءة المحتوى..." },
+  { id: "patch", label: "تعديل معرّف الحزمة والاسم..." },
+  { id: "save", label: "حفظ النسخة الجديدة في السيرفر..." },
+  { id: "done", label: "اكتمل التكرار بنجاح!" },
+];
+
+function CloneModal({ app, onClose, onDone }: { app: App; onClose: () => void; onDone: () => void }) {
+  const [name, setName] = useState(`${app.name} 2`);
+  const [stage, setStage] = useState<CloneStage>("idle");
+  const [error, setError] = useState("");
+  const [newBundleId, setNewBundleId] = useState("");
+
+  const handleClone = async () => {
+    if (!name.trim()) return;
+    setError("");
+    setStage("unzip");
+
+    const token = localStorage.getItem("adminToken") || "";
+    const api = import.meta.env.VITE_API_URL || "";
+
+    await new Promise(r => setTimeout(r, 700));
+    setStage("patch");
+    await new Promise(r => setTimeout(r, 600));
+    setStage("save");
+
+    try {
+      const res = await fetch(`${api}/api/admin/apps/${app.id}/clone`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-admin-token": token },
+        body: JSON.stringify({ name: name.trim() }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "فشل التكرار");
+      setNewBundleId(json.newBundleId || "");
+      setStage("done");
+      onDone();
+    } catch (err: any) {
+      setError(err.message || "فشل التكرار");
+      setStage("error");
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.85)" }}>
+      <div className="w-full max-w-md rounded-2xl border border-white/10 overflow-hidden" style={{ background: "#0a0a0a" }}>
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
+          <div className="flex items-center gap-2">
+            <GitFork className="w-4 h-4" style={{ color: ACCENT }} />
+            <span className="font-bold text-white text-sm">تكرار التطبيق</span>
+          </div>
+          <button onClick={onClose} disabled={stage !== "idle" && stage !== "done" && stage !== "error"}
+            className="text-white/30 hover:text-white disabled:opacity-20">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="p-6 space-y-5">
+          {/* Original app info */}
+          <div className="flex items-center gap-3 p-3 rounded-xl border border-white/5" style={{ background: "#111" }}>
+            {app.icon && <img src={app.icon} className="w-10 h-10 rounded-xl object-cover" />}
+            <div className="min-w-0">
+              <p className="text-white text-sm font-semibold truncate">{app.name}</p>
+              <p className="text-white/30 text-xs font-mono truncate">{app.bundleId || "—"}</p>
+            </div>
+          </div>
+
+          {/* Warning note */}
+          <div className="flex gap-2 p-3 rounded-xl border border-yellow-500/20 bg-yellow-500/5">
+            <AlertTriangle className="w-4 h-4 text-yellow-400 shrink-0 mt-0.5" />
+            <p className="text-yellow-300/80 text-xs leading-relaxed">
+              التكرار قد لا يدعم ميزات معينة مثل <strong>الإشعارات</strong> وبعض روابط التطبيق العميقة في بعض التطبيقات.
+            </p>
+          </div>
+
+          {stage === "idle" || stage === "error" ? (
+            <>
+              {/* Name input */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium" style={{ color: `${ACCENT}99` }}>
+                  اسم النسخة الجديدة
+                </label>
+                <Input
+                  value={name}
+                  onChange={e => setName(e.target.value)}
+                  placeholder="مثال: واتساب 2"
+                  dir="rtl"
+                  autoFocus
+                  onKeyDown={e => e.key === "Enter" && handleClone()}
+                />
+              </div>
+
+              {error && (
+                <div className="flex items-center gap-2 text-red-400 text-xs p-3 rounded-xl bg-red-500/5 border border-red-500/20">
+                  <AlertCircle className="w-3.5 h-3.5 shrink-0" /> {error}
+                </div>
+              )}
+
+              <div className="flex gap-3 pt-1">
+                <button onClick={onClose}
+                  className="flex-1 py-2.5 rounded-xl text-sm text-white/50 border border-white/10 hover:border-white/20 hover:text-white transition-colors">
+                  إلغاء
+                </button>
+                <button onClick={handleClone} disabled={!name.trim()}
+                  className="flex-1 py-2.5 rounded-xl text-sm font-bold text-black disabled:opacity-40 flex items-center justify-center gap-2"
+                  style={{ background: ACCENT }}>
+                  <GitFork className="w-4 h-4" /> تثبيت
+                </button>
+              </div>
+            </>
+          ) : stage === "done" ? (
+            <div className="space-y-4">
+              <div className="text-center py-4">
+                <PackageCheck className="w-12 h-12 mx-auto mb-3" style={{ color: ACCENT }} />
+                <p className="text-white font-bold">تم إنشاء النسخة بنجاح!</p>
+                <p className="text-white/40 text-xs mt-1">اسم التطبيق: <span className="text-white/70">{name}</span></p>
+                {newBundleId && (
+                  <p className="text-white/30 text-xs mt-0.5 font-mono">{newBundleId}</p>
+                )}
+              </div>
+              <button onClick={onClose}
+                className="w-full py-2.5 rounded-xl text-sm font-bold text-black"
+                style={{ background: ACCENT }}>
+                إغلاق
+              </button>
+            </div>
+          ) : (
+            /* Progress stages */
+            <div className="space-y-3 py-2">
+              {CLONE_STAGES.slice(0, 3).map((s, i) => {
+                const currentIdx = CLONE_STAGES.findIndex(x => x.id === stage);
+                const done = i < currentIdx;
+                const active = i === currentIdx;
+                return (
+                  <div key={s.id} className={cn(
+                    "flex items-center gap-3 p-3 rounded-xl transition-all border",
+                    done ? "border-green-500/20 bg-green-500/5" :
+                    active ? "border-white/20 bg-white/5" :
+                    "border-white/5 opacity-30"
+                  )}>
+                    <div className="shrink-0">
+                      {done ? (
+                        <CheckCircle2 className="w-4 h-4 text-green-400" />
+                      ) : active ? (
+                        <Loader2 className="w-4 h-4 animate-spin" style={{ color: ACCENT }} />
+                      ) : (
+                        <div className="w-4 h-4 rounded-full border border-white/20" />
+                      )}
+                    </div>
+                    <span className={cn("text-sm", done ? "text-green-300" : active ? "text-white" : "text-white/30")}>
+                      {s.label}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function AdminApps() {
   const [, navigate] = useLocation();
   const queryClient = useQueryClient();
@@ -776,6 +943,7 @@ export default function AdminApps() {
   const [modal, setModal] = useState<"import" | null>(null);
   const [editingApp, setEditingApp] = useState<App | null>(null);
   const [updatingApp, setUpdatingApp] = useState<App | null>(null);
+  const [cloningApp, setCloningApp] = useState<App | null>(null);
 
   const filteredApps = useMemo(() => {
     if (!search.trim()) return apps;
@@ -844,6 +1012,7 @@ export default function AdminApps() {
       {modal === "import" && <IpaImportModal onClose={() => setModal(null)} onDone={() => { setModal(null); queryClient.invalidateQueries({ queryKey: getAdminListAppsQueryKey() }); }} />}
       {editingApp && <EditAppModal app={editingApp} onClose={() => setEditingApp(null)} />}
       {updatingApp && <UpdateAppModal app={updatingApp} onClose={() => setUpdatingApp(null)} onDone={() => { setUpdatingApp(null); queryClient.invalidateQueries({ queryKey: getAdminListAppsQueryKey() }); }} />}
+      {cloningApp && <CloneModal app={cloningApp} onClose={() => setCloningApp(null)} onDone={() => { queryClient.invalidateQueries({ queryKey: getAdminListAppsQueryKey() }); }} />}
 
       <div className="space-y-4" dir="rtl">
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -950,6 +1119,10 @@ export default function AdminApps() {
                             <button onClick={() => { setEditingApp(app); setMenuOpenId(null); }}
                               className="w-full flex items-center gap-2 px-3 py-2 text-sm text-white/50 hover:text-white hover:bg-white/5">
                               <Edit2 className="w-3.5 h-3.5" /> تعديل
+                            </button>
+                            <button onClick={() => { setCloningApp(app); setMenuOpenId(null); }}
+                              className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-white/5" style={{ color: "#a78bfa" }}>
+                              <GitFork className="w-3.5 h-3.5" /> تكرار
                             </button>
                             <button onClick={() => { setUpdatingApp(app); setMenuOpenId(null); }}
                               className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-white/5" style={{ color: ACCENT }}>

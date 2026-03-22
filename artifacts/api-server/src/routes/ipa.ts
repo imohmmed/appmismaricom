@@ -8,6 +8,8 @@ import { promisify } from "util";
 import path from "path";
 import fs from "fs";
 import crypto from "crypto";
+import { eq } from "drizzle-orm";
+import { db, appsTable } from "@workspace/db";
 
 const execFileAsync = promisify(execFile);
 const router = Router();
@@ -351,6 +353,89 @@ router.post("/admin/translate", async (req, res): Promise<void> => {
   } catch (err: any) {
     res.status(500).json({ error: err.message || "فشل الاتصال" });
   }
+});
+
+// ─── POST /admin/apps/:id/clone ─────────────────────────────────────────────
+router.post("/admin/apps/:id/clone", async (req: any, res): Promise<void> => {
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) { res.status(400).json({ error: "معرّف غير صالح" }); return; }
+
+  const { name } = req.body;
+  if (!name || typeof name !== "string" || !name.trim()) {
+    res.status(400).json({ error: "اسم التطبيق الجديد مطلوب" }); return;
+  }
+
+  const [app] = await db.select().from(appsTable).where(eq(appsTable.id, id));
+  if (!app) { res.status(404).json({ error: "التطبيق غير موجود" }); return; }
+  if (!app.ipaPath) { res.status(400).json({ error: "ملف IPA غير موجود لهذا التطبيق" }); return; }
+
+  const ipaFilename = path.basename(app.ipaPath);
+  const ipaFilePath = path.join(IPA_DIR, ipaFilename);
+  if (!fs.existsSync(ipaFilePath)) {
+    res.status(400).json({ error: "ملف IPA غير موجود على السيرفر" }); return;
+  }
+
+  const rand = Math.floor(Math.random() * 90) + 10;
+  const originalBundleId = app.bundleId || "com.app";
+  const newBundleId = `${originalBundleId}.m${rand}`;
+  const newName = name.trim();
+
+  const buf = fs.readFileSync(ipaFilePath);
+  const zip = new AdmZip(buf);
+  const entries = zip.getEntries();
+
+  const plistEntry = entries.find(e => /^Payload\/[^/]+\.app\/Info\.plist$/.test(e.entryName));
+  if (!plistEntry) { res.status(422).json({ error: "لم يتم العثور على Info.plist داخل ملف IPA" }); return; }
+
+  const plistData = plist.parse(plistEntry.getData().toString("utf8")) as Record<string, any>;
+
+  plistData["CFBundleIdentifier"] = newBundleId;
+  plistData["CFBundleDisplayName"] = newName;
+  plistData["CFBundleName"] = newName;
+
+  if (Array.isArray(plistData["CFBundleURLTypes"])) {
+    plistData["CFBundleURLTypes"] = plistData["CFBundleURLTypes"].map((urlType: any) => {
+      if (Array.isArray(urlType["CFBundleURLSchemes"])) {
+        urlType["CFBundleURLSchemes"] = urlType["CFBundleURLSchemes"].map((scheme: string) =>
+          scheme.includes(originalBundleId) ? scheme.replace(originalBundleId, newBundleId) : scheme
+        );
+      }
+      return urlType;
+    });
+  }
+
+  zip.updateFile(plistEntry.entryName, Buffer.from(plist.build(plistData), "utf8"));
+
+  const newIpaFilename = `clone_${randomHex(12)}.ipa`;
+  const newIpaFilePath = path.join(IPA_DIR, newIpaFilename);
+  zip.writeZip(newIpaFilePath);
+
+  const newIpaUrl = buildIpaUrl(req, newIpaFilename);
+  const newIpaRelPath = `/admin/FilesIPA/IpaApp/${newIpaFilename}`;
+
+  const [newApp] = await db.insert(appsTable).values({
+    name: newName,
+    description: app.description,
+    descriptionAr: app.descriptionAr,
+    descriptionEn: app.descriptionEn,
+    icon: app.icon,
+    ipaPath: newIpaRelPath,
+    iconPath: app.iconPath,
+    categoryId: app.categoryId,
+    tag: app.tag,
+    version: app.version,
+    bundleId: newBundleId,
+    size: app.size,
+    downloadUrl: newIpaUrl,
+    downloads: 0,
+    isFeatured: false,
+    isHot: false,
+    isHidden: false,
+    isTestMode: false,
+    status: "active",
+  }).returning();
+
+  res.json({ success: true, app: newApp, newBundleId });
 });
 
 export default router;
