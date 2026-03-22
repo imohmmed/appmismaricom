@@ -195,10 +195,51 @@ const FEATURES = [
   { icon: Zap, label: "iPhone & iPad" },
 ];
 
+// ─── helpers ──────────────────────────────────────────────────────────────────
+function goToEnroll() {
+  // Direct navigation so iOS shows "Install Profile" dialog
+  window.location.href = `${API}/api/profile/enroll`;
+}
+
+interface ActivateResult {
+  valid: boolean;
+  alreadyRegistered?: boolean;
+  planName?: string;
+  groupName?: string;
+  downloadLink?: string;
+  hasIpa?: boolean;
+  error?: string;
+}
+
 export default function Home() {
   const { data: plansData, isLoading: plansLoading } = useListPlans();
   const plans = plansData?.plans || [];
   const [selectedApp, setSelectedApp] = useState<AppItem | null>(null);
+
+  // ── Code activation state ──
+  const [code, setCode] = useState("");
+  const [activating, setActivating] = useState(false);
+  const [activateResult, setActivateResult] = useState<ActivateResult | null>(null);
+
+  async function handleActivate() {
+    const trimmed = code.trim().toUpperCase();
+    if (!trimmed) return;
+    setActivating(true);
+    setActivateResult(null);
+    try {
+      const res = await fetch(`${API}/api/activate/validate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: trimmed }),
+      });
+      const data: ActivateResult = await res.json();
+      setActivateResult(data);
+    } catch {
+      setActivateResult({ valid: false, error: "تعذّر الاتصال بالخادم" });
+    } finally {
+      setActivating(false);
+    }
+  }
 
   return (
     <PublicLayout>
@@ -275,16 +316,55 @@ export default function Home() {
           <input
             type="text"
             placeholder="أدخل كود الاشتراك..."
-            className="w-full rounded-xl border px-4 py-3.5 text-sm mb-4 text-center focus:outline-none"
+            className="w-full rounded-xl border px-4 py-3.5 text-sm mb-4 text-center focus:outline-none tracking-widest uppercase"
             style={{ borderColor: `${TEXT}20`, background: "#fff", color: TEXT }}
             dir="ltr"
+            value={code}
+            onChange={e => { setCode(e.target.value); setActivateResult(null); }}
+            onKeyDown={e => e.key === "Enter" && handleActivate()}
           />
           <button
-            className="w-full py-3.5 rounded-2xl font-bold text-sm transition-all hover:opacity-90"
+            onClick={handleActivate}
+            disabled={activating || !code.trim()}
+            className="w-full py-3.5 rounded-2xl font-bold text-sm transition-all hover:opacity-90 disabled:opacity-50"
             style={{ background: `linear-gradient(135deg, ${PRIMARY}, #6fa8ff)`, color: "#fff" }}
           >
-            تحقق من الاشتراك
+            {activating ? "جاري التحقق..." : "تحقق من الاشتراك"}
           </button>
+
+          {/* Result */}
+          {activateResult && (
+            <div
+              className="mt-4 rounded-xl p-4 text-sm text-right"
+              style={{
+                background: activateResult.valid ? `${PRIMARY}15` : "#ff4d4d15",
+                border: `1px solid ${activateResult.valid ? PRIMARY : "#ff4d4d"}40`,
+              }}
+            >
+              {!activateResult.valid ? (
+                <p style={{ color: "#e53e3e" }}>{activateResult.error || "الكود غير صحيح أو منتهي الصلاحية"}</p>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  <p className="font-bold" style={{ color: PRIMARY }}>✓ اشتراك نشط</p>
+                  {activateResult.planName && (
+                    <p style={{ color: TEXT }}>الباقة: <span className="font-semibold">{activateResult.planName}</span></p>
+                  )}
+                  {activateResult.downloadLink && (
+                    <a
+                      href={activateResult.downloadLink}
+                      className="mt-2 block w-full py-3 rounded-xl font-bold text-sm text-center transition-all hover:opacity-90"
+                      style={{ background: PRIMARY, color: TEXT }}
+                    >
+                      تحميل مسماري+
+                    </a>
+                  )}
+                  {!activateResult.hasIpa && (
+                    <p className="text-xs opacity-60" style={{ color: TEXT }}>تواصل مع المسؤول لاستلام التطبيق</p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </section>
 
@@ -321,9 +401,9 @@ export default function Home() {
                 </div>
               ))}
             </div>
-            <a href="#" className="block w-full py-3.5 rounded-2xl font-bold text-sm transition-all hover:opacity-90" style={{ background: PRIMARY, color: TEXT }}>
+            <button onClick={goToEnroll} className="block w-full py-3.5 rounded-2xl font-bold text-sm transition-all hover:opacity-90" style={{ background: PRIMARY, color: TEXT }}>
               طلب اشتراك
-            </a>
+            </button>
           </div>
         ) : (
           <div className="max-w-3xl mx-auto grid grid-cols-1 sm:grid-cols-2 gap-5">
@@ -374,6 +454,7 @@ export default function Home() {
                     ))}
                   </div>
                   <button
+                    onClick={goToEnroll}
                     className="block w-full py-3.5 rounded-2xl font-bold text-sm transition-all hover:opacity-90"
                     style={{ background: PRIMARY, color: TEXT }}
                   >
