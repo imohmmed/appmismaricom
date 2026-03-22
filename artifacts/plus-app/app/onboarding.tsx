@@ -121,7 +121,7 @@ export default function OnboardingScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const params = useLocalSearchParams<{ udid?: string }>();
-  const { setOnboardingDone, setDeviceUdid, deviceUdid, fontAr } = useSettings();
+  const { setOnboardingDone, setDeviceUdid, deviceUdid, fontAr, setSubscriptionCode } = useSettings();
 
   const [step, setStep] = useState<Step>("landing");
   const [activeWord, setActiveWord] = useState(0);
@@ -299,6 +299,9 @@ export default function OnboardingScreen() {
       const data = await res.json();
       if (data.found) {
         setCheckResult({ success: true, message: "جهازك مسجّل وجاهز!" });
+        if (data.subscriber?.code) {
+          setSubscriptionCode(data.subscriber.code);
+        }
       } else {
         setCheckResult({ success: false, message: "هذا الجهاز غير مسجّل. تواصل مع المسؤول." });
       }

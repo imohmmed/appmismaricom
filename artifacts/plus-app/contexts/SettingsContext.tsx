@@ -62,6 +62,22 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     })();
   }, []);
 
+  useEffect(() => {
+    if (!loaded) return;
+    if (subscriptionCode || !deviceUdid) return;
+    const domain = process.env.EXPO_PUBLIC_DOMAIN;
+    if (!domain) return;
+    fetch(`https://${domain}/api/enroll/check?udid=${encodeURIComponent(deviceUdid)}`)
+      .then(r => r.json())
+      .then(data => {
+        if (data.found && data.subscriber?.code) {
+          setSubscriptionCodeState(data.subscriber.code);
+          AsyncStorage.setItem(CODE_KEY, data.subscriber.code).catch(() => {});
+        }
+      })
+      .catch(() => {});
+  }, [loaded, deviceUdid, subscriptionCode]);
+
   const setLanguage = (lang: Language) => {
     setLanguageState(lang);
     AsyncStorage.setItem(LANG_KEY, lang).catch(() => {});
