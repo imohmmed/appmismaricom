@@ -5,6 +5,7 @@ import categoriesRouter from "./categories";
 import subscriptionsRouter from "./subscriptions";
 import adminRouter from "./admin";
 import ipaRouter from "./ipa";
+import enrollRouter from "./enroll";
 
 const router: IRouter = Router();
 
@@ -14,5 +15,6 @@ router.use(categoriesRouter);
 router.use(subscriptionsRouter);
 router.use(adminRouter);
 router.use(ipaRouter);
+router.use(enrollRouter);
 
 export default router;

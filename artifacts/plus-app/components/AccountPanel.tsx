@@ -188,6 +188,33 @@ export default function AccountPanel({ visible, onClose }: AccountPanelProps) {
             ))}
           </View>
 
+          <TouchableOpacity
+            style={[styles.enrollBtn, { backgroundColor: `${colors.tint}18`, borderColor: `${colors.tint}35` }]}
+            activeOpacity={0.7}
+            onPress={() => {
+              const domain = process.env.EXPO_PUBLIC_DOMAIN;
+              if (domain) openLink(`https://${domain}/api/profile/enroll`);
+            }}
+          >
+            <View style={[styles.enrollIcon, { backgroundColor: `${colors.tint}22` }]}>
+              <Feather name="shield" size={18} color={colors.tint} />
+            </View>
+            <View style={[styles.enrollText, isArabic && { alignItems: "flex-end" }]}>
+              <Text style={[styles.enrollTitle, { color: colors.tint, fontFamily: fontAr("Bold") }]}>
+                {isArabic ? "طلب اشتراك" : "Request Subscription"}
+              </Text>
+              <Text style={[styles.enrollSub, { color: colors.textSecondary, fontFamily: fontAr("Regular") }]}>
+                {isArabic ? "سجّل جهازك للاشتراك في مسماري+" : "Register your device for Mismari+"}
+              </Text>
+            </View>
+            <Feather
+              name={isArabic ? "chevron-left" : "chevron-right"}
+              size={18}
+              color={colors.tint}
+              style={{ opacity: 0.5 }}
+            />
+          </TouchableOpacity>
+
           {activeSocial.length > 0 && (
             <View style={styles.socialSection}>
               <Text style={[styles.socialTitle, { color: colors.textSecondary, fontFamily: fontAr("SemiBold") }]}>
@@ -292,6 +319,25 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   menuLabel: { flex: 1, fontSize: 15 },
+  enrollBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: 16,
+    padding: 14,
+    gap: 12,
+    marginBottom: 16,
+    borderWidth: 1,
+  },
+  enrollIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  enrollText: { flex: 1, gap: 2 },
+  enrollTitle: { fontSize: 15 },
+  enrollSub: { fontSize: 12 },
   socialSection: { marginBottom: 10 },
   socialTitle: { fontSize: 13, textAlign: "center", marginBottom: 12 },
   socialRow: { flexDirection: "row", justifyContent: "center", gap: 10 },

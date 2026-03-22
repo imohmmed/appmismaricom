@@ -3,7 +3,7 @@ import { AdminLayout } from "@/components/layout/AdminLayout";
 import {
   Search, RefreshCw, Loader2, CheckSquare, Square,
   Trash2, Clock, CheckCircle2, XCircle, X,
-  Smartphone, Tablet, Shield, Copy
+  Smartphone, Tablet, Shield, Copy, ClipboardList
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -36,6 +36,17 @@ interface Sub {
   createdAt: string;
 }
 
+interface EnrollReq {
+  id: number;
+  name: string | null;
+  phone: string | null;
+  udid: string;
+  deviceType: string | null;
+  notes: string | null;
+  status: string;
+  createdAt: string;
+}
+
 interface Group {
   id: number;
   certName: string;
@@ -45,6 +56,7 @@ interface Group {
 }
 
 type FilterType = "all" | "active" | "inactive";
+type Tab = "subscriptions" | "enrollments";
 
 function ApproveModal({ sub, onClose, onDone }: { sub: Sub; onClose: () => void; onDone: () => void }) {
   const { toast } = useToast();
@@ -129,14 +141,18 @@ function ApproveModal({ sub, onClose, onDone }: { sub: Sub; onClose: () => void;
                     >
                       <Shield className="w-4 h-4 shrink-0" style={{ color: isSelected ? A : "rgba(255,255,255,0.3)" }} />
                       <div className="flex-1 min-w-0">
-                        <p className="text-white text-sm font-medium truncate">{g.certName}</p>
-                        <div className="flex items-center gap-3 mt-0.5">
-                          <span className="flex items-center gap-1 text-xs text-white/40">
-                            <Smartphone className="w-3 h-3" /> {iphoneCount}
-                          </span>
-                          <span className="flex items-center gap-1 text-xs text-white/40">
-                            <Tablet className="w-3 h-3" /> {ipadCount}
-                          </span>
+                        <p className="text-sm font-medium text-white truncate">{g.certName}</p>
+                        <div className="flex gap-3 mt-0.5">
+                          {iphoneCount > 0 && (
+                            <span className="text-[10px] text-white/40 flex items-center gap-1">
+                              <Smartphone className="w-2.5 h-2.5" /> {iphoneCount}
+                            </span>
+                          )}
+                          {ipadCount > 0 && (
+                            <span className="text-[10px] text-white/40 flex items-center gap-1">
+                              <Tablet className="w-2.5 h-2.5" /> {ipadCount}
+                            </span>
+                          )}
                         </div>
                       </div>
                       {isSelected && <CheckCircle2 className="w-4 h-4 shrink-0" style={{ color: A }} />}
@@ -145,12 +161,6 @@ function ApproveModal({ sub, onClose, onDone }: { sub: Sub; onClose: () => void;
                 })}
               </div>
             )}
-            <input
-              value={selectedGroup}
-              onChange={e => setSelectedGroup(e.target.value)}
-              placeholder="أو اكتب اسم المجموعة يدوياً..."
-              className="mt-2 w-full bg-black border border-white/10 rounded-lg py-2 px-3 text-sm text-white placeholder-white/20 focus:border-[#9fbcff]/40 focus:outline-none"
-            />
           </div>
         </div>
 
@@ -171,8 +181,186 @@ function ApproveModal({ sub, onClose, onDone }: { sub: Sub; onClose: () => void;
   );
 }
 
+function EnrollmentRequests() {
+  const { toast } = useToast();
+  const [requests, setRequests] = useState<EnrollReq[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+
+  const fetchData = async () => {
+    setLoading(true);
+    const data = await adminFetch("/admin/enroll-requests");
+    setRequests(data?.requests || []);
+    setLoading(false);
+  };
+
+  useEffect(() => { fetchData(); }, []);
+
+  const filtered = requests.filter(r => {
+    if (!search.trim()) return true;
+    const s = search.toLowerCase();
+    return (
+      (r.name || "").toLowerCase().includes(s) ||
+      (r.phone || "").includes(s) ||
+      r.udid.toLowerCase().includes(s)
+    );
+  });
+
+  const handleDelete = async (id: number) => {
+    if (!confirm("حذف هذا الطلب؟")) return;
+    await adminFetch(`/admin/enroll-requests/${id}`, { method: "DELETE" });
+    toast({ title: "تم الحذف" });
+    fetchData();
+  };
+
+  const handleStatus = async (id: number, status: string) => {
+    await adminFetch(`/admin/enroll-requests/${id}`, {
+      method: "PUT",
+      body: JSON.stringify({ status }),
+    });
+    toast({ title: status === "approved" ? "تم قبول الطلب" : "تم رفض الطلب" });
+    fetchData();
+  };
+
+  const copyUdid = (udid: string) => {
+    navigator.clipboard.writeText(udid);
+    toast({ title: "تم نسخ UDID" });
+  };
+
+  const pending = requests.filter(r => r.status === "pending").length;
+
+  return (
+    <div className="space-y-4" dir="rtl">
+      <div className="flex items-center gap-3 flex-wrap">
+        <div className="relative flex-1 min-w-[200px] max-w-sm">
+          <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+          <input
+            placeholder="ابحث بالاسم، الهاتف، UDID..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="w-full bg-[#111111] border border-white/10 rounded-lg py-2 pr-10 pl-4 text-sm text-white placeholder-white/30 focus:outline-none focus:border-white/30"
+          />
+        </div>
+        {pending > 0 && (
+          <div className="px-3 py-1.5 rounded-lg text-xs font-semibold" style={{ background: `${A}20`, color: A }}>
+            {pending} طلب معلّق
+          </div>
+        )}
+        <div className="flex-1" />
+        <button onClick={fetchData} className="p-2 rounded-lg text-white/40 hover:text-white hover:bg-white/5">
+          <RefreshCw className="w-4 h-4" />
+        </button>
+      </div>
+
+      <div className="bg-[#111111] rounded-xl border border-white/10 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm text-right">
+            <thead className="bg-[#0a0a0a] border-b border-white/5">
+              <tr>
+                <th className="px-4 py-3 text-xs font-medium text-white/40">الاسم</th>
+                <th className="px-4 py-3 text-xs font-medium text-white/40">الهاتف</th>
+                <th className="px-4 py-3 text-xs font-medium text-white/40">UDID</th>
+                <th className="px-4 py-3 text-xs font-medium text-white/40">الجهاز</th>
+                <th className="px-4 py-3 text-xs font-medium text-white/40">الملاحظات</th>
+                <th className="px-4 py-3 text-xs font-medium text-white/40">الحالة</th>
+                <th className="px-4 py-3 text-xs font-medium text-white/40">التاريخ</th>
+                <th className="px-4 py-3 w-28" />
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr>
+                  <td colSpan={8} className="p-10 text-center text-white/40">
+                    <Loader2 className="w-5 h-5 animate-spin inline" />
+                  </td>
+                </tr>
+              ) : filtered.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="p-10 text-center">
+                    <ClipboardList className="w-8 h-8 text-white/10 mx-auto mb-2" />
+                    <p className="text-white/30 text-sm">لا توجد طلبات تسجيل</p>
+                  </td>
+                </tr>
+              ) : filtered.map(req => (
+                <tr key={req.id} className="border-b border-white/5 hover:bg-white/[0.02] group">
+                  <td className="px-4 py-3">
+                    <p className="text-white font-medium text-sm whitespace-nowrap">{req.name || <span className="text-white/30">—</span>}</p>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className="text-white/60 text-xs font-mono whitespace-nowrap">{req.phone || "—"}</span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-1">
+                      <span className="text-white/40 text-xs font-mono">{req.udid.slice(0, 12)}…</span>
+                      <button
+                        onClick={() => copyUdid(req.udid)}
+                        className="opacity-0 group-hover:opacity-100 p-0.5 rounded text-white/30 hover:text-white transition-all"
+                      >
+                        <Copy className="w-3 h-3" />
+                      </button>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className="text-white/50 text-xs whitespace-nowrap">{req.deviceType || "—"}</span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className="text-white/40 text-xs">{req.notes ? req.notes.slice(0, 30) + (req.notes.length > 30 ? "..." : "") : "—"}</span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className={`px-2 py-0.5 rounded-full text-xs whitespace-nowrap ${
+                      req.status === "approved"
+                        ? "bg-green-500/20 text-green-400"
+                        : req.status === "rejected"
+                        ? "bg-red-500/20 text-red-400"
+                        : "bg-yellow-500/20 text-yellow-400"
+                    }`}>
+                      {req.status === "approved" ? "مقبول" : req.status === "rejected" ? "مرفوض" : "معلّق"}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-white/40 text-xs whitespace-nowrap">
+                    {new Date(req.createdAt).toLocaleDateString("ar-IQ")}
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                      {req.status === "pending" && (
+                        <>
+                          <button
+                            onClick={() => handleStatus(req.id, "approved")}
+                            className="p-1.5 rounded-lg text-white/30 hover:text-green-400 hover:bg-green-500/10 transition-all"
+                            title="قبول"
+                          >
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleStatus(req.id, "rejected")}
+                            className="p-1.5 rounded-lg text-white/30 hover:text-red-400 hover:bg-red-500/10 transition-all"
+                            title="رفض"
+                          >
+                            <XCircle className="w-3.5 h-3.5" />
+                          </button>
+                        </>
+                      )}
+                      <button
+                        onClick={() => handleDelete(req.id)}
+                        className="p-1.5 rounded-lg text-white/30 hover:text-red-400 hover:bg-red-500/10 transition-all"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function AdminRequests() {
   const { toast } = useToast();
+  const [tab, setTab] = useState<Tab>("enrollments");
   const [subs, setSubs] = useState<Sub[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -191,7 +379,7 @@ export default function AdminRequests() {
     setLoading(false);
   };
 
-  useEffect(() => { fetchData(); }, [search]);
+  useEffect(() => { if (tab === "subscriptions") fetchData(); }, [search, tab]);
 
   const filtered = subs.filter(s => {
     if (filter === "active") return s.isActive === "true";
@@ -249,172 +437,198 @@ export default function AdminRequests() {
   return (
     <AdminLayout>
       <div className="space-y-4" dir="rtl">
-        <div className="flex items-center gap-3 flex-wrap">
-          <div className="relative flex-1 min-w-[200px] max-w-sm">
-            <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
-            <input
-              placeholder="ابحث بالاسم، الهاتف، الكود، UDID..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              className="w-full bg-[#111111] border border-white/10 rounded-lg py-2 pr-10 pl-4 text-sm text-white placeholder-white/30 focus:outline-none focus:border-white/30"
-            />
-          </div>
-
-          <div className="flex items-center gap-1 bg-[#111111] border border-white/10 rounded-lg p-1">
-            {(["all", "active", "inactive"] as FilterType[]).map(f => (
-              <button
-                key={f}
-                onClick={() => setFilter(f)}
-                className="px-3 py-1.5 rounded-md text-xs font-medium transition-all"
-                style={filter === f ? { background: A, color: "#000" } : { color: "rgba(255,255,255,0.4)" }}
-              >
-                {f === "all" ? `الكل (${total})` : f === "active" ? `مفعّل (${activeCount})` : `غير مفعّل (${inactiveCount})`}
-              </button>
-            ))}
-          </div>
-
-          <div className="flex-1" />
-
-          {selectedIds.size > 0 && (
+        <div className="flex items-center gap-2 border-b border-white/5 pb-1">
+          {([
+            { key: "enrollments", label: "طلبات التسجيل", icon: ClipboardList },
+            { key: "subscriptions", label: "الاشتراكات", icon: CheckCircle2 },
+          ] as { key: Tab; label: string; icon: React.ElementType }[]).map(({ key, label, icon: Icon }) => (
             <button
-              onClick={handleBulkDelete}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500/20"
+              key={key}
+              onClick={() => setTab(key)}
+              className="flex items-center gap-2 px-4 py-2 rounded-t-lg text-sm font-medium transition-all border-b-2"
+              style={tab === key
+                ? { color: A, borderColor: A, background: `${A}08` }
+                : { color: "rgba(255,255,255,0.35)", borderColor: "transparent" }
+              }
             >
-              <Trash2 className="w-3.5 h-3.5" /> حذف ({selectedIds.size})
+              <Icon className="w-4 h-4" />
+              {label}
             </button>
-          )}
-
-          <button onClick={fetchData} className="p-2 rounded-lg text-white/40 hover:text-white hover:bg-white/5">
-            <RefreshCw className="w-4 h-4" />
-          </button>
+          ))}
         </div>
 
-        <div className="bg-[#111111] rounded-xl border border-white/10 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm text-right">
-              <thead className="bg-[#0a0a0a] border-b border-white/5">
-                <tr>
-                  <th className="px-3 py-3 w-10">
-                    <button onClick={toggleAll}>
-                      {allSelected
-                        ? <CheckSquare className="w-4 h-4" style={{ color: A }} />
-                        : <Square className="w-4 h-4 text-white/30" />}
-                    </button>
-                  </th>
-                  <th className="px-3 py-3 text-xs font-medium text-white/40">المشترك</th>
-                  <th className="px-3 py-3 text-xs font-medium text-white/40">الكود</th>
-                  <th className="px-3 py-3 text-xs font-medium text-white/40">UDID</th>
-                  <th className="px-3 py-3 text-xs font-medium text-white/40">الباقة</th>
-                  <th className="px-3 py-3 text-xs font-medium text-white/40">الجهاز</th>
-                  <th className="px-3 py-3 text-xs font-medium text-white/40">تاريخ الانتهاء</th>
-                  <th className="px-3 py-3 text-xs font-medium text-white/40">الحالة</th>
-                  <th className="px-3 py-3 text-xs font-medium text-white/40">تاريخ الطلب</th>
-                  <th className="px-3 py-3 w-24" />
-                </tr>
-              </thead>
-              <tbody>
-                {loading ? (
-                  <tr>
-                    <td colSpan={10} className="p-10 text-center text-white/40">
-                      <Loader2 className="w-5 h-5 animate-spin inline" />
-                    </td>
-                  </tr>
-                ) : filtered.length === 0 ? (
-                  <tr>
-                    <td colSpan={10} className="p-10 text-center text-white/30">لا توجد طلبات</td>
-                  </tr>
-                ) : filtered.map(sub => (
-                  <tr key={sub.id} className="border-b border-white/5 hover:bg-white/[0.02] group">
-                    <td className="px-3 py-3">
-                      <button onClick={() => toggle(sub.id)}>
-                        {selectedIds.has(sub.id)
-                          ? <CheckSquare className="w-4 h-4" style={{ color: A }} />
-                          : <Square className="w-4 h-4 text-white/30" />}
-                      </button>
-                    </td>
-                    <td className="px-3 py-3">
-                      <p className="text-white font-medium text-sm whitespace-nowrap">{sub.subscriberName || <span className="text-white/30">—</span>}</p>
-                      {sub.phone && <p className="text-white/40 text-xs mt-0.5" dir="ltr">{sub.phone}</p>}
-                    </td>
-                    <td className="px-3 py-3">
-                      <code className="text-xs font-mono font-bold whitespace-nowrap" style={{ color: A }}>{sub.code}</code>
-                    </td>
-                    <td className="px-3 py-3">
-                      {sub.udid ? (
-                        <div className="flex items-center gap-1">
-                          <span className="text-white/40 text-xs font-mono">{sub.udid.slice(0, 12)}…</span>
-                          <button
-                            onClick={() => copyUdid(sub.udid!)}
-                            className="opacity-0 group-hover:opacity-100 p-0.5 rounded text-white/30 hover:text-white transition-all"
-                          >
-                            <Copy className="w-3 h-3" />
-                          </button>
-                        </div>
-                      ) : (
-                        <span className="text-white/20 text-xs">—</span>
-                      )}
-                    </td>
-                    <td className="px-3 py-3">
-                      <span className="px-2 py-0.5 rounded-full text-xs whitespace-nowrap" style={{ background: `${A}20`, color: A }}>
-                        {sub.planNameAr || sub.planName || "—"}
-                      </span>
-                    </td>
-                    <td className="px-3 py-3">
-                      <span className="text-white/50 text-xs whitespace-nowrap">{sub.deviceType || "—"}</span>
-                      {sub.groupName && <p className="text-white/25 text-[10px] mt-0.5 whitespace-nowrap">{sub.groupName}</p>}
-                    </td>
-                    <td className="px-3 py-3">
-                      {sub.expiresAt ? (
-                        <span className={`text-xs flex items-center gap-1 whitespace-nowrap ${new Date(sub.expiresAt) < new Date() ? "text-red-400" : "text-green-400"}`}>
-                          <Clock className="w-3 h-3" />
-                          {new Date(sub.expiresAt).toLocaleDateString("ar-IQ")}
-                        </span>
-                      ) : (
-                        <span className="text-white/25 text-xs">—</span>
-                      )}
-                    </td>
-                    <td className="px-3 py-3">
-                      <button
-                        onClick={() => handleToggleActive(sub)}
-                        className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs transition-all whitespace-nowrap ${
-                          sub.isActive === "true"
-                            ? "bg-green-500/20 text-green-400 hover:bg-green-500/30"
-                            : "bg-white/10 text-white/40 hover:bg-white/15"
-                        }`}
-                      >
-                        {sub.isActive === "true"
-                          ? <><CheckCircle2 className="w-3 h-3" /> مفعّل</>
-                          : <><XCircle className="w-3 h-3" /> غير مفعّل</>}
-                      </button>
-                    </td>
-                    <td className="px-3 py-3 text-white/40 text-xs whitespace-nowrap">
-                      {new Date(sub.createdAt).toLocaleDateString("ar-IQ")}
-                    </td>
-                    <td className="px-3 py-3">
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
-                        {sub.isActive !== "true" && (
-                          <button
-                            onClick={() => setApproveTarget(sub)}
-                            className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-bold text-black whitespace-nowrap"
-                            style={{ background: A }}
-                          >
-                            <CheckCircle2 className="w-3 h-3" /> قبول
-                          </button>
-                        )}
-                        <button
-                          onClick={() => handleDelete(sub.id)}
-                          className="p-1.5 rounded-lg text-white/30 hover:text-red-400 hover:bg-red-500/10 transition-all"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
+        {tab === "enrollments" ? (
+          <EnrollmentRequests />
+        ) : (
+          <>
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="relative flex-1 min-w-[200px] max-w-sm">
+                <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+                <input
+                  placeholder="ابحث بالاسم، الهاتف، الكود، UDID..."
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  className="w-full bg-[#111111] border border-white/10 rounded-lg py-2 pr-10 pl-4 text-sm text-white placeholder-white/30 focus:outline-none focus:border-white/30"
+                />
+              </div>
+
+              <div className="flex items-center gap-1 bg-[#111111] border border-white/10 rounded-lg p-1">
+                {(["all", "active", "inactive"] as FilterType[]).map(f => (
+                  <button
+                    key={f}
+                    onClick={() => setFilter(f)}
+                    className="px-3 py-1.5 rounded-md text-xs font-medium transition-all"
+                    style={filter === f ? { background: A, color: "#000" } : { color: "rgba(255,255,255,0.4)" }}
+                  >
+                    {f === "all" ? `الكل (${total})` : f === "active" ? `مفعّل (${activeCount})` : `غير مفعّل (${inactiveCount})`}
+                  </button>
                 ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+              </div>
+
+              <div className="flex-1" />
+
+              {selectedIds.size > 0 && (
+                <button
+                  onClick={handleBulkDelete}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500/20"
+                >
+                  <Trash2 className="w-3.5 h-3.5" /> حذف ({selectedIds.size})
+                </button>
+              )}
+
+              <button onClick={fetchData} className="p-2 rounded-lg text-white/40 hover:text-white hover:bg-white/5">
+                <RefreshCw className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="bg-[#111111] rounded-xl border border-white/10 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm text-right">
+                  <thead className="bg-[#0a0a0a] border-b border-white/5">
+                    <tr>
+                      <th className="px-3 py-3 w-10">
+                        <button onClick={toggleAll}>
+                          {allSelected
+                            ? <CheckSquare className="w-4 h-4" style={{ color: A }} />
+                            : <Square className="w-4 h-4 text-white/30" />}
+                        </button>
+                      </th>
+                      <th className="px-3 py-3 text-xs font-medium text-white/40">المشترك</th>
+                      <th className="px-3 py-3 text-xs font-medium text-white/40">الكود</th>
+                      <th className="px-3 py-3 text-xs font-medium text-white/40">UDID</th>
+                      <th className="px-3 py-3 text-xs font-medium text-white/40">الباقة</th>
+                      <th className="px-3 py-3 text-xs font-medium text-white/40">الجهاز</th>
+                      <th className="px-3 py-3 text-xs font-medium text-white/40">تاريخ الانتهاء</th>
+                      <th className="px-3 py-3 text-xs font-medium text-white/40">الحالة</th>
+                      <th className="px-3 py-3 text-xs font-medium text-white/40">تاريخ الطلب</th>
+                      <th className="px-3 py-3 w-24" />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {loading ? (
+                      <tr>
+                        <td colSpan={10} className="p-10 text-center text-white/40">
+                          <Loader2 className="w-5 h-5 animate-spin inline" />
+                        </td>
+                      </tr>
+                    ) : filtered.length === 0 ? (
+                      <tr>
+                        <td colSpan={10} className="p-10 text-center text-white/30">لا توجد اشتراكات</td>
+                      </tr>
+                    ) : filtered.map(sub => (
+                      <tr key={sub.id} className="border-b border-white/5 hover:bg-white/[0.02] group">
+                        <td className="px-3 py-3">
+                          <button onClick={() => toggle(sub.id)}>
+                            {selectedIds.has(sub.id)
+                              ? <CheckSquare className="w-4 h-4" style={{ color: A }} />
+                              : <Square className="w-4 h-4 text-white/30" />}
+                          </button>
+                        </td>
+                        <td className="px-3 py-3">
+                          <p className="text-white font-medium text-sm whitespace-nowrap">{sub.subscriberName || <span className="text-white/30">—</span>}</p>
+                          {sub.phone && <p className="text-white/40 text-xs mt-0.5" dir="ltr">{sub.phone}</p>}
+                        </td>
+                        <td className="px-3 py-3">
+                          <code className="text-xs font-mono font-bold whitespace-nowrap" style={{ color: A }}>{sub.code}</code>
+                        </td>
+                        <td className="px-3 py-3">
+                          {sub.udid ? (
+                            <div className="flex items-center gap-1">
+                              <span className="text-white/40 text-xs font-mono">{sub.udid.slice(0, 12)}…</span>
+                              <button
+                                onClick={() => copyUdid(sub.udid!)}
+                                className="opacity-0 group-hover:opacity-100 p-0.5 rounded text-white/30 hover:text-white transition-all"
+                              >
+                                <Copy className="w-3 h-3" />
+                              </button>
+                            </div>
+                          ) : (
+                            <span className="text-white/20 text-xs">—</span>
+                          )}
+                        </td>
+                        <td className="px-3 py-3">
+                          <span className="px-2 py-0.5 rounded-full text-xs whitespace-nowrap" style={{ background: `${A}20`, color: A }}>
+                            {sub.planNameAr || sub.planName || "—"}
+                          </span>
+                        </td>
+                        <td className="px-3 py-3">
+                          <span className="text-white/50 text-xs whitespace-nowrap">{sub.deviceType || "—"}</span>
+                          {sub.groupName && <p className="text-white/25 text-[10px] mt-0.5 whitespace-nowrap">{sub.groupName}</p>}
+                        </td>
+                        <td className="px-3 py-3">
+                          {sub.expiresAt ? (
+                            <span className={`text-xs flex items-center gap-1 whitespace-nowrap ${new Date(sub.expiresAt) < new Date() ? "text-red-400" : "text-green-400"}`}>
+                              <Clock className="w-3 h-3" />
+                              {new Date(sub.expiresAt).toLocaleDateString("ar-IQ")}
+                            </span>
+                          ) : (
+                            <span className="text-white/25 text-xs">—</span>
+                          )}
+                        </td>
+                        <td className="px-3 py-3">
+                          <button
+                            onClick={() => handleToggleActive(sub)}
+                            className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs transition-all whitespace-nowrap ${
+                              sub.isActive === "true"
+                                ? "bg-green-500/20 text-green-400 hover:bg-green-500/30"
+                                : "bg-white/10 text-white/40 hover:bg-white/15"
+                            }`}
+                          >
+                            {sub.isActive === "true"
+                              ? <><CheckCircle2 className="w-3 h-3" /> مفعّل</>
+                              : <><XCircle className="w-3 h-3" /> غير مفعّل</>}
+                          </button>
+                        </td>
+                        <td className="px-3 py-3 text-white/40 text-xs whitespace-nowrap">
+                          {new Date(sub.createdAt).toLocaleDateString("ar-IQ")}
+                        </td>
+                        <td className="px-3 py-3">
+                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                            {sub.isActive !== "true" && (
+                              <button
+                                onClick={() => setApproveTarget(sub)}
+                                className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-bold text-black whitespace-nowrap"
+                                style={{ background: A }}
+                              >
+                                <CheckCircle2 className="w-3 h-3" /> قبول
+                              </button>
+                            )}
+                            <button
+                              onClick={() => handleDelete(sub.id)}
+                              className="p-1.5 rounded-lg text-white/30 hover:text-red-400 hover:bg-red-500/10 transition-all"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
       {approveTarget && (

@@ -6,3 +6,4 @@ export * from "./featured_banners";
 export * from "./settings";
 export * from "./groups";
 export * from "./notifications";
+export * from "./enrollment_requests";
