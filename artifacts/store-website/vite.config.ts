@@ -66,6 +66,12 @@ export default defineConfig({
       "/api": {
         target: "http://localhost:8080",
         changeOrigin: true,
+        xfwd: true,
+      },
+      "/admin/FilesIPA": {
+        target: "http://localhost:8080",
+        changeOrigin: true,
+        xfwd: true,
       },
     },
     fs: {

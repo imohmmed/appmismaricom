@@ -32,6 +32,18 @@ const defaultOrigins = [
   "http://localhost:5173",
 ];
 
+// Auto-add Replit dev domain (available in the Replit environment)
+if (process.env.REPLIT_DEV_DOMAIN) {
+  defaultOrigins.push(`https://${process.env.REPLIT_DEV_DOMAIN}`);
+}
+// Also support comma-separated REPLIT_DOMAINS
+if (process.env.REPLIT_DOMAINS) {
+  for (const d of process.env.REPLIT_DOMAINS.split(",")) {
+    const origin = `https://${d.trim()}`;
+    if (!defaultOrigins.includes(origin)) defaultOrigins.push(origin);
+  }
+}
+
 const corsOrigins = allowedOrigins.length > 0
   ? allowedOrigins
   : defaultOrigins;

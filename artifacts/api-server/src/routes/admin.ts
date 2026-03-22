@@ -171,7 +171,8 @@ router.post("/admin/login", loginLimiter, async (req, res): Promise<void> => {
 });
 
 // ─── PROTECT all routes below this line ─────────────────────────────────────
-router.use(adminAuth);
+// Use "/admin" path prefix so public routes (e.g. /profile/enroll) are NOT intercepted
+router.use("/admin", adminAuth);
 
 // ─── STATS ─────────────────────────────────────────────────────────────────
 
