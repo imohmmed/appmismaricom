@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { eq } from "drizzle-orm";
-import { db, plansTable, subscriptionsTable } from "@workspace/db";
+import { db, plansTable, subscriptionsTable, groupsTable } from "@workspace/db";
 import {
   ListPlansResponse,
   ActivateSubscriptionBody,
@@ -68,6 +68,42 @@ router.post("/subscriptions/activate", async (req, res): Promise<void> => {
       expiresAt: sub.expiresAt,
     })
   );
+});
+
+// ─── PUBLIC SUBSCRIBER PROFILE (no auth) ──────────────────────────────────
+router.get("/subscriber/:id", async (req, res): Promise<void> => {
+  const id = Number(req.params.id);
+  if (!id) { res.status(400).json({ error: "Invalid ID" }); return; }
+
+  const [sub] = await db
+    .select({
+      id: subscriptionsTable.id,
+      code: subscriptionsTable.code,
+      subscriberName: subscriptionsTable.subscriberName,
+      phone: subscriptionsTable.phone,
+      udid: subscriptionsTable.udid,
+      deviceType: subscriptionsTable.deviceType,
+      groupName: subscriptionsTable.groupName,
+      planId: subscriptionsTable.planId,
+      isActive: subscriptionsTable.isActive,
+      activatedAt: subscriptionsTable.activatedAt,
+      expiresAt: subscriptionsTable.expiresAt,
+      createdAt: subscriptionsTable.createdAt,
+    })
+    .from(subscriptionsTable)
+    .where(eq(subscriptionsTable.id, id));
+
+  if (!sub) { res.status(404).json({ error: "غير موجود" }); return; }
+
+  const [plan] = await db.select().from(plansTable).where(eq(plansTable.id, sub.planId));
+
+  res.json({
+    subscriber: {
+      ...sub,
+      planName: plan?.name || null,
+      planNameAr: plan?.nameAr || null,
+    },
+  });
 });
 
 export default router;

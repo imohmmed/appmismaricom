@@ -14,7 +14,7 @@ const navGroups = [
       { href: "/admin/featured", icon: Star, label: "المميزات", labelEn: "Featured" },
       { href: "/admin/subscribers", icon: Users, label: "المشتركين", labelEn: "Subscribers" },
       { href: "/admin/groups", icon: UsersRound, label: "المجموعات", labelEn: "Groups" },
-      { href: "/admin/categories", icon: Layers, label: "التصنيفات", labelEn: "Categories" },
+      { href: "/admin/categories", icon: Layers, label: "الأقسام", labelEn: "Categories" },
     ],
   },
   {

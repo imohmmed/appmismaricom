@@ -21,6 +21,7 @@ import AdminDownloads from "./pages/admin/Downloads";
 import AdminSettings from "./pages/admin/Settings";
 import AdminAddByUrl from "./pages/admin/AddByUrl";
 import AdminAddByFile from "./pages/admin/AddByFile";
+import SubscriberProfile from "./pages/SubscriberProfile";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -52,6 +53,8 @@ function Router() {
       <Route path="/admin/settings" component={AdminSettings} />
       <Route path="/admin/apps/add-url" component={AdminAddByUrl} />
       <Route path="/admin/apps/add-file" component={AdminAddByFile} />
+
+      <Route path="/subscriber/:id" component={SubscriberProfile} />
 
       <Route component={NotFound} />
     </Switch>

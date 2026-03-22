@@ -224,16 +224,19 @@ router.delete("/admin/apps/:id", async (req, res): Promise<void> => {
 
 router.get("/admin/categories", async (_req, res): Promise<void> => {
   const categories = await db
-    .select({
-      id: categoriesTable.id,
-      name: categoriesTable.name,
-      nameAr: categoriesTable.nameAr,
-      icon: categoriesTable.icon,
-      appCount: sql<number>`(SELECT count(*) FROM apps WHERE apps.category_id = ${categoriesTable.id})::int`,
-    })
+    .select({ id: categoriesTable.id, name: categoriesTable.name, nameAr: categoriesTable.nameAr, icon: categoriesTable.icon })
     .from(categoriesTable);
 
-  res.json(AdminListCategoriesResponse.parse({ categories }));
+  const counts = await db
+    .select({ categoryId: appsTable.categoryId, cnt: sql<number>`count(*)::int` })
+    .from(appsTable)
+    .groupBy(appsTable.categoryId);
+
+  const countMap: Record<number, number> = {};
+  for (const row of counts) if (row.categoryId != null) countMap[row.categoryId] = Number(row.cnt);
+
+  const result = categories.map(c => ({ ...c, appCount: countMap[c.id] ?? 0 }));
+  res.json(AdminListCategoriesResponse.parse({ categories: result }));
 });
 
 router.post("/admin/categories", async (req, res): Promise<void> => {

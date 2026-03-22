@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import {
   Search, Plus, X, Trash2, Edit2, CheckSquare, Square,
-  Loader2, AlertCircle, Copy, RefreshCw
+  Loader2, AlertCircle, Copy, RefreshCw, Bell, Link2
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -56,6 +56,76 @@ function Select({ ...p }: React.SelectHTMLAttributes<HTMLSelectElement>) {
 }
 
 const blankForm = { code: "", subscriberName: "", phone: "", udid: "", deviceType: "iPhone", groupName: "", planId: "", isActive: "true" };
+
+function NotifyModal({ sub, onClose }: { sub: Sub; onClose: () => void }) {
+  const { toast } = useToast();
+  const [title, setTitle] = useState("");
+  const [body, setBody] = useState("");
+  const [sending, setSending] = useState(false);
+
+  const handleSend = async () => {
+    if (!title.trim() || !body.trim()) { toast({ title: "يرجى إدخال العنوان والرسالة", variant: "destructive" }); return; }
+    setSending(true);
+    try {
+      const token = localStorage.getItem("adminToken") || "";
+      await fetch(`${API}/api/admin/notifications`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-admin-token": token },
+        body: JSON.stringify({ title, body, target: `sub:${sub.id}:${sub.code}` }),
+      });
+      toast({ title: `تم إرسال الرسالة إلى ${sub.subscriberName || sub.code}` });
+      onClose();
+    } catch {
+      toast({ title: "حدث خطأ", variant: "destructive" });
+    }
+    setSending(false);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" dir="rtl">
+      <div className="bg-[#0a0a0a] border border-white/10 rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-white/5">
+          <div>
+            <h3 className="text-sm font-bold text-white">إرسال رسالة</h3>
+            <p className="text-white/40 text-xs mt-0.5">{sub.subscriberName || sub.code}</p>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-lg text-white/30 hover:text-white hover:bg-white/5"><X className="w-4 h-4" /></button>
+        </div>
+        <div className="p-5 space-y-3">
+          <div className="space-y-1">
+            <label className="text-xs font-medium" style={{ color: `${A}99` }}>العنوان</label>
+            <input
+              value={title} onChange={e => setTitle(e.target.value)}
+              placeholder="عنوان الرسالة"
+              className="w-full bg-black border border-white/10 rounded-lg py-2 px-3 text-sm text-white focus:border-[#9fbcff]/50 focus:outline-none placeholder-white/20"
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs font-medium" style={{ color: `${A}99` }}>الرسالة</label>
+            <textarea
+              value={body} onChange={e => setBody(e.target.value)}
+              rows={3}
+              placeholder="اكتب رسالتك هنا..."
+              className="w-full bg-black border border-white/10 rounded-lg py-2 px-3 text-sm text-white focus:border-[#9fbcff]/50 focus:outline-none placeholder-white/20 resize-none"
+            />
+          </div>
+          <div className="flex justify-end gap-2 pt-1">
+            <button onClick={onClose} className="px-4 py-2 rounded-lg border border-white/10 text-white/50 text-sm">إلغاء</button>
+            <button
+              onClick={handleSend}
+              disabled={sending}
+              className="px-5 py-2 rounded-lg text-sm font-bold text-black disabled:opacity-50 flex items-center gap-1.5"
+              style={{ background: A }}
+            >
+              {sending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Bell className="w-3.5 h-3.5" />}
+              إرسال
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function SubModal({ sub, plans, onClose, onSaved }: { sub?: Sub; plans: Plan[]; onClose: () => void; onSaved: () => void }) {
   const [form, setForm] = useState(sub ? {
@@ -168,6 +238,7 @@ export default function AdminSubscribers() {
   const [modal, setModal] = useState<"add" | "edit" | null>(null);
   const [editSub, setEditSub] = useState<Sub | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [notifySub, setNotifySub] = useState<Sub | null>(null);
 
   const fetchData = async () => {
     setLoading(true);
@@ -329,6 +400,24 @@ export default function AdminSubscribers() {
                     <td className="px-3 py-3">
                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button
+                          title="نسخ رابط الإحالة"
+                          onClick={() => {
+                            const base = window.location.origin + import.meta.env.BASE_URL;
+                            navigator.clipboard.writeText(`${base}subscriber/${sub.id}`);
+                            toast({ title: "تم نسخ الرابط" });
+                          }}
+                          className="p-1.5 rounded-lg text-white/40 hover:text-[#9fbcff] hover:bg-[#9fbcff]/10"
+                        >
+                          <Link2 className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          title="إرسال رسالة"
+                          onClick={() => setNotifySub(sub)}
+                          className="p-1.5 rounded-lg text-white/40 hover:text-[#9fbcff] hover:bg-[#9fbcff]/10"
+                        >
+                          <Bell className="w-3.5 h-3.5" />
+                        </button>
+                        <button
                           onClick={() => { setEditSub(sub); setModal("edit"); }}
                           className="p-1.5 rounded-lg text-white/40 hover:text-white hover:bg-white/5"
                         >
@@ -358,6 +447,7 @@ export default function AdminSubscribers() {
           onSaved={fetchData}
         />
       )}
+      {notifySub && <NotifyModal sub={notifySub} onClose={() => setNotifySub(null)} />}
     </AdminLayout>
   );
 }

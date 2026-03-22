@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import {
   Plus, Search, CheckSquare, Square, Trash2, X,
-  Loader2, Copy, RefreshCw, Download
+  Loader2, Copy, RefreshCw, Download, Smartphone, Tablet, Shield
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -25,12 +25,15 @@ interface Sub {
   subscriberName: string | null;
   planNameAr: string | null;
   planName: string | null;
+  deviceType: string | null;
+  groupName: string | null;
   isActive: string;
   udid: string | null;
   createdAt: string;
 }
 
 interface Plan { id: number; name: string; nameAr: string | null; }
+interface Group { id: number; certName: string; iphoneOfficialCount: number; iphoneMacCount: number; ipadCount: number; }
 
 function generateCode() {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -46,22 +49,27 @@ export default function AdminSubCodes() {
   const { toast } = useToast();
   const [subs, setSubs] = useState<Sub[]>([]);
   const [plans, setPlans] = useState<Plan[]>([]);
+  const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [modal, setModal] = useState(false);
   const [genCount, setGenCount] = useState(1);
   const [genPlanId, setGenPlanId] = useState("");
+  const [genDeviceType, setGenDeviceType] = useState<"iPhone" | "iPad">("iPhone");
+  const [genGroupName, setGenGroupName] = useState("");
   const [generating, setGenerating] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
-    const [subsData, plansData] = await Promise.all([
+    const [subsData, plansData, groupsData] = await Promise.all([
       adminFetch("/admin/subscriptions?limit=500"),
       adminFetch("/admin/plans"),
+      adminFetch("/admin/groups"),
     ]);
     setSubs(subsData?.subscriptions || []);
     setPlans(plansData?.plans || []);
+    setGroups(groupsData?.groups || []);
     setLoading(false);
   };
   useEffect(() => { fetchData(); }, []);
@@ -99,25 +107,34 @@ export default function AdminSubCodes() {
       const code = generateCode();
       await adminFetch("/admin/subscriptions", {
         method: "POST",
-        body: JSON.stringify({ code, planId: Number(genPlanId), isActive: "false" }),
+        body: JSON.stringify({
+          code,
+          planId: Number(genPlanId),
+          isActive: "false",
+          deviceType: genDeviceType,
+          groupName: genGroupName.trim() || null,
+        }),
       });
       codes.push(code);
     }
     toast({ title: `تم إنشاء ${genCount} كود اشتراك` });
     setModal(false);
+    setGenGroupName("");
     fetchData();
     setGenerating(false);
   };
 
   const exportCodes = () => {
-    const lines = filtered.map(s => `${s.code}\t${s.isActive === "true" ? "مفعّل" : "غير مفعّل"}\t${s.planNameAr || s.planName || ""}`);
-    const blob = new Blob([["الكود\tالحالة\tالباقة", ...lines].join("\n")], { type: "text/plain" });
+    const lines = filtered.map(s => `${s.code}\t${s.isActive === "true" ? "مفعّل" : "غير مفعّل"}\t${s.planNameAr || s.planName || ""}\t${s.deviceType || ""}\t${s.groupName || ""}`);
+    const blob = new Blob([["الكود\tالحالة\tالباقة\tالجهاز\tالمجموعة", ...lines].join("\n")], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
     a.download = "subscription-codes.txt";
     a.click();
   };
+
+  const inp = "w-full bg-black border border-white/10 rounded-lg py-2 px-3 text-sm text-white focus:border-[#9fbcff]/50 focus:outline-none placeholder-white/20";
 
   return (
     <AdminLayout>
@@ -165,24 +182,26 @@ export default function AdminSubCodes() {
                   <th className="px-3 py-3 text-xs font-medium text-white/40">كود الاشتراك</th>
                   <th className="px-3 py-3 text-xs font-medium text-white/40">المشترك</th>
                   <th className="px-3 py-3 text-xs font-medium text-white/40">الباقة</th>
+                  <th className="px-3 py-3 text-xs font-medium text-white/40">الجهاز</th>
+                  <th className="px-3 py-3 text-xs font-medium text-white/40">المجموعة</th>
                   <th className="px-3 py-3 text-xs font-medium text-white/40">الحالة</th>
                   <th className="px-3 py-3 text-xs font-medium text-white/40">UDID</th>
                   <th className="px-3 py-3 text-xs font-medium text-white/40">تاريخ الإنشاء</th>
-                  <th className="px-3 py-3 w-16" />
+                  <th className="px-3 py-3 w-10" />
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan={8} className="p-8 text-center text-white/40"><Loader2 className="w-5 h-5 animate-spin inline" /></td></tr>
+                  <tr><td colSpan={10} className="p-8 text-center text-white/40"><Loader2 className="w-5 h-5 animate-spin inline" /></td></tr>
                 ) : filtered.length === 0 ? (
-                  <tr><td colSpan={8} className="p-8 text-center text-white/30">لا توجد أكواد</td></tr>
+                  <tr><td colSpan={10} className="p-8 text-center text-white/30">لا توجد أكواد</td></tr>
                 ) : filtered.map(sub => (
                   <tr key={sub.id} className="border-b border-white/5 hover:bg-white/2 group">
                     <td className="px-3 py-3"><button onClick={() => toggle(sub.id)}>{selectedIds.has(sub.id) ? <CheckSquare className="w-4 h-4" style={{ color: A }} /> : <Square className="w-4 h-4 text-white/30" />}</button></td>
                     <td className="px-3 py-3">
                       <div className="flex items-center gap-2">
                         <code className="text-sm font-mono font-bold" style={{ color: A }}>{sub.code}</code>
-                        <button onClick={() => { navigator.clipboard.writeText(sub.code); }} className="opacity-0 group-hover:opacity-100 p-0.5 rounded text-white/30 hover:text-white">
+                        <button onClick={() => { navigator.clipboard.writeText(sub.code); toast({ title: "تم النسخ" }); }} className="opacity-0 group-hover:opacity-100 p-0.5 rounded text-white/30 hover:text-white">
                           <Copy className="w-3.5 h-3.5" />
                         </button>
                       </div>
@@ -193,6 +212,13 @@ export default function AdminSubCodes() {
                         {sub.planNameAr || sub.planName || "-"}
                       </span>
                     </td>
+                    <td className="px-3 py-3">
+                      <span className="flex items-center gap-1 text-white/60 text-xs whitespace-nowrap">
+                        {sub.deviceType === "iPad" ? <Tablet className="w-3 h-3" /> : sub.deviceType ? <Smartphone className="w-3 h-3" /> : null}
+                        {sub.deviceType || "-"}
+                      </span>
+                    </td>
+                    <td className="px-3 py-3 text-white/40 text-xs whitespace-nowrap">{sub.groupName || "-"}</td>
                     <td className="px-3 py-3">
                       <span className={`px-2 py-0.5 rounded-full text-xs ${sub.isActive === "true" ? "bg-green-500/20 text-green-400" : "bg-white/10 text-white/40"}`}>
                         {sub.isActive === "true" ? "مفعّل" : "غير مفعّل"}
@@ -215,33 +241,92 @@ export default function AdminSubCodes() {
 
       {modal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/80 backdrop-blur-sm" dir="rtl">
-          <div className="bg-[#0a0a0a] border border-white/10 rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-white/5">
+          <div className="bg-[#0a0a0a] border border-white/10 rounded-2xl w-full max-w-sm shadow-2xl flex flex-col max-h-[92vh] overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-white/5 shrink-0">
               <h3 className="text-base font-bold text-white">إنشاء أكواد اشتراك</h3>
               <button onClick={() => setModal(false)} className="p-1.5 rounded-lg text-white/30 hover:text-white hover:bg-white/5"><X className="w-4 h-4" /></button>
             </div>
-            <form onSubmit={handleGenerate} className="p-5 space-y-4">
+            <form onSubmit={handleGenerate} className="flex-1 overflow-y-auto p-5 space-y-4">
               <div className="space-y-1">
-                <label className="text-xs font-medium" style={{ color: `${A}99` }}>الباقة</label>
-                <select required value={genPlanId} onChange={e => setGenPlanId(e.target.value)}
-                  className="w-full bg-black border border-white/10 rounded-lg py-2 px-3 text-sm text-white focus:border-[#9fbcff]/50 focus:outline-none">
+                <label className="text-xs font-medium" style={{ color: `${A}99` }}>الباقة *</label>
+                <select required value={genPlanId} onChange={e => setGenPlanId(e.target.value)} className={inp}>
                   <option value="">اختر باقة</option>
                   {plans.map(p => <option key={p.id} value={p.id}>{p.nameAr || p.name}</option>)}
                 </select>
               </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-medium" style={{ color: `${A}99` }}>نوع الجهاز *</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {(["iPhone", "iPad"] as const).map(dt => (
+                    <button
+                      key={dt}
+                      type="button"
+                      onClick={() => setGenDeviceType(dt)}
+                      className="flex items-center justify-center gap-2 py-2.5 rounded-xl border text-sm font-medium transition-all"
+                      style={genDeviceType === dt
+                        ? { background: `${A}15`, borderColor: `${A}40`, color: A }
+                        : { background: "rgba(255,255,255,0.04)", borderColor: "rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.5)" }
+                      }
+                    >
+                      {dt === "iPad" ? <Tablet className="w-4 h-4" /> : <Smartphone className="w-4 h-4" />}
+                      {dt}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-medium" style={{ color: `${A}99` }}>المجموعة</label>
+                {groups.length > 0 && (
+                  <div className="space-y-1.5 max-h-36 overflow-y-auto mb-2">
+                    {groups.map(g => {
+                      const iphoneCount = (g.iphoneOfficialCount || 0) + (g.iphoneMacCount || 0);
+                      const ipadCount = g.ipadCount || 0;
+                      const isSelected = genGroupName === g.certName;
+                      return (
+                        <button
+                          key={g.id}
+                          type="button"
+                          onClick={() => setGenGroupName(isSelected ? "" : g.certName)}
+                          className="w-full flex items-center gap-2 px-3 py-2 rounded-lg border text-right transition-all text-sm"
+                          style={isSelected
+                            ? { background: `${A}15`, borderColor: `${A}30`, color: A }
+                            : { background: "rgba(255,255,255,0.04)", borderColor: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.7)" }
+                          }
+                        >
+                          <Shield className="w-3.5 h-3.5 shrink-0" />
+                          <span className="flex-1 truncate">{g.certName}</span>
+                          <span className="text-xs text-white/30 flex items-center gap-1.5 shrink-0">
+                            <span className="flex items-center gap-0.5"><Smartphone className="w-2.5 h-2.5" />{iphoneCount}</span>
+                            <span className="flex items-center gap-0.5"><Tablet className="w-2.5 h-2.5" />{ipadCount}</span>
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+                <input
+                  value={genGroupName}
+                  onChange={e => setGenGroupName(e.target.value)}
+                  className={inp}
+                  placeholder="أو اكتب اسم المجموعة..."
+                />
+              </div>
+
               <div className="space-y-1">
                 <label className="text-xs font-medium" style={{ color: `${A}99` }}>عدد الأكواد</label>
                 <input type="number" min="1" max="100" value={genCount} onChange={e => setGenCount(Number(e.target.value))}
-                  className="w-full bg-black border border-white/10 rounded-lg py-2 px-3 text-sm text-white focus:border-[#9fbcff]/50 focus:outline-none" dir="ltr" />
-              </div>
-              <div className="pt-2 flex justify-end gap-2">
-                <button type="button" onClick={() => setModal(false)} className="px-4 py-2 rounded-lg border border-white/10 text-white/50 text-sm">إلغاء</button>
-                <button type="submit" disabled={generating} className="px-5 py-2 rounded-lg text-sm font-bold text-black disabled:opacity-50 flex items-center gap-1.5" style={{ background: A }}>
-                  {generating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
-                  إنشاء
-                </button>
+                  className={inp} dir="ltr" />
               </div>
             </form>
+            <div className="border-t border-white/5 p-4 flex justify-end gap-2 shrink-0">
+              <button type="button" onClick={() => setModal(false)} className="px-4 py-2 rounded-lg border border-white/10 text-white/50 text-sm">إلغاء</button>
+              <button onClick={handleGenerate as any} disabled={generating} className="px-5 py-2 rounded-lg text-sm font-bold text-black disabled:opacity-50 flex items-center gap-1.5" style={{ background: A }}>
+                {generating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+                إنشاء
+              </button>
+            </div>
           </div>
         </div>
       )}

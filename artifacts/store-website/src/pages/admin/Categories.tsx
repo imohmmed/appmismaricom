@@ -79,7 +79,7 @@ export default function AdminCategories() {
       <div className="space-y-6" dir="rtl">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-bold text-white">التصنيفات</h2>
+            <h2 className="text-lg font-bold text-white">الأقسام</h2>
             <p className="text-white/40 text-xs mt-0.5">أقسام التطبيقات في المتجر</p>
           </div>
           <button onClick={openAdd} className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold text-black" style={{ background: A }}>
