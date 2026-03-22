@@ -1,5 +1,5 @@
 import { Feather } from "@expo/vector-icons";
-import { useNavigation, useRouter } from "expo-router";
+import { useNavigation } from "expo-router";
 import React, { useState, useRef, useCallback, useEffect } from "react";
 import {
   Dimensions,
@@ -15,9 +15,28 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useSettings } from "@/contexts/SettingsContext";
-import { useCategories, useApps, getCategoryColor, getTagColor, type ApiApp, type ApiCategory } from "@/hooks/useAppData";
+import { useCategories, useApps, getCategoryColor, getTagColor, type ApiApp } from "@/hooks/useAppData";
+import AppDetailPanel from "@/components/AppDetailPanel";
+import SlidePanel from "@/components/SlidePanel";
+import CategorySlideContent from "@/components/CategorySlideContent";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
+
+function apiAppToDetail(app: ApiApp) {
+  return {
+    id: app.id,
+    name: app.name,
+    descAr: app.descAr ?? undefined,
+    descEn: app.description ?? undefined,
+    desc: app.description ?? undefined,
+    category: app.categoryName,
+    categoryNameAr: app.categoryNameAr ?? undefined,
+    categoryId: app.categoryId,
+    tag: app.tag,
+    icon: app.icon || "box",
+    catKey: app.categoryName?.toLowerCase(),
+  };
+}
 
 export default function SearchScreen() {
   const insets = useSafeAreaInsets();
@@ -26,7 +45,9 @@ export default function SearchScreen() {
   const [query, setQuery] = useState("");
   const inputRef = useRef<TextInput>(null);
   const { colors, t, fontAr, isArabic } = useSettings();
-  const router = useRouter();
+
+  const [selectedApp, setSelectedApp] = useState<ApiApp | null>(null);
+  const [activeCat, setActiveCat] = useState<{ id: number; name?: string; nameAr?: string; color?: string } | null>(null);
 
   useEffect(() => {
     const unsub = navigation.addListener("tabPress" as any, () => {
@@ -43,7 +64,6 @@ export default function SearchScreen() {
     return unsub;
   }, [navigation]);
 
-  // ── API data ──────────────────────────────────────────────────────────────
   const { categories, loading: catsLoading } = useCategories();
   const { apps: searchResults, loading: searchLoading } = useApps({
     search: query,
@@ -51,8 +71,16 @@ export default function SearchScreen() {
     skip: query.length < 2,
   });
 
-  const isSearching = query.length >= 2;
+  const { apps: relatedApps } = useApps({
+    categoryId: selectedApp?.categoryId,
+    limit: 31,
+    skip: !selectedApp?.categoryId,
+  });
+  const relatedAppsMapped = selectedApp
+    ? relatedApps.filter(a => a.id !== selectedApp.id).slice(0, 30).map(apiAppToDetail)
+    : [];
 
+  const isSearching = query.length >= 2;
   const clearQuery = useCallback(() => setQuery(""), []);
 
   const renderAppRow = (app: ApiApp, index: number, list: ApiApp[]) => {
@@ -61,7 +89,10 @@ export default function SearchScreen() {
     const textAlign = isArabic ? ("right" as const) : ("left" as const);
     return (
       <View key={app.id}>
-        <Pressable style={[styles.appRow, !isArabic && { flexDirection: "row" }]}>
+        <Pressable
+          style={[styles.appRow, !isArabic && { flexDirection: "row" }]}
+          onPress={() => setSelectedApp(app)}
+        >
           {isArabic ? (
             <>
               <View style={[styles.getButton, { backgroundColor: colors.card }]}>
@@ -131,7 +162,6 @@ export default function SearchScreen() {
         keyboardShouldPersistTaps="handled"
       >
         {isSearching ? (
-          /* ── Search Results ──────────────────────────────────────────────── */
           <View style={styles.resultsContainer}>
             {searchLoading ? (
               <View style={styles.emptyState}>
@@ -149,7 +179,6 @@ export default function SearchScreen() {
             )}
           </View>
         ) : (
-          /* ── Browse Categories (from API) ────────────────────────────────── */
           <View style={styles.categoriesContainer}>
             <Text style={[styles.sectionTitle, { color: colors.text, fontFamily: fontAr("Bold"), textAlign: isArabic ? "right" : "left" }]}>
               {t("sections")}
@@ -161,14 +190,12 @@ export default function SearchScreen() {
                 {categories.map((cat) => {
                   const color = getCategoryColor(cat.id);
                   const isEmoji = cat.icon && cat.icon.length <= 2;
+                  const catLabel = isArabic ? (cat.nameAr || cat.name) : (cat.name || cat.nameAr);
                   return (
                     <Pressable
                       key={cat.id}
                       style={[styles.catCard, { backgroundColor: color }]}
-                      onPress={() => router.push({
-                        pathname: "/category/[id]",
-                        params: { id: String(cat.id), name: isArabic ? (cat.nameAr || cat.name) : (cat.name || cat.nameAr), color },
-                      })}
+                      onPress={() => setActiveCat({ id: cat.id, name: cat.name, nameAr: cat.nameAr, color })}
                     >
                       <View style={[styles.catCardIconWrap, isArabic ? { left: 16, right: undefined } : { right: 16 }]}>
                         {isEmoji ? (
@@ -178,7 +205,7 @@ export default function SearchScreen() {
                         )}
                       </View>
                       <Text style={[styles.catCardLabel, { fontFamily: fontAr("Bold"), textAlign: isArabic ? "right" : "left" }]}>
-                        {isArabic ? (cat.nameAr || cat.name) : (cat.name || cat.nameAr)}
+                        {catLabel}
                       </Text>
                       <Text style={[styles.catAppCount, { fontFamily: fontAr("Regular"), textAlign: isArabic ? "right" : "left" }]}>
                         {cat.appCount} {isArabic ? "تطبيق" : (cat.appCount === 1 ? "app" : "apps")}
@@ -191,6 +218,47 @@ export default function SearchScreen() {
           </View>
         )}
       </ScrollView>
+
+      {/* App detail from search results */}
+      <SlidePanel visible={selectedApp !== null} onClose={() => setSelectedApp(null)}>
+        {selectedApp && (
+          <AppDetailPanel
+            app={apiAppToDetail(selectedApp)}
+            onClose={() => setSelectedApp(null)}
+            onCategoryPress={() => {
+              setSelectedApp(null);
+              if (selectedApp?.categoryId) {
+                setActiveCat({
+                  id: selectedApp.categoryId,
+                  name: selectedApp.categoryName,
+                  nameAr: selectedApp.categoryNameAr ?? undefined,
+                  color: "#9fbcff",
+                });
+              }
+            }}
+            relatedApps={relatedAppsMapped}
+            onRelatedAppPress={(a) => {
+              const found = searchResults.find(x => x.id === a.id);
+              if (found) setSelectedApp(found);
+              else setSelectedApp({ ...a, description: a.desc, categoryName: a.category } as any);
+            }}
+          />
+        )}
+      </SlidePanel>
+
+      {/* Category slide panel */}
+      <SlidePanel visible={activeCat !== null} onClose={() => setActiveCat(null)}>
+        {activeCat && (
+          <CategorySlideContent
+            categoryId={activeCat.id}
+            categoryName={activeCat.name}
+            categoryNameAr={activeCat.nameAr}
+            color={activeCat.color || "#9fbcff"}
+            onClose={() => setActiveCat(null)}
+          />
+        )}
+      </SlidePanel>
+
     </View>
   );
 }
