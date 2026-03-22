@@ -21,7 +21,7 @@ import SlidePanel from "@/components/SlidePanel";
 import AppDetailPanel from "@/components/AppDetailPanel";
 import GlassBackButton from "@/components/GlassBackButton";
 import AccountPanel from "@/components/AccountPanel";
-import { useCategories, useApps, getCategoryColor, getTagColor, type ApiApp, type ApiCategory } from "@/hooks/useAppData";
+import { useCategories, useApps, useBanners, getCategoryColor, getTagColor, type ApiApp, type ApiCategory, type ApiBanner } from "@/hooks/useAppData";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const PAGE_WIDTH = SCREEN_WIDTH - 80;
@@ -185,14 +185,19 @@ function CategoryCard({ cat, onPress }: { cat: ApiCategory; onPress: () => void 
 }
 
 // ─── Featured Card ────────────────────────────────────────────────────────────
-function FeaturedCard({ item }: { item: { id: number; title: string; subtitle: string; color: string } }) {
-  const { fontAr } = useSettings();
+const BANNER_COLORS = ["#007AFF", "#5856D6", "#FF9500", "#34C759", "#FF3B30", "#AF52DE"];
+
+function FeaturedCard({ item, index }: { item: ApiBanner; index: number }) {
+  const { fontAr, isArabic } = useSettings();
+  const title = (isArabic ? item.title : item.titleEn) || item.title;
+  const subtitle = (isArabic ? item.description : item.descriptionEn) || item.description || "";
+  const color = BANNER_COLORS[index % BANNER_COLORS.length];
   return (
     <View style={[styles.featuredCard, { width: SCREEN_WIDTH - 48 }]}>
-      <View style={[styles.featuredGradient, { backgroundColor: item.color }]}>
+      <View style={[styles.featuredGradient, { backgroundColor: color }]}>
         <View style={styles.featuredContent}>
-          <Text style={[styles.featuredTitle, { fontFamily: fontAr("Bold") }]}>{item.title}</Text>
-          <Text style={[styles.featuredSubtitle, { fontFamily: fontAr("Regular") }]}>{item.subtitle}</Text>
+          <Text style={[styles.featuredTitle, { fontFamily: fontAr("Bold") }]}>{title}</Text>
+          <Text style={[styles.featuredSubtitle, { fontFamily: fontAr("Regular") }]}>{subtitle}</Text>
         </View>
       </View>
     </View>
@@ -218,16 +223,12 @@ export default function PlusScreen() {
   const { apps: hotApps }      = useApps({ section: "trending",       limit: 30 });
   const { apps: mostDownloaded } = useApps({ section: "most_downloaded", limit: 30 });
   const { apps: newAdds }      = useApps({ section: "latest",         limit: 15 });
-
-  const FEATURED_APPS = [
-    { id: 1, title: t("featuredBlackFriday"), subtitle: t("featuredBlackFridaySub"), color: "#007AFF" },
-    { id: 2, title: t("featuredNewApps"),     subtitle: t("featuredNewAppsSub"),     color: "#5856D6" },
-    { id: 3, title: t("featuredPremium"),     subtitle: t("featuredPremiumSub"),     color: "#FF9500" },
-  ];
+  const { banners } = useBanners();
 
   useEffect(() => {
     const interval = setInterval(() => {
-      featuredIndex.current = (featuredIndex.current + 1) % FEATURED_APPS.length;
+      if (banners.length === 0) return;
+      featuredIndex.current = (featuredIndex.current + 1) % banners.length;
       featuredRef.current?.scrollToOffset({
         offset: featuredIndex.current * (SCREEN_WIDTH - 48 + 12),
         animated: true,
@@ -291,7 +292,7 @@ export default function PlusScreen() {
         <View style={{ marginTop: 8 }}>
           <FlatList
             ref={featuredRef}
-            data={FEATURED_APPS}
+            data={banners}
             horizontal
             inverted={isArabic}
             pagingEnabled={false}
@@ -300,14 +301,14 @@ export default function PlusScreen() {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={{ paddingHorizontal: 16, gap: 12 }}
             keyExtractor={(item) => item.id.toString()}
-            renderItem={({ item }) => <FeaturedCard item={item} />}
+            renderItem={({ item, index }) => <FeaturedCard item={item} index={index} />}
             onScroll={Animated.event(
               [{ nativeEvent: { contentOffset: { x: scrollX } } }],
               { useNativeDriver: false }
             )}
           />
           <View style={styles.paginationDots}>
-            {FEATURED_APPS.map((_, i) => {
+            {banners.map((_, i) => {
               const snap = SCREEN_WIDTH - 48 + 12;
               const inputRange = [(i - 1) * snap, i * snap, (i + 1) * snap];
               const dotWidth   = scrollX.interpolate({ inputRange, outputRange: [8, 20, 8], extrapolate: "clamp" });

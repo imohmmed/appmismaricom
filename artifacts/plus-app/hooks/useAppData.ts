@@ -86,6 +86,38 @@ export function useApps(opts?: {
   return { apps, loading };
 }
 
+export interface ApiBanner {
+  id: number;
+  title: string;
+  titleEn: string | null;
+  description: string | null;
+  descriptionEn: string | null;
+  image: string | null;
+  imageEn: string | null;
+  link: string | null;
+  sortOrder: number;
+  isActive: boolean;
+}
+
+export function useBanners() {
+  const [banners, setBanners] = useState<ApiBanner[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetch_ = useCallback(async () => {
+    const base = getBase();
+    if (!base) { setLoading(false); return; }
+    try {
+      const res = await fetch(`${base}/banners`);
+      const data = await res.json();
+      setBanners(data?.banners || []);
+    } catch { /* silently fail */ }
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { fetch_(); }, [fetch_]);
+  return { banners, loading, refetch: fetch_ };
+}
+
 // Fallback icon name when app icon isn't a valid Feather icon
 export const FALLBACK_ICON = "box";
 

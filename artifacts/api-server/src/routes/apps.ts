@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { eq, desc, sql, and, ilike } from "drizzle-orm";
-import { db, appsTable, categoriesTable, settingsTable } from "@workspace/db";
+import { db, appsTable, categoriesTable, settingsTable, featuredBannersTable } from "@workspace/db";
 import {
   ListAppsQueryParams,
   ListAppsResponse,
@@ -194,6 +194,11 @@ router.get("/settings", async (_req, res): Promise<void> => {
     storeName: map.store_name || "مسماري",
     storeDescription: map.store_description || "",
   });
+});
+
+router.get("/banners", async (_req, res): Promise<void> => {
+  const banners = await db.select().from(featuredBannersTable).where(eq(featuredBannersTable.isActive, true)).orderBy(featuredBannersTable.sortOrder);
+  res.json({ banners });
 });
 
 export default router;

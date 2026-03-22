@@ -26,18 +26,15 @@ function NativeTabLayout() {
       <Icon sf={{ default: "chart.bar", selected: "chart.bar.fill" }} />
       <Label>{t("tabNumbers")}</Label>
     </NativeTabs.Trigger>,
+    <NativeTabs.Trigger key="search" name="search">
+      <Icon sf={{ default: "magnifyingglass", selected: "magnifyingglass" }} />
+      <Label>{t("headerSearch")}</Label>
+    </NativeTabs.Trigger>,
   ];
 
-  const searchTrigger = (
-    <NativeTabs.Trigger key="search" name="search" role="search">
-      <Icon sf="magnifyingglass" />
-      <Label>{t("headerSearch")}</Label>
-    </NativeTabs.Trigger>
-  );
-
   const orderedChildren = isArabic
-    ? [...[...tabTriggers].reverse(), searchTrigger]
-    : [...tabTriggers, searchTrigger];
+    ? [...tabTriggers].reverse()
+    : tabTriggers;
 
   return (
     <NativeTabs>
