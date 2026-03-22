@@ -69,11 +69,6 @@ function ScrollingWords({ activeWord, fontAr: fontArFn }: { activeWord: number; 
 
   return (
     <View style={styles.scrollContainer}>
-      {/* Top separator line */}
-      <View style={styles.scrollLineTop} pointerEvents="none" />
-      {/* Bottom separator line */}
-      <View style={styles.scrollLineBottom} pointerEvents="none" />
-
       {/* Track: absolute-positioned words, clipped by scrollContainer overflow:hidden */}
       <Animated.View style={[styles.scrollTrack, { transform: [{ translateY: scrollY }] }]}>
         {slots.map((w) => {
@@ -111,6 +106,18 @@ function ScrollingWords({ activeWord, fontAr: fontArFn }: { activeWord: number; 
           );
         })}
       </Animated.View>
+
+      {/* Symmetric gradient fades — each covers exactly 1 word slot */}
+      <LinearGradient
+        colors={[WHITE, WHITE + "00"]}
+        style={styles.scrollFadeTop}
+        pointerEvents="none"
+      />
+      <LinearGradient
+        colors={[WHITE + "00", WHITE]}
+        style={styles.scrollFadeBottom}
+        pointerEvents="none"
+      />
     </View>
   );
 }
@@ -530,22 +537,20 @@ const styles = StyleSheet.create({
   scrollTrack: {
     alignItems: "center",
   },
-  scrollLineTop: {
+  scrollFadeTop: {
     position: "absolute",
-    top: WORD_HEIGHT,
-    left: 32,
-    right: 32,
-    height: 1.5,
-    backgroundColor: DARK + "18",
+    top: 0,
+    left: 0,
+    right: 0,
+    height: WORD_HEIGHT,
     zIndex: 10,
   },
-  scrollLineBottom: {
+  scrollFadeBottom: {
     position: "absolute",
-    top: WORD_HEIGHT * 2,
-    left: 32,
-    right: 32,
-    height: 1.5,
-    backgroundColor: DARK + "18",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: WORD_HEIGHT,
     zIndex: 10,
   },
   wordRow: {
