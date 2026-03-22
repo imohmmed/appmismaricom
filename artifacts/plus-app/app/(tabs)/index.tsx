@@ -34,15 +34,15 @@ function AppListRow({ app, showDivider, onPress }: { app: ApiApp; showDivider: b
   return (
     <View>
       <Pressable style={styles.listRow} onPress={onPress}>
-        <View style={[styles.listRowIcon, { backgroundColor: `${tagColor}15` }]}>
-          <Feather name={(app.icon as any) || "box"} size={24} color={tagColor} />
-        </View>
-        <View style={styles.listRowInfo}>
-          <Text style={[styles.listRowName, { color: colors.text }]} numberOfLines={1}>{app.name}</Text>
-          <Text style={[styles.listRowDesc, { color: colors.textSecondary, fontFamily: fontAr("Regular") }]} numberOfLines={1}>{desc}</Text>
-        </View>
         <View style={[styles.listRowGetButton, { backgroundColor: colors.card }]}>
           <Text style={[styles.listRowGetText, { color: colors.tint, fontFamily: fontAr("Bold") }]}>{t("download")}</Text>
+        </View>
+        <View style={styles.listRowInfo}>
+          <Text style={[styles.listRowName, { color: colors.text, textAlign: "right" }]} numberOfLines={1}>{app.name}</Text>
+          <Text style={[styles.listRowDesc, { color: colors.textSecondary, fontFamily: fontAr("Regular"), textAlign: "right" }]} numberOfLines={1}>{desc}</Text>
+        </View>
+        <View style={[styles.listRowIcon, { backgroundColor: `${tagColor}15` }]}>
+          <Feather name={(app.icon as any) || "box"} size={24} color={tagColor} />
         </View>
       </Pressable>
       {showDivider && <View style={[styles.listRowDivider, { backgroundColor: colors.separator }]} />}
@@ -134,17 +134,17 @@ function CategoryPageContent({ cat, onClose, onAppPress }: {
               return (
                 <View key={app.id}>
                   <Pressable style={styles.appRow} onPress={() => onAppPress(app)}>
-                    <View style={[styles.appIcon, { backgroundColor: `${tc}15` }]}>
-                      <Feather name={(app.icon as any) || "box"} size={22} color={tc} />
+                    <View style={[styles.getButton, { backgroundColor: colors.card }]}>
+                      <Text style={[styles.getButtonText, { color: colors.tint, fontFamily: fontAr("Bold") }]}>{t("download")}</Text>
                     </View>
-                    <View style={styles.appInfo}>
-                      <Text style={[styles.appName, { color: colors.text }]}>{app.name}</Text>
-                      <Text style={[styles.appDesc, { color: colors.textSecondary, fontFamily: fontAr("Regular") }]}>
+                    <View style={[styles.appInfo, { alignItems: "flex-end" }]}>
+                      <Text style={[styles.appName, { color: colors.text, textAlign: "right" }]}>{app.name}</Text>
+                      <Text style={[styles.appDesc, { color: colors.textSecondary, fontFamily: fontAr("Regular"), textAlign: "right" }]}>
                         {desc(app)}
                       </Text>
                     </View>
-                    <View style={[styles.getButton, { backgroundColor: colors.card }]}>
-                      <Text style={[styles.getButtonText, { color: colors.tint, fontFamily: fontAr("Bold") }]}>{t("download")}</Text>
+                    <View style={[styles.appIcon, { backgroundColor: `${tc}15` }]}>
+                      <Feather name={(app.icon as any) || "box"} size={22} color={tc} />
                     </View>
                   </Pressable>
                   {idx < apps.length - 1 && <View style={[styles.listRowDivider, { backgroundColor: colors.separator }]} />}

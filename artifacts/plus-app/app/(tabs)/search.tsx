@@ -44,21 +44,21 @@ export default function SearchScreen() {
     const desc = (isArabic ? app.descAr : null) || app.description || "";
     return (
       <View key={app.id}>
-        <Pressable style={[styles.appRow, isArabic && { flexDirection: "row-reverse" }]}>
-          <View style={[styles.appIcon, { backgroundColor: `${tc}15` }]}>
-            <Feather name={(app.icon as any) || "box"} size={22} color={tc} />
-          </View>
-          <View style={[styles.appInfo, isArabic && { alignItems: "flex-end" }]}>
-            <Text style={[styles.appName, { color: colors.text }]}>{app.name}</Text>
-            <Text style={[styles.appDesc, { color: colors.textSecondary, fontFamily: fontAr("Regular") }]}>
-              {desc}
-            </Text>
-          </View>
-          <Pressable style={[styles.getButton, { backgroundColor: colors.card }]}>
+        <Pressable style={styles.appRow}>
+          <View style={[styles.getButton, { backgroundColor: colors.card }]}>
             <Text style={[styles.getButtonText, { color: colors.tint, fontFamily: fontAr("Bold") }]}>
               {t("download")}
             </Text>
-          </Pressable>
+          </View>
+          <View style={[styles.appInfo, { alignItems: "flex-end" }]}>
+            <Text style={[styles.appName, { color: colors.text, textAlign: "right" }]}>{app.name}</Text>
+            <Text style={[styles.appDesc, { color: colors.textSecondary, fontFamily: fontAr("Regular"), textAlign: "right" }]}>
+              {desc}
+            </Text>
+          </View>
+          <View style={[styles.appIcon, { backgroundColor: `${tc}15` }]}>
+            <Feather name={(app.icon as any) || "box"} size={22} color={tc} />
+          </View>
         </Pressable>
         {index < list.length - 1 && <View style={[styles.divider, { backgroundColor: colors.separator }]} />}
       </View>
