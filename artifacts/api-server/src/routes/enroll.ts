@@ -76,11 +76,11 @@ router.get("/profile/enroll", (req, res): void => {
     </array>
   </dict>
   <key>PayloadOrganization</key>
-  <string>Mismari</string>
+  <string>${subtitle}</string>
   <key>PayloadDisplayName</key>
   <string>${displayName}</string>
   <key>PayloadDescription</key>
-  <string>${subtitle} - ${description}</string>
+  <string>${description}</string>
   <key>PayloadVersion</key>
   <integer>1</integer>
   <key>PayloadUUID</key>

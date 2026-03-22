@@ -109,7 +109,9 @@ export default function Enroll() {
     }
   }
 
-  const profileUrl = `${API}/api/profile/enroll?source=web&token=${encodeURIComponent(token)}`;
+  const selectedPlan = plans.find(p => p.id === planId);
+  const planLabel = selectedPlan ? (selectedPlan.nameAr || selectedPlan.name) : "";
+  const profileUrl = `${API}/api/profile/enroll?source=web&token=${encodeURIComponent(token)}${planLabel ? `&plan=${encodeURIComponent(planLabel)}` : ""}`;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -165,6 +167,35 @@ export default function Enroll() {
             </div>
 
             <div className="p-5 space-y-5">
+              {plans.length > 0 && (
+                <div>
+                  <p className="text-xs font-medium text-white/40 mb-2">اختر الباقة (اختياري)</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {plans.map(p => (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => setPlanId(p.id === planId ? "" : p.id)}
+                        className="flex flex-col items-start p-3 rounded-xl border text-right transition-all"
+                        style={planId === p.id
+                          ? { background: `${A}15`, borderColor: `${A}40` }
+                          : { background: "rgba(255,255,255,0.03)", borderColor: "rgba(255,255,255,0.08)" }
+                        }
+                      >
+                        <span className="text-sm font-medium leading-tight" style={{ color: planId === p.id ? A : "rgba(255,255,255,0.75)" }}>
+                          {p.nameAr || p.name}
+                        </span>
+                        {p.price != null && (
+                          <span className="text-xs mt-0.5" style={{ color: planId === p.id ? `${A}80` : "rgba(255,255,255,0.3)" }}>
+                            {p.price === 0 ? "مجاني" : `${p.price} ${p.currency || "ر.س"}`}
+                          </span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div className="space-y-3">
                 {[
                   { num: "١", text: "اضغط «تحميل الملف» أدناه" },
