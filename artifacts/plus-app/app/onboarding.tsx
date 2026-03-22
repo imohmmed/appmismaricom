@@ -42,38 +42,68 @@ const WORDS = [
   { text: "محدّث", icon: "refresh-cw" as const, color: PURPLE },
 ];
 
-function AnimatedWord({ word, active }: { word: typeof WORDS[0]; active: boolean }) {
-  const opacity = useRef(new Animated.Value(0)).current;
-  const translateY = useRef(new Animated.Value(20)).current;
-  const scale = useRef(new Animated.Value(0.9)).current;
+const WORD_HEIGHT = 70;
+const VISIBLE_COUNT = 5;
+
+function ScrollingWords({ activeWord, fontAr: fontArFn }: { activeWord: number; fontAr: (w: string) => string }) {
+  const scrollY = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    if (active) {
-      Animated.parallel([
-        Animated.timing(opacity, { toValue: 1, duration: 400, useNativeDriver: true }),
-        Animated.timing(translateY, { toValue: 0, duration: 400, easing: Easing.out(Easing.back(1.5)), useNativeDriver: true }),
-        Animated.timing(scale, { toValue: 1, duration: 400, useNativeDriver: true }),
-      ]).start();
-    } else {
-      Animated.parallel([
-        Animated.timing(opacity, { toValue: 0.25, duration: 300, useNativeDriver: true }),
-        Animated.timing(translateY, { toValue: 0, duration: 300, useNativeDriver: true }),
-        Animated.timing(scale, { toValue: 0.85, duration: 300, useNativeDriver: true }),
-      ]).start();
-    }
-  }, [active]);
+    Animated.timing(scrollY, {
+      toValue: -activeWord * WORD_HEIGHT,
+      duration: 600,
+      easing: Easing.inOut(Easing.cubic),
+      useNativeDriver: true,
+    }).start();
+  }, [activeWord]);
+
+  const totalSlots = activeWord + 6;
+  const slots = [];
+  for (let i = -2; i < totalSlots; i++) {
+    const wIdx = ((i % WORDS.length) + WORDS.length) % WORDS.length;
+    slots.push({ ...WORDS[wIdx], slotIndex: i });
+  }
 
   return (
-    <Animated.View style={[styles.wordRow, { opacity, transform: [{ translateY }, { scale }] }]}>
-      {active && (
-        <View style={[styles.wordIcon, { backgroundColor: word.color + "20" }]}>
-          <Feather name={word.icon} size={22} color={word.color} />
-        </View>
-      )}
-      <Text style={[styles.wordText, active && styles.wordActive]}>
-        {word.text}
-      </Text>
-    </Animated.View>
+    <View style={styles.scrollContainer}>
+      <Animated.View style={[styles.scrollTrack, { transform: [{ translateY: Animated.add(scrollY, new Animated.Value(WORD_HEIGHT * 2)) }] }]}>
+        {slots.map((w) => {
+          const distance = Math.abs(w.slotIndex - activeWord);
+          const isActive = distance === 0;
+          const opacity = isActive ? 1 : distance === 1 ? 0.3 : 0.12;
+          const scl = isActive ? 1 : distance === 1 ? 0.88 : 0.78;
+
+          return (
+            <View key={w.slotIndex} style={[styles.wordRow, { height: WORD_HEIGHT }]}>
+              <View style={[styles.wordRowInner, { opacity, transform: [{ scale: scl }] }]}>
+                {isActive && (
+                  <View style={[styles.wordIcon, { backgroundColor: w.color + "20" }]}>
+                    <Feather name={w.icon} size={22} color={w.color} />
+                  </View>
+                )}
+                <Text style={[
+                  styles.wordText,
+                  { fontFamily: fontArFn("ExtraBold") },
+                  isActive && styles.wordActive,
+                ]}>
+                  {w.text}
+                </Text>
+              </View>
+            </View>
+          );
+        })}
+      </Animated.View>
+      <LinearGradient
+        colors={["#f2f2f7", "#f2f2f700"]}
+        style={styles.scrollFadeTop}
+        pointerEvents="none"
+      />
+      <LinearGradient
+        colors={["#f2f2f700", "#f2f2f7"]}
+        style={styles.scrollFadeBottom}
+        pointerEvents="none"
+      />
+    </View>
   );
 }
 
@@ -113,7 +143,7 @@ export default function OnboardingScreen() {
   useEffect(() => {
     if (step !== "landing") return;
     const interval = setInterval(() => {
-      setActiveWord((prev) => (prev + 1) % WORDS.length);
+      setActiveWord((prev) => prev + 1);
     }, 2000);
     return () => clearInterval(interval);
   }, [step]);
@@ -199,11 +229,7 @@ export default function OnboardingScreen() {
         {/* ═══ LANDING ═══ */}
         {step === "landing" && (
           <>
-            <View style={styles.landingWords}>
-              {WORDS.map((w, i) => (
-                <AnimatedWord key={w.text} word={w} active={i === activeWord} />
-              ))}
-            </View>
+            <ScrollingWords activeWord={activeWord} fontAr={fontAr} />
 
             <View style={{ flex: 1 }} />
 
@@ -488,12 +514,35 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 
-  landingWords: {
-    paddingTop: SH * 0.08,
-    paddingHorizontal: 40,
-    gap: 16,
+  scrollContainer: {
+    height: WORD_HEIGHT * VISIBLE_COUNT,
+    overflow: "hidden",
+    marginTop: SH * 0.06,
+  },
+  scrollTrack: {
+    alignItems: "center",
+  },
+  scrollFadeTop: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    height: WORD_HEIGHT * 1.2,
+    zIndex: 2,
+  },
+  scrollFadeBottom: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: WORD_HEIGHT * 1.2,
+    zIndex: 2,
   },
   wordRow: {
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  wordRowInner: {
     flexDirection: "row-reverse",
     alignItems: "center",
     gap: 12,
@@ -506,7 +555,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   wordText: {
-    fontSize: 36,
+    fontSize: 38,
     fontWeight: "800",
     color: DARK + "30",
   },
