@@ -7,7 +7,6 @@ import {
   Animated,
   Dimensions,
   FlatList,
-  Image,
   Linking,
   Platform,
   Pressable,
@@ -361,10 +360,6 @@ export default function PlusScreen() {
     <View style={[styles.container, { paddingTop: isWeb ? 67 : insets.top, backgroundColor: colors.background }]}>
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <View style={[styles.header, isArabic && { flexDirection: "row-reverse" }]}>
-        <Image
-          source={require("../../assets/images/mismari-logo.png")}
-          style={{ width: 100, height: 40, resizeMode: "contain" }}
-        />
         <View style={[styles.headerActions, isArabic && { flexDirection: "row-reverse" }]}>
           {/* Bell icon */}
           <TouchableOpacity
