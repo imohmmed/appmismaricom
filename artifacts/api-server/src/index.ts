@@ -2,7 +2,6 @@ import crypto from "crypto";
 import app from "./app";
 import { logger } from "./lib/logger";
 import { db, adminsTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
 
 const rawPort = process.env["PORT"];
 
@@ -19,12 +18,18 @@ if (Number.isNaN(port) || port <= 0) {
 }
 
 async function seedDefaultAdmin() {
+  const username = process.env.DEFAULT_ADMIN_USERNAME;
+  const password = process.env.DEFAULT_ADMIN_PASSWORD;
+
+  if (!username || !password) {
+    logger.warn("DEFAULT_ADMIN_USERNAME / DEFAULT_ADMIN_PASSWORD not set — skipping admin seed");
+    return;
+  }
+
   try {
     const existing = await db.select({ id: adminsTable.id }).from(adminsTable).limit(1);
     if (existing.length > 0) return;
 
-    const username = process.env.DEFAULT_ADMIN_USERNAME || "mohmmed";
-    const password = process.env.DEFAULT_ADMIN_PASSWORD || "ZVwas5183";
     const salt = crypto.randomBytes(32).toString("hex");
     const passwordHash = crypto.pbkdf2Sync(password, salt, 100000, 64, "sha512").toString("hex");
 
@@ -36,7 +41,7 @@ async function seedDefaultAdmin() {
       isActive: true,
       permissions: JSON.stringify([]),
     });
-    logger.info({ username }, "Default admin created");
+    logger.info({ username }, "Default admin created from secrets");
   } catch (err) {
     logger.error({ err }, "Failed to seed default admin");
   }
