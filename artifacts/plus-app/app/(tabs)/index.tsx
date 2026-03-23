@@ -362,8 +362,10 @@ export default function PlusScreen() {
       <View style={[styles.header, isArabic && { flexDirection: "row-reverse" }]}>
         {/* Title */}
         <View style={[styles.headerTitleBlock, isArabic && { alignItems: "flex-end" }]}>
-          <Text style={[styles.headerTitleAr, { color: colors.text, fontFamily: fontAr("Bold") }]}>مسماري+</Text>
-          <Text style={[styles.headerTitleEn, { color: colors.textSecondary }]}>Mismari+</Text>
+          {isArabic
+            ? <Text style={[styles.headerTitle, { color: colors.text, fontFamily: fontAr("Bold") }]}>مسماري+</Text>
+            : <Text style={[styles.headerTitle, { color: colors.text, fontFamily: "Inter_700Bold" }]}>Mismari+</Text>
+          }
         </View>
         <View style={[styles.headerActions, isArabic && { flexDirection: "row-reverse" }]}>
           {/* Bell icon */}
@@ -527,16 +529,10 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "flex-start",
   },
-  headerTitleAr: {
-    fontSize: 24,
+  headerTitle: {
+    fontSize: 28,
     fontWeight: "700",
     letterSpacing: -0.3,
-  },
-  headerTitleEn: {
-    fontSize: 12,
-    fontFamily: "Inter_400Regular",
-    opacity: 0.45,
-    marginTop: 1,
   },
   headerActions: {
     flexDirection: "row",
