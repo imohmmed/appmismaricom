@@ -205,4 +205,31 @@ router.get("/subscriber/:code", subscriberProfileLimiter, async (req, res): Prom
   });
 });
 
+// ── Save / update push token for a subscriber ────────────────────────────────
+router.post("/subscriber/push-token", async (req, res): Promise<void> => {
+  const { code, pushToken } = req.body as { code?: string; pushToken?: string };
+
+  if (!code || !pushToken) {
+    res.status(400).json({ error: "code and pushToken are required" });
+    return;
+  }
+
+  const [sub] = await db
+    .select({ id: subscriptionsTable.id })
+    .from(subscriptionsTable)
+    .where(eq(subscriptionsTable.code, code));
+
+  if (!sub) {
+    res.status(404).json({ error: "Subscriber not found" });
+    return;
+  }
+
+  await db
+    .update(subscriptionsTable)
+    .set({ pushToken })
+    .where(eq(subscriptionsTable.id, sub.id));
+
+  res.json({ ok: true });
+});
+
 export default router;

@@ -22,6 +22,7 @@ import {
   AdminLoginResponse,
 } from "@workspace/api-zod";
 import { adminAuth, JWT_SECRET } from "../middleware/adminAuth";
+import { notifyAppAdded, notifyAppUpdated } from "../lib/pushNotifications";
 
 const router: IRouter = Router();
 
@@ -319,6 +320,9 @@ router.post("/admin/apps", async (req, res): Promise<void> => {
     .where(eq(categoriesTable.id, app.categoryId));
 
   res.status(201).json({ ...app, categoryName: category?.name ?? "Unknown" });
+
+  // Fire-and-forget: send push notifications after responding
+  notifyAppAdded(app.id).catch(() => {});
 });
 
 router.put("/admin/apps/:id", async (req, res): Promise<void> => {
@@ -351,6 +355,9 @@ router.put("/admin/apps/:id", async (req, res): Promise<void> => {
     .where(eq(categoriesTable.id, app.categoryId));
 
   res.json({ ...app, categoryName: category?.name ?? "Unknown" });
+
+  // Fire-and-forget: send push notifications after responding
+  notifyAppUpdated(app.id).catch(() => {});
 });
 
 router.patch("/admin/apps/:id", async (req, res): Promise<void> => {

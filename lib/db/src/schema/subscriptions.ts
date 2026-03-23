@@ -23,6 +23,7 @@ export const subscriptionsTable = pgTable("subscriptions", {
   sourceType: text("source_type").notNull().default("subscription_code"),
   isActive: text("is_active").notNull().default("true"),
   balance: integer("balance").notNull().default(0),
+  pushToken: text("push_token"),
   activatedAt: timestamp("activated_at", { withTimezone: true }),
   expiresAt: timestamp("expires_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
