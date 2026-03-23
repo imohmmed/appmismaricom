@@ -187,7 +187,7 @@ function BalanceModal({ sub, onClose, onChanged }: { sub: Sub; onClose: () => vo
                       <p className="text-[10px] text-white/25">{new Date(tx.createdAt).toLocaleDateString("ar-IQ")}</p>
                     </div>
                     <span className={`text-xs font-bold shrink-0 ${tx.type === "credit" ? "text-green-400" : "text-red-400"}`}>
-                      {tx.type === "credit" ? "+" : "-"}{tx.amount.toLocaleString("ar-IQ")}
+                      {tx.type === "credit" ? "+" : "-"}{(tx.amount ?? 0).toLocaleString("ar-IQ")}
                     </span>
                   </div>
                 ))}
