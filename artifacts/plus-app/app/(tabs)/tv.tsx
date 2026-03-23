@@ -8,6 +8,7 @@ import {
   Alert,
   Animated,
   Dimensions,
+  Image,
   Linking,
   PanResponder,
   Platform,
@@ -43,6 +44,7 @@ interface IpaInfo {
   bundleId: string;
   version: string;
   fileSize: number;
+  iconBase64?: string;
 }
 
 interface SignJob {
@@ -467,6 +469,8 @@ export default function SignScreen() {
   // ── Render ─────────────────────────────────────────────────────────────────
   const paddingTop = isWeb ? 67 : insets.top;
 
+  const hasArabic = (s: string) => /[\u0600-\u06FF]/.test(s);
+
   const signTitle = (
     <Text style={[styles.headerTitle, { color: colors.text }]}>
       {isArabic
@@ -556,12 +560,12 @@ export default function SignScreen() {
             { backgroundColor: colors.background, paddingTop, transform: [{ translateX: slideAnim }] },
           ]}
         >
-          {/* Panel header */}
-          <View style={[styles.header, isArabic ? { flexDirection: "row-reverse" } : {}]}>
+          {/* Panel header: back button always in device-natural "start" position */}
+          <View style={styles.header}>
             <TouchableOpacity onPress={closePanel} style={[styles.backBtn, { backgroundColor: colors.card }]} activeOpacity={0.7}>
               <Feather name={isArabic ? "arrow-right" : "arrow-left"} size={16} color={colors.text} />
             </TouchableOpacity>
-            <View style={{ flex: 1, alignItems: isArabic ? "flex-end" : "flex-start" }}>
+            <View style={{ flex: 1 }}>
               {signTitle}
             </View>
           </View>
@@ -578,8 +582,14 @@ export default function SignScreen() {
               <>
                 <SectionHeader title={t("signInfoCard")} colors={colors} fontAr={fontAr} isArabic={isArabic} />
                 <View style={[styles.infoCard, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
-                  <View style={[styles.infoIconBig, { backgroundColor: `${TINT}15` }]}>
-                    <Feather name="package" size={30} color={TINT} />
+                  <View style={[styles.infoIconBig, { backgroundColor: `${TINT}15`, overflow: "hidden" }]}>
+                    {ipaInfo.iconBase64
+                      ? <Image
+                          source={{ uri: `data:image/png;base64,${ipaInfo.iconBase64}` }}
+                          style={{ width: 60, height: 60, borderRadius: 18 }}
+                        />
+                      : <Feather name="package" size={30} color={TINT} />
+                    }
                   </View>
                   <View style={{ flex: 1, gap: 6 }}>
                     {[
@@ -590,7 +600,14 @@ export default function SignScreen() {
                     ].map(row => (
                       <View key={row.label} style={[styles.infoRow, isArabic && { flexDirection: "row-reverse" }]}>
                         <Text style={[styles.infoLabel, { color: colors.textSecondary, fontFamily: fontAr("Regular") }]}>{row.label}</Text>
-                        <Text style={[styles.infoValue, { color: colors.text, fontFamily: row.mono ? "Inter_400Regular" : fontAr("SemiBold") }]} numberOfLines={1}>{row.value}</Text>
+                        <Text
+                          style={[styles.infoValue, {
+                            color: colors.text,
+                            fontFamily: row.mono || !hasArabic(row.value) ? "Inter_400Regular" : fontAr("SemiBold"),
+                            textAlign: "left",
+                          }]}
+                          numberOfLines={1}
+                        >{row.value}</Text>
                       </View>
                     ))}
                   </View>

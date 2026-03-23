@@ -207,17 +207,61 @@ function resolveLocalPath(storedPath: string): string {
   return path.join(process.cwd(), storedPath);
 }
 
-function readIpaInfo(ipaPath: string): { name: string; version: string; bundleId: string } {
+function readIpaInfo(ipaPath: string): { name: string; version: string; bundleId: string; iconBase64?: string } {
   try {
     const zip = new AdmZip(ipaPath);
     const entries = zip.getEntries();
     const plistEntry = entries.find(e => /^Payload\/[^/]+\.app\/Info\.plist$/.test(e.entryName));
     if (!plistEntry) return { name: "App", version: "1.0", bundleId: "com.app" };
-    const data = plist.parse(plistEntry.getData().toString("utf8")) as Record<string, any>;
+
+    // Parse plist — handle both XML and binary formats
+    let data: Record<string, any> = {};
+    try {
+      data = plist.parse(plistEntry.getData().toString("utf8")) as Record<string, any>;
+    } catch {
+      // Binary plist: try raw buffer approach
+      try {
+        data = plist.parse(plistEntry.getData() as any) as Record<string, any>;
+      } catch { data = {}; }
+    }
+
+    const appFolder = plistEntry.entryName.replace("Info.plist", "");
+
+    // Try to extract app icon
+    let iconBase64: string | undefined;
+    try {
+      const primaryIcons =
+        data["CFBundleIcons"]?.["CFBundlePrimaryIcon"]?.["CFBundleIconFiles"] ||
+        data["CFBundleIcons~ipad"]?.["CFBundlePrimaryIcon"]?.["CFBundleIconFiles"] ||
+        data["CFBundleIconFiles"] ||
+        [];
+      const iconName: string | undefined = Array.isArray(primaryIcons)
+        ? primaryIcons[primaryIcons.length - 1]
+        : undefined;
+      if (iconName) {
+        // Prefer @3x then @2x then plain
+        const candidates = [`${iconName}@3x.png`, `${iconName}@2x.png`, `${iconName}.png`, iconName];
+        for (const candidate of candidates) {
+          const entry = entries.find(e => e.entryName === `${appFolder}${candidate}`);
+          if (entry) { iconBase64 = entry.getData().toString("base64"); break; }
+        }
+      }
+      // Fallback: look for any AppIcon PNG in the app bundle
+      if (!iconBase64) {
+        const iconEntry = entries.find(e =>
+          e.entryName.startsWith(appFolder) &&
+          /AppIcon.*\.png$/i.test(e.entryName) &&
+          !e.entryName.includes("/")
+        );
+        if (iconEntry) iconBase64 = iconEntry.getData().toString("base64");
+      }
+    } catch { /* icon extraction optional */ }
+
     return {
       name: data["CFBundleDisplayName"] || data["CFBundleName"] || "App",
       version: data["CFBundleShortVersionString"] || data["CFBundleVersion"] || "1.0",
       bundleId: data["CFBundleIdentifier"] || "com.app",
+      iconBase64,
     };
   } catch {
     return { name: "App", version: "1.0", bundleId: "com.app" };
