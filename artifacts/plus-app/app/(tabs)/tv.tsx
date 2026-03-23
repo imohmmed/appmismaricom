@@ -90,11 +90,11 @@ function timeAgo(dateStr: string, isArabic: boolean): string {
 
 // ── Sub-components ───────────────────────────────────────────────────────────
 
-function SectionHeader({ title, sub, colors, fontAr }: any) {
+function SectionHeader({ title, sub, colors, fontAr, isArabic }: any) {
   return (
-    <View style={{ marginBottom: 20 }}>
-      <Text style={{ color: colors.text, fontFamily: fontAr("Bold"), fontSize: 22 }}>{title}</Text>
-      {sub ? <Text style={{ color: colors.textSecondary, fontFamily: fontAr("Regular"), fontSize: 13, marginTop: 3 }}>{sub}</Text> : null}
+    <View style={{ marginBottom: 20, alignItems: isArabic ? "flex-end" : "flex-start" }}>
+      <Text style={{ color: colors.text, fontFamily: fontAr("Bold"), fontSize: 22, textAlign: isArabic ? "right" : "left" }}>{title}</Text>
+      {sub ? <Text style={{ color: colors.textSecondary, fontFamily: fontAr("Regular"), fontSize: 13, marginTop: 3, textAlign: isArabic ? "right" : "left" }}>{sub}</Text> : null}
     </View>
   );
 }
@@ -511,6 +511,7 @@ export default function SignScreen() {
               sub={t("signViaUrlSub")}
               colors={colors}
               fontAr={fontAr}
+              isArabic={isArabic}
             />
 
             <View style={[styles.inputCard, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
