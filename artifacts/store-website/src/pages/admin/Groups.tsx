@@ -22,9 +22,14 @@ const IPHONE_TOTAL = IOS_LIMIT + MAC_LIMIT;
 
 async function adminFetch(path: string, opts?: RequestInit) {
   const token = localStorage.getItem("adminToken") || "";
+  const { headers: extraHeaders, ...restOpts } = opts || {};
   const res = await fetch(`${API}/api${path}`, {
-    headers: { "x-admin-token": token, "Content-Type": "application/json" },
-    ...opts,
+    ...restOpts,
+    headers: {
+      "x-admin-token": token,
+      "Content-Type": "application/json",
+      ...(extraHeaders as Record<string, string> | undefined),
+    },
   });
   return res;
 }
