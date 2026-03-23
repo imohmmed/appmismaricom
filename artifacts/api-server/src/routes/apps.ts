@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { eq, desc, sql, and, ilike, inArray } from "drizzle-orm";
-import { db, appsTable, categoriesTable, settingsTable, featuredBannersTable, appPlansTable, subscriptionsTable } from "@workspace/db";
+import { db, appsTable, categoriesTable, settingsTable, featuredBannersTable, appPlansTable, subscriptionsTable, notificationsTable } from "@workspace/db";
 import {
   ListAppsQueryParams,
   ListAppsResponse,
@@ -260,6 +260,18 @@ router.get("/settings", async (_req, res): Promise<void> => {
 router.get("/banners", async (_req, res): Promise<void> => {
   const banners = await db.select().from(featuredBannersTable).where(eq(featuredBannersTable.isActive, true)).orderBy(featuredBannersTable.sortOrder);
   res.json({ banners });
+});
+
+// ─── PUBLIC NOTIFICATIONS ─────────────────────────────────────────────────────
+// Returns all notifications (broadcast + app events) ordered newest first.
+// The mobile app polls this to show notifications without depending on push.
+router.get("/notifications", async (_req, res): Promise<void> => {
+  const notifications = await db
+    .select()
+    .from(notificationsTable)
+    .orderBy(desc(notificationsTable.sentAt))
+    .limit(100);
+  res.json({ notifications });
 });
 
 export default router;

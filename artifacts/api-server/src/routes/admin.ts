@@ -1115,7 +1115,7 @@ router.post("/admin/notifications", async (req, res): Promise<void> => {
 
   const [notification] = await db
     .insert(notificationsTable)
-    .values({ title, body, target: resolvedTarget, recipientCount: pushCount })
+    .values({ type: "broadcast", title, body, target: resolvedTarget, recipientCount: pushCount })
     .returning();
 
   res.status(201).json({ success: true, notification });

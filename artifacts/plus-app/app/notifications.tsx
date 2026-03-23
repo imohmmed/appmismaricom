@@ -14,13 +14,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { useSettings } from "@/contexts/SettingsContext";
-import {
-  getNotifications,
-  markAllRead,
-  clearAll,
-  type StoredNotification,
-  type NotifType,
-} from "@/utils/notificationStorage";
+import { type NotifType } from "@/utils/notificationStorage";
 import { emitOpenApp } from "@/utils/openAppSignal";
 
 const API_DOMAIN = process.env.EXPO_PUBLIC_DOMAIN || "";
@@ -33,6 +27,18 @@ const TABS: { key: Tab; labelAr: string; labelEn: string }[] = [
   { key: "broadcast", labelAr: "رسائل",    labelEn: "Messages" },
   { key: "apps",      labelAr: "تطبيقات",  labelEn: "Apps" },
 ];
+
+interface ServerNotification {
+  id: number;
+  type: string;
+  title: string;
+  body: string;
+  target: string;
+  appId: number | null;
+  appIcon: string | null;
+  recipientCount: number;
+  sentAt: string;
+}
 
 function timeAgo(iso: string, isArabic: boolean): string {
   const diff = Date.now() - new Date(iso).getTime();
@@ -53,44 +59,43 @@ function timeAgo(iso: string, isArabic: boolean): string {
   }
 }
 
-function notifIcon(type: NotifType) {
+function notifIcon(type: string) {
   if (type === "broadcast")    return { name: "bell" as const, color: "#9fbcff" };
   if (type === "app_added")    return { name: "plus-circle" as const, color: "#34C759" };
   if (type === "app_updated")  return { name: "refresh-cw" as const, color: "#FF9500" };
   return { name: "bell" as const, color: "#9fbcff" };
 }
 
+function resolveIcon(appIcon: string | null | undefined): string | null {
+  if (!appIcon) return null;
+  if (appIcon.startsWith("http")) return appIcon;
+  return `${BASE_URL}${appIcon}`;
+}
+
 interface NotifRowProps {
-  notif: StoredNotification;
-  onPress: (notif: StoredNotification) => void;
+  notif: ServerNotification;
+  onPress: (notif: ServerNotification) => void;
 }
 
 function NotifRow({ notif, onPress }: NotifRowProps) {
   const { colors, fontAr, isArabic } = useSettings();
   const icon = notifIcon(notif.type);
-  const time = timeAgo(notif.receivedAt, isArabic);
+  const time = timeAgo(notif.sentAt, isArabic);
+  const iconUri = resolveIcon(notif.appIcon);
 
   return (
     <Pressable
-      style={[
-        styles.row,
-        { backgroundColor: notif.isRead ? colors.background : `${colors.tint}08` },
-      ]}
+      style={[styles.row, { backgroundColor: colors.background }]}
       onPress={() => onPress(notif)}
     >
-      {/* Icon or app icon */}
       <View style={[styles.iconWrap, { backgroundColor: `${icon.color}18` }]}>
-        {notif.appIcon && (notif.type === "app_added" || notif.type === "app_updated") ? (
-          <Image
-            source={{ uri: `${BASE_URL}${notif.appIcon}` }}
-            style={styles.appIcon}
-          />
+        {iconUri && (notif.type === "app_added" || notif.type === "app_updated") ? (
+          <Image source={{ uri: iconUri }} style={styles.appIcon} />
         ) : (
           <Feather name={icon.name} size={20} color={icon.color} />
         )}
       </View>
 
-      {/* Text */}
       <View style={[styles.rowContent, isArabic && { alignItems: "flex-end" }]}>
         <Text
           style={[
@@ -114,11 +119,6 @@ function NotifRow({ notif, onPress }: NotifRowProps) {
           {time}
         </Text>
       </View>
-
-      {/* Unread dot */}
-      {!notif.isRead && (
-        <View style={[styles.unreadDot, { backgroundColor: colors.tint }]} />
-      )}
     </Pressable>
   );
 }
@@ -129,21 +129,27 @@ export default function NotificationsScreen() {
   const { colors, fontAr, isArabic } = useSettings();
 
   const [activeTab, setActiveTab] = useState<Tab>("all");
-  const [notifications, setNotifications] = useState<StoredNotification[]>([]);
+  const [notifications, setNotifications] = useState<ServerNotification[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    const all = await getNotifications();
-    setNotifications(all);
-    setLoading(false);
-  }, []);
+    try {
+      setError(null);
+      const res = await fetch(`${BASE_URL}/api/notifications`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      setNotifications(data.notifications || []);
+    } catch (e: any) {
+      setError(isArabic ? "فشل تحميل الإشعارات" : "Failed to load notifications");
+    } finally {
+      setLoading(false);
+    }
+  }, [isArabic]);
 
   useEffect(() => {
     load();
-    // Mark all read after short delay so unread dots show briefly
-    const t = setTimeout(() => markAllRead(), 800);
-    return () => clearTimeout(t);
   }, [load]);
 
   const onRefresh = useCallback(async () => {
@@ -159,16 +165,11 @@ export default function NotificationsScreen() {
     return true;
   });
 
-  const handleNotifPress = (notif: StoredNotification) => {
+  const handleNotifPress = (notif: ServerNotification) => {
     if (notif.appId) {
       emitOpenApp(notif.appId);
       router.back();
     }
-  };
-
-  const handleClearAll = async () => {
-    await clearAll();
-    setNotifications([]);
   };
 
   return (
@@ -181,15 +182,7 @@ export default function NotificationsScreen() {
         <Text style={[styles.headerTitle, { color: colors.text, fontFamily: fontAr("Bold") }]}>
           {isArabic ? "الإشعارات" : "Notifications"}
         </Text>
-        {notifications.length > 0 ? (
-          <TouchableOpacity onPress={handleClearAll} hitSlop={12}>
-            <Text style={[styles.clearBtn, { color: colors.tint, fontFamily: fontAr("Regular") }]}>
-              {isArabic ? "مسح الكل" : "Clear all"}
-            </Text>
-          </TouchableOpacity>
-        ) : (
-          <View style={{ width: 60 }} />
-        )}
+        <View style={{ width: 60 }} />
       </View>
 
       {/* Tabs */}
@@ -226,6 +219,18 @@ export default function NotificationsScreen() {
       {loading ? (
         <View style={styles.center}>
           <ActivityIndicator color={colors.tint} />
+        </View>
+      ) : error ? (
+        <View style={styles.center}>
+          <Feather name="wifi-off" size={40} color={`${colors.textSecondary}50`} />
+          <Text style={[styles.emptyText, { color: colors.textSecondary, fontFamily: fontAr("Regular") }]}>
+            {error}
+          </Text>
+          <TouchableOpacity onPress={load} style={[styles.retryBtn, { borderColor: colors.tint }]}>
+            <Text style={[styles.retryText, { color: colors.tint, fontFamily: fontAr("Regular") }]}>
+              {isArabic ? "إعادة المحاولة" : "Retry"}
+            </Text>
+          </TouchableOpacity>
         </View>
       ) : filtered.length === 0 ? (
         <View style={styles.center}>
@@ -266,7 +271,6 @@ const styles = StyleSheet.create({
   },
   backBtn: { width: 40, alignItems: "flex-start" },
   headerTitle: { fontSize: 20 },
-  clearBtn: { fontSize: 14, width: 60, textAlign: "right" },
   tabsRow: {
     flexDirection: "row",
     borderBottomWidth: StyleSheet.hairlineWidth,
@@ -283,6 +287,8 @@ const styles = StyleSheet.create({
   tabText: { fontSize: 15 },
   center: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12 },
   emptyText: { fontSize: 16, marginTop: 8 },
+  retryBtn: { marginTop: 4, paddingHorizontal: 20, paddingVertical: 8, borderWidth: 1, borderRadius: 8 },
+  retryText: { fontSize: 14 },
   row: {
     flexDirection: "row",
     alignItems: "flex-start",
@@ -305,11 +311,4 @@ const styles = StyleSheet.create({
   rowTitle: { fontSize: 15 },
   rowBody: { fontSize: 13, lineHeight: 18 },
   rowTime: { fontSize: 12, marginTop: 2 },
-  unreadDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginTop: 6,
-    flexShrink: 0,
-  },
 });

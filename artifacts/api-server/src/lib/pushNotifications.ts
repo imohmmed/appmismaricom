@@ -1,4 +1,4 @@
-import { db, subscriptionsTable, appsTable, categoriesTable } from "@workspace/db";
+import { db, subscriptionsTable, appsTable, categoriesTable, notificationsTable } from "@workspace/db";
 import { eq, and, isNotNull } from "drizzle-orm";
 
 const EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send";
@@ -43,6 +43,7 @@ export async function notifyAppAdded(appId: number): Promise<void> {
       .select({
         name: appsTable.name,
         icon: appsTable.icon,
+        iconPath: appsTable.iconPath,
         categoryId: appsTable.categoryId,
         categoryName: categoriesTable.name,
         categoryNameAr: categoriesTable.nameAr,
@@ -52,6 +53,22 @@ export async function notifyAppAdded(appId: number): Promise<void> {
       .where(eq(appsTable.id, appId));
 
     if (!appRow) return;
+
+    const catNameAr = appRow.categoryNameAr || appRow.categoryName || "";
+    const title = appRow.name;
+    const body = `✨ تم إضافة تطبيق ${appRow.name} في قسم ${catNameAr}`;
+    const iconPath = appRow.iconPath || null;
+
+    // Save to DB so mobile app can fetch even without push
+    await db.insert(notificationsTable).values({
+      type: "app_added",
+      title,
+      body,
+      target: "all",
+      appId,
+      appIcon: iconPath,
+      recipientCount: 0,
+    });
 
     const tokens = await db
       .select({ pushToken: subscriptionsTable.pushToken })
@@ -65,17 +82,14 @@ export async function notifyAppAdded(appId: number): Promise<void> {
 
     if (tokens.length === 0) return;
 
-    const catNameAr = appRow.categoryNameAr || appRow.categoryName || "";
-    const catNameEn = appRow.categoryName || "";
-
     const messages: PushMessage[] = tokens
       .filter((t) => t.pushToken?.startsWith("ExponentPushToken"))
       .map((t) => ({
         to: t.pushToken!,
-        title: appRow.name,
-        body: `✨ تم إضافة تطبيق ${appRow.name} في قسم ${catNameAr}`,
+        title,
+        body,
         sound: "default" as const,
-        data: { type: "app_added", appId },
+        data: { type: "app_added", appId, appIcon: iconPath },
         ...(appRow.icon ? { image: appRow.icon } : {}),
       }));
 
@@ -155,6 +169,7 @@ export async function notifyAppUpdated(appId: number): Promise<void> {
       .select({
         name: appsTable.name,
         icon: appsTable.icon,
+        iconPath: appsTable.iconPath,
         categoryId: appsTable.categoryId,
         categoryName: categoriesTable.name,
         categoryNameAr: categoriesTable.nameAr,
@@ -164,6 +179,22 @@ export async function notifyAppUpdated(appId: number): Promise<void> {
       .where(eq(appsTable.id, appId));
 
     if (!appRow) return;
+
+    const catNameAr = appRow.categoryNameAr || appRow.categoryName || "";
+    const title = appRow.name;
+    const body = `🔄 تم تحديث تطبيق ${appRow.name} في قسم ${catNameAr}`;
+    const iconPath = appRow.iconPath || null;
+
+    // Save to DB so mobile app can fetch even without push
+    await db.insert(notificationsTable).values({
+      type: "app_updated",
+      title,
+      body,
+      target: "all",
+      appId,
+      appIcon: iconPath,
+      recipientCount: 0,
+    });
 
     const tokens = await db
       .select({ pushToken: subscriptionsTable.pushToken })
@@ -177,16 +208,14 @@ export async function notifyAppUpdated(appId: number): Promise<void> {
 
     if (tokens.length === 0) return;
 
-    const catNameAr = appRow.categoryNameAr || appRow.categoryName || "";
-
     const messages: PushMessage[] = tokens
       .filter((t) => t.pushToken?.startsWith("ExponentPushToken"))
       .map((t) => ({
         to: t.pushToken!,
-        title: appRow.name,
-        body: `🔄 تم تحديث تطبيق ${appRow.name} في قسم ${catNameAr}`,
+        title,
+        body,
         sound: "default" as const,
-        data: { type: "app_updated", appId },
+        data: { type: "app_updated", appId, appIcon: iconPath },
         ...(appRow.icon ? { image: appRow.icon } : {}),
       }));
 
