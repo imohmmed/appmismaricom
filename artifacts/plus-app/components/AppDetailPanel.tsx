@@ -32,9 +32,10 @@ const HEADER_COLLAPSE_POINT = 120;
 type AppData = {
   id: number;
   name: string;
-  descAr?: string;
-  descEn?: string;
-  desc?: string;
+  description?: string | null;
+  descAr?: string | null;
+  descEn?: string | null;
+  desc?: string | null;
   category: string;
   categoryNameAr?: string;
   tag: string;
@@ -412,8 +413,9 @@ export default function AppDetailPanel({ app, onClose, onCategoryPress, relatedA
   const catTransKey = CAT_TRANSLATION_KEY[app.catKey || ""] || CAT_TRANSLATION_KEY[catName] || catName;
   const catLabel = isArabic ? (catNameAr || t(catTransKey as any) || catName) : (t(catTransKey as any) || catName);
 
-  const fullDescAr = `${app.descAr || app.desc}. هذا إصدار ${app.tag === "tweaked" ? "بلس" : app.tag === "modded" ? "معدّل" : "مهكر"} من ${app.name} مع ميزات بريميوم مفعّلة. التثبيت مباشر بدون جيلبريك. تحديثات مستمرة ودعم فني مع اشتراكك. متوافق مع أحدث إصدارات iOS. بدون إلغاء - نحافظ على الشهادات محدّثة.`;
-  const fullDescEn = `${app.descEn || app.desc}. This is a ${app.tag} version of ${app.name} with premium features unlocked. Direct install without jailbreak. Continuous updates and support with your subscription. Compatible with latest iOS versions. No revokes - certificates kept up to date.`;
+  const baseDesc = app.description || app.desc || "";
+  const fullDescAr = `${app.descAr || baseDesc}${baseDesc ? ". " : ""}هذا إصدار ${app.tag === "tweaked" ? "بلس" : app.tag === "modded" ? "معدّل" : "مهكر"} من ${app.name} مع ميزات بريميوم مفعّلة. التثبيت مباشر بدون جيلبريك. تحديثات مستمرة ودعم فني مع اشتراكك. متوافق مع أحدث إصدارات iOS. بدون إلغاء - نحافظ على الشهادات محدّثة.`;
+  const fullDescEn = `${app.descEn || baseDesc}${baseDesc ? ". " : ""}This is a ${app.tag} version of ${app.name} with premium features unlocked. Direct install without jailbreak. Continuous updates and support with your subscription. Compatible with latest iOS versions. No revokes - certificates kept up to date.`;
   const fullDesc = isArabic ? fullDescAr : fullDescEn;
 
   const avgRating = reviews.length > 0
