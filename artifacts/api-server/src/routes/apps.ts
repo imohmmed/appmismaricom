@@ -12,6 +12,20 @@ import {
 
 const router: IRouter = Router();
 
+/**
+ * Rebuild the icon URL dynamically using the current request's host.
+ * Stored icon URLs use an old Replit dev domain that changes on restart.
+ * iconPath (e.g. /admin/FilesIPA/Icons/abc.png) is always stable.
+ */
+function resolveIconUrl(req: any, icon: string, iconPath: string | null | undefined): string {
+  if (iconPath) {
+    const proto = (req.headers["x-forwarded-proto"] as string) || req.protocol || "https";
+    const host = (req.headers["x-forwarded-host"] as string) || req.get("host") || "localhost";
+    return `${proto}://${host}${iconPath}`;
+  }
+  return icon; // base64 or non-path icon (e.g. emoji / feather icon name)
+}
+
 router.get("/apps", async (req, res): Promise<void> => {
   const query = ListAppsQueryParams.safeParse(req.query);
   if (!query.success) {
@@ -88,7 +102,7 @@ router.get("/apps", async (req, res): Promise<void> => {
       name: appsTable.name,
       description: appsTable.description,
       icon: appsTable.icon,
-      iconUrl: appsTable.icon,
+      iconPath: appsTable.iconPath,
       categoryId: appsTable.categoryId,
       categoryName: categoriesTable.name,
       categoryNameAr: categoriesTable.nameAr,
@@ -116,6 +130,7 @@ router.get("/apps", async (req, res): Promise<void> => {
     ListAppsResponse.parse({
       apps: apps.map((a) => ({
         ...a,
+        icon: resolveIconUrl(req, a.icon, a.iconPath),
         description: a.description ?? undefined,
         categoryName: a.categoryName ?? "Unknown",
         categoryNameAr: a.categoryNameAr ?? undefined,
@@ -127,13 +142,14 @@ router.get("/apps", async (req, res): Promise<void> => {
   );
 });
 
-router.get("/apps/featured", async (_req, res): Promise<void> => {
+router.get("/apps/featured", async (req, res): Promise<void> => {
   const apps = await db
     .select({
       id: appsTable.id,
       name: appsTable.name,
       description: appsTable.description,
       icon: appsTable.icon,
+      iconPath: appsTable.iconPath,
       categoryId: appsTable.categoryId,
       categoryName: categoriesTable.name,
       categoryNameAr: categoriesTable.nameAr,
@@ -155,6 +171,7 @@ router.get("/apps/featured", async (_req, res): Promise<void> => {
     ListFeaturedAppsResponse.parse({
       apps: apps.map((a) => ({
         ...a,
+        icon: resolveIconUrl(req, a.icon, a.iconPath),
         description: a.description ?? undefined,
         categoryName: a.categoryName ?? "Unknown",
         categoryNameAr: a.categoryNameAr ?? undefined,
@@ -164,13 +181,14 @@ router.get("/apps/featured", async (_req, res): Promise<void> => {
   );
 });
 
-router.get("/apps/hot", async (_req, res): Promise<void> => {
+router.get("/apps/hot", async (req, res): Promise<void> => {
   const apps = await db
     .select({
       id: appsTable.id,
       name: appsTable.name,
       description: appsTable.description,
       icon: appsTable.icon,
+      iconPath: appsTable.iconPath,
       categoryId: appsTable.categoryId,
       categoryName: categoriesTable.name,
       categoryNameAr: categoriesTable.nameAr,
@@ -192,6 +210,7 @@ router.get("/apps/hot", async (_req, res): Promise<void> => {
     ListHotAppsResponse.parse({
       apps: apps.map((a) => ({
         ...a,
+        icon: resolveIconUrl(req, a.icon, a.iconPath),
         description: a.description ?? undefined,
         categoryName: a.categoryName ?? "Unknown",
         categoryNameAr: a.categoryNameAr ?? undefined,
@@ -214,6 +233,7 @@ router.get("/apps/:id", async (req, res): Promise<void> => {
       name: appsTable.name,
       description: appsTable.description,
       icon: appsTable.icon,
+      iconPath: appsTable.iconPath,
       categoryId: appsTable.categoryId,
       categoryName: categoriesTable.name,
       categoryNameAr: categoriesTable.nameAr,
@@ -236,6 +256,7 @@ router.get("/apps/:id", async (req, res): Promise<void> => {
 
   res.json(GetAppResponse.parse({
     ...app,
+    icon: resolveIconUrl(req, app.icon, app.iconPath),
     description: app.description ?? undefined,
     categoryName: app.categoryName ?? "Unknown",
     categoryNameAr: app.categoryNameAr ?? undefined,
