@@ -12,7 +12,7 @@ import { useSettings } from "@/contexts/SettingsContext";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.3;
-const EDGE_WIDTH = 40;
+const EDGE_WIDTH = 44;
 
 type SlidePanelProps = {
   visible: boolean;
@@ -21,16 +21,18 @@ type SlidePanelProps = {
 };
 
 export default function SlidePanel({ visible, onClose, children }: SlidePanelProps) {
-  const { colors } = useSettings();
-  const translateX = useRef(new Animated.Value(SCREEN_WIDTH)).current;
+  const { colors, isArabic } = useSettings();
+  const translateX = useRef(new Animated.Value(isArabic ? -SCREEN_WIDTH : SCREEN_WIDTH)).current;
   const [mounted, setMounted] = useState(false);
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
 
   const touchStartX = useRef(0);
+  const offScreen = isArabic ? -SCREEN_WIDTH : SCREEN_WIDTH;
 
   useEffect(() => {
     if (visible) {
+      translateX.setValue(offScreen);
       setMounted(true);
       Animated.spring(translateX, {
         toValue: 0,
@@ -40,7 +42,7 @@ export default function SlidePanel({ visible, onClose, children }: SlidePanelPro
       }).start();
     } else if (mounted) {
       Animated.timing(translateX, {
-        toValue: SCREEN_WIDTH,
+        toValue: offScreen,
         duration: 250,
         useNativeDriver: true,
       }).start(() => {
@@ -56,21 +58,35 @@ export default function SlidePanel({ visible, onClose, children }: SlidePanelPro
         return false;
       },
       onMoveShouldSetPanResponder: (_, gestureState) => {
-        const startedAtEdge = touchStartX.current <= EDGE_WIDTH;
-        const swipingRight = gestureState.dx > 10;
-        const moreHorizontalThanVertical =
-          Math.abs(gestureState.dy) < Math.abs(gestureState.dx);
-        return startedAtEdge && swipingRight && moreHorizontalThanVertical;
+        if (isArabic) {
+          // RTL: swipe starts from right edge, going left to dismiss
+          const startedAtEdge = touchStartX.current >= SCREEN_WIDTH - EDGE_WIDTH;
+          const swipingLeft = gestureState.dx < -10;
+          const moreHorizontal = Math.abs(gestureState.dy) < Math.abs(gestureState.dx);
+          return startedAtEdge && swipingLeft && moreHorizontal;
+        } else {
+          // LTR: swipe starts from left edge, going right to dismiss
+          const startedAtEdge = touchStartX.current <= EDGE_WIDTH;
+          const swipingRight = gestureState.dx > 10;
+          const moreHorizontal = Math.abs(gestureState.dy) < Math.abs(gestureState.dx);
+          return startedAtEdge && swipingRight && moreHorizontal;
+        }
       },
       onPanResponderMove: (_, gestureState) => {
-        if (gestureState.dx > 0) {
-          translateX.setValue(gestureState.dx);
+        if (isArabic) {
+          if (gestureState.dx < 0) translateX.setValue(gestureState.dx);
+        } else {
+          if (gestureState.dx > 0) translateX.setValue(gestureState.dx);
         }
       },
       onPanResponderRelease: (_, gestureState) => {
-        if (gestureState.dx > SWIPE_THRESHOLD || gestureState.vx > 0.5) {
+        const shouldClose = isArabic
+          ? gestureState.dx < -SWIPE_THRESHOLD || gestureState.vx < -0.5
+          : gestureState.dx > SWIPE_THRESHOLD || gestureState.vx > 0.5;
+
+        if (shouldClose) {
           Animated.timing(translateX, {
-            toValue: SCREEN_WIDTH,
+            toValue: offScreen,
             duration: 200,
             useNativeDriver: true,
           }).start(() => {
@@ -90,8 +106,8 @@ export default function SlidePanel({ visible, onClose, children }: SlidePanelPro
   ).current;
 
   const backdropOpacity = translateX.interpolate({
-    inputRange: [0, SCREEN_WIDTH],
-    outputRange: [0.4, 0],
+    inputRange: isArabic ? [-SCREEN_WIDTH, 0] : [0, SCREEN_WIDTH],
+    outputRange: isArabic ? [0, 0.4] : [0.4, 0],
     extrapolate: "clamp",
   });
 
@@ -123,6 +139,5 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: "#FFFFFF",
   },
 });

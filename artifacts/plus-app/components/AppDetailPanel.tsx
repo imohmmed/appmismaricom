@@ -22,6 +22,7 @@ import { useSettings } from "@/contexts/SettingsContext";
 import type { ThemeColors } from "@/constants/colors";
 import GlassBackButton from "@/components/GlassBackButton";
 import AppIconImg from "@/components/AppIconImg";
+import SlidePanel from "@/components/SlidePanel";
 import { useSign } from "@/hooks/useSign";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
@@ -228,23 +229,8 @@ export default function AppDetailPanel({ app, onClose, onCategoryPress, relatedA
   const [codeInput, setCodeInput] = useState(subscriptionCode);
   const [cloneName, setCloneName] = useState("");
   const [pendingAction, setPendingAction] = useState<"download" | "clone" | null>(null);
-  // ─── Nested app panel (قد يعجبك أيضاً → slide-from-side, stacks like navigation) ──
+  // ─── Nested app panel (قد يعجبك أيضاً → uses SlidePanel for consistent behavior) ──
   const [nestedApp, setNestedApp] = useState<AppData | null>(null);
-  const slideAnim = useRef(new Animated.Value(SCREEN_WIDTH)).current;
-
-  const openNested = (a: AppData) => {
-    slideAnim.setValue(isArabic ? -SCREEN_WIDTH : SCREEN_WIDTH);
-    setNestedApp(a);
-    Animated.spring(slideAnim, { toValue: 0, useNativeDriver: true, damping: 22, stiffness: 200 }).start();
-  };
-
-  const closeNested = () => {
-    Animated.timing(slideAnim, {
-      toValue: isArabic ? -SCREEN_WIDTH : SCREEN_WIDTH,
-      duration: 260,
-      useNativeDriver: true,
-    }).start(() => setNestedApp(null));
-  };
 
   const handleDownload = () => {
     if (!subscriptionCode) {
@@ -497,7 +483,7 @@ export default function AppDetailPanel({ app, onClose, onCategoryPress, relatedA
             </View>
             <RelatedAppsRow
               apps={relatedApps}
-              onPress={openNested}
+              onPress={setNestedApp}
             />
           </>
         )}
@@ -573,23 +559,17 @@ export default function AppDetailPanel({ app, onClose, onCategoryPress, relatedA
         </KeyboardAvoidingView>
       </Modal>
 
-      {/* ── Nested app panel: slides in from the side like native navigation ── */}
-      <Modal
-        visible={!!nestedApp}
-        animationType="none"
-        onRequestClose={closeNested}
-      >
-        <Animated.View style={{ flex: 1, transform: [{ translateX: slideAnim }] }}>
-          {nestedApp && (
-            <AppDetailPanel
-              app={nestedApp}
-              onClose={closeNested}
-              relatedApps={relatedApps.filter((a) => a.id !== nestedApp.id)}
-              onRelatedAppPress={openNested}
-            />
-          )}
-        </Animated.View>
-      </Modal>
+      {/* ── Nested app panel: same SlidePanel used throughout the app ── */}
+      <SlidePanel visible={!!nestedApp} onClose={() => setNestedApp(null)}>
+        {nestedApp && (
+          <AppDetailPanel
+            app={nestedApp}
+            onClose={() => setNestedApp(null)}
+            relatedApps={relatedApps.filter((a) => a.id !== nestedApp.id)}
+            onRelatedAppPress={setNestedApp}
+          />
+        )}
+      </SlidePanel>
     </View>
   );
 }
