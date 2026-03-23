@@ -22,7 +22,7 @@ interface AppRow {
 }
 
 const TAG_COLORS: Record<string, string> = {
-  tweaked: "#007AFF", modded: "#AF52DE", hacked: "#FF3B30", plus: "#34C759",
+  tweaked: "#007AFF", modded: "#AF52DE", hacked: "#FF3B30", plus: "#34C759", new: "#34C759", hot: "#FF9500",
 };
 
 export default function AdminDownloads() {
@@ -32,11 +32,11 @@ export default function AdminDownloads() {
 
   const fetchData = async () => {
     setLoading(true);
-    const d = await adminFetch("/admin/apps?limit=200&sortBy=downloads");
+    const d = await adminFetch("/admin/apps?limit=500&sortBy=downloads");
     const all: AppRow[] = d?.apps || [];
-    const sorted = [...all];
+    const sorted = [...all].sort((a, b) => (b.downloads || 0) - (a.downloads || 0));
     setApps(sorted);
-    setTotalDownloads(sorted.reduce((s, a) => s + a.downloads, 0));
+    setTotalDownloads(sorted.reduce((s, a) => s + (a.downloads || 0), 0));
     setLoading(false);
   };
 
@@ -81,20 +81,30 @@ export default function AdminDownloads() {
               {loading ? "..." : apps.length}
             </p>
           </div>
-          <div className="bg-[#111111] rounded-xl border border-white/8 p-4">
+          <div className="bg-[#111111] rounded-xl border border-white/8 p-4 col-span-2 md:col-span-1">
             <div className="flex items-center gap-2 mb-2">
               <div className="w-8 h-8 rounded-lg bg-yellow-500/20 flex items-center justify-center">
                 <TrendingUp className="w-4 h-4 text-yellow-400" />
               </div>
               <span className="text-white/40 text-xs">الأكثر تحميلاً</span>
             </div>
-            <p className="text-sm font-bold text-white truncate">
-              {loading ? "..." : topApp?.name || "-"}
-            </p>
-            {topApp && (
-              <p className="text-xs mt-1" style={{ color: A }}>
-                {topApp.downloads.toLocaleString()} تحميل
-              </p>
+            {topApp ? (
+              <div className="flex items-center gap-2">
+                <img
+                  src={topApp.icon}
+                  alt={topApp.name}
+                  className="w-8 h-8 rounded-lg object-cover shrink-0"
+                  onError={e => { (e.target as HTMLImageElement).style.display = "none"; }}
+                />
+                <div className="min-w-0">
+                  <p className="text-sm font-bold text-white truncate">{topApp.name}</p>
+                  <p className="text-xs mt-0.5" style={{ color: A }}>
+                    {(topApp.downloads || 0).toLocaleString("ar-IQ")} تحميل
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm font-bold text-white">{loading ? "..." : "—"}</p>
             )}
           </div>
         </div>
@@ -103,7 +113,7 @@ export default function AdminDownloads() {
         <div className="bg-[#111111] rounded-xl border border-white/8 overflow-hidden">
           <div className="px-5 py-3.5 border-b border-white/5 flex items-center gap-2">
             <TrendingUp className="w-4 h-4" style={{ color: A }} />
-            <h3 className="text-sm font-bold text-white">الأكثر تحميلاً</h3>
+            <h3 className="text-sm font-bold text-white">ترتيب التطبيقات حسب التحميل</h3>
           </div>
           {loading ? (
             <div className="flex justify-center py-16">
@@ -114,37 +124,63 @@ export default function AdminDownloads() {
           ) : (
             <div className="divide-y divide-white/5">
               {apps.map((app, idx) => {
-                const pct = totalDownloads > 0 ? (app.downloads / totalDownloads) * 100 : 0;
+                const pct = totalDownloads > 0 ? ((app.downloads || 0) / totalDownloads) * 100 : 0;
                 const tc = TAG_COLORS[app.tag] || A;
                 return (
-                  <div key={app.id} className="flex items-center gap-4 px-5 py-3 group">
-                    <span className="text-white/20 text-xs w-6 text-left shrink-0" style={{ fontFamily: "Outfit" }}>
+                  <div key={app.id} className="flex items-center gap-4 px-5 py-3 hover:bg-white/[0.02] transition-colors">
+                    <span
+                      className="text-white/25 text-xs w-6 text-center shrink-0 font-mono"
+                      style={{ fontFamily: "Outfit" }}
+                    >
                       {idx + 1}
                     </span>
-                    <div className="w-8 h-8 rounded-xl flex items-center justify-center text-sm shrink-0"
-                      style={{ backgroundColor: tc + "15" }}>
-                      <Smartphone className="w-3.5 h-3.5" style={{ color: tc }} />
-                    </div>
+
+                    {app.icon ? (
+                      <img
+                        src={app.icon}
+                        alt={app.name}
+                        className="w-9 h-9 rounded-xl object-cover shrink-0 bg-white/5"
+                        onError={e => {
+                          const el = e.target as HTMLImageElement;
+                          el.onerror = null;
+                          el.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(app.name)}&background=111111&color=9fbcff&bold=true&size=64`;
+                        }}
+                      />
+                    ) : (
+                      <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: tc + "15" }}>
+                        <Smartphone className="w-4 h-4" style={{ color: tc }} />
+                      </div>
+                    )}
+
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
+                      <div className="flex items-center gap-2 mb-1.5">
                         <p className="text-white text-sm font-medium truncate">{app.name}</p>
-                        <span className="px-1.5 py-0.5 rounded-full text-[9px] font-medium shrink-0"
-                          style={{ background: tc + "25", color: tc }}>
+                        <span
+                          className="px-1.5 py-0.5 rounded-full text-[9px] font-medium shrink-0"
+                          style={{ background: tc + "25", color: tc }}
+                        >
                           {app.tag}
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <div className="flex-1 h-1.5 rounded-full bg-white/5">
-                          <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: tc }} />
+                        <div className="flex-1 h-1 rounded-full bg-white/5">
+                          <div
+                            className="h-full rounded-full transition-all"
+                            style={{ width: `${Math.max(pct, app.downloads > 0 ? 1 : 0)}%`, background: tc }}
+                          />
                         </div>
-                        <span className="text-white/30 text-[10px] shrink-0">{pct.toFixed(1)}%</span>
+                        <span className="text-white/25 text-[10px] shrink-0 w-9 text-left">{pct.toFixed(1)}%</span>
                       </div>
                     </div>
-                    <div className="text-right shrink-0">
-                      <p className="text-sm font-bold" style={{ color: tc, fontFamily: "Outfit" }}>
-                        {app.downloads.toLocaleString()}
+
+                    <div className="text-right shrink-0 min-w-[60px]">
+                      <p
+                        className="text-sm font-bold"
+                        style={{ color: (app.downloads || 0) > 0 ? tc : "rgba(255,255,255,0.2)", fontFamily: "Outfit" }}
+                      >
+                        {(app.downloads || 0).toLocaleString("ar-IQ")}
                       </p>
-                      <p className="text-white/30 text-[10px]">{app.categoryName}</p>
+                      <p className="text-white/25 text-[10px] mt-0.5">{app.categoryName || "—"}</p>
                     </div>
                   </div>
                 );
