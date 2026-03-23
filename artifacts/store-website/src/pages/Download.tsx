@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams } from "wouter";
-import { Loader2, Download, AlertCircle, Smartphone, CheckCircle2, ExternalLink } from "lucide-react";
+import { Loader2, Download, AlertCircle, Smartphone, CheckCircle2 } from "lucide-react";
 
 const API = import.meta.env.VITE_API_URL || "";
 const A = "#9fbcff";
@@ -139,16 +139,6 @@ export default function DownloadPage() {
             ))}
           </div>
 
-          {/* Plist link (for debugging in Safari) */}
-          <a
-            href={info.plistUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1.5 text-white/20 text-xs hover:text-white/40 transition-colors"
-          >
-            <ExternalLink className="w-3 h-3" />
-            عرض ملف التثبيت
-          </a>
         </div>
       )}
 

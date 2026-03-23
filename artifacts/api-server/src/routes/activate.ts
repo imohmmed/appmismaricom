@@ -236,7 +236,7 @@ router.get("/groups/:certName/manifest.plist", async (req, res): Promise<void> =
         <key>kind</key>
         <string>software</string>
         <key>title</key>
-        <string>مسماري+</string>
+        <string>Mismari+</string>
       </dict>
     </dict>
   </array>
