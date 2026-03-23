@@ -763,42 +763,16 @@ async function rebuildGroupStats(certName: string) {
   };
 }
 
-// GET /admin/groups — single aggregated query for all group stats
+// GET /admin/groups — reads stats per group from subscriptions
 router.get("/admin/groups", async (_req, res): Promise<void> => {
   const groups = await db.select().from(groupsTable).orderBy(desc(groupsTable.createdAt));
-  if (groups.length === 0) { res.json({ groups: [] }); return; }
-
-  const certNames = groups.map(g => g.certName);
-  // Single query: aggregate stats for all groups at once
-  const statsResult = await db.execute(sql`
-    SELECT
-      group_name,
-      COUNT(*) FILTER (WHERE apple_platform = 'IOS')::int AS iphone_official_count,
-      COUNT(*) FILTER (WHERE apple_platform = 'MAC')::int AS iphone_mac_count,
-      COUNT(*) FILTER (WHERE apple_platform = 'IPAD_OS')::int AS ipad_count,
-      COUNT(*) FILTER (WHERE apple_status = 'PROCESSING')::int AS pending_count,
-      COUNT(*) FILTER (WHERE apple_status = 'ENABLED')::int AS active_count,
-      COUNT(*)::int AS total_devices
-    FROM subscriptions
-    WHERE group_name = ANY(${certNames})
-    GROUP BY group_name
-  `);
-  const statsMap: Record<string, any> = {};
-  for (const row of statsResult.rows as any[]) {
-    statsMap[row.group_name] = {
-      iphoneOfficialCount: row.iphone_official_count,
-      iphoneMacCount: row.iphone_mac_count,
-      ipadCount: row.ipad_count,
-      pendingCount: row.pending_count,
-      activeCount: row.active_count,
-      totalDevices: row.total_devices,
+  const result = await Promise.all(groups.map(async (g) => {
+    const live = await rebuildGroupStats(g.certName);
+    return {
+      ...g,
+      privateKey: g.privateKey ? "••••••••" : "",
+      ...live,
     };
-  }
-  const empty = { iphoneOfficialCount: 0, iphoneMacCount: 0, ipadCount: 0, pendingCount: 0, activeCount: 0, totalDevices: 0 };
-  const result = groups.map(g => ({
-    ...g,
-    privateKey: g.privateKey ? "••••••••" : "",
-    ...(statsMap[g.certName] ?? empty),
   }));
   res.json({ groups: result });
 });
