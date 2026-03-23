@@ -537,8 +537,15 @@ export default function AppDetailPanel({ app, onClose, onCategoryPress, relatedA
           <View style={[st.infoBoxDivider, { backgroundColor: colors.separator }]} />
           <View style={st.infoBox}>
             <Text style={[st.infoBoxLabel, { color: colors.textSecondary, fontFamily: fontAr("SemiBold") }]}>{t("size")}</Text>
-            <Text style={[st.infoBoxValue, { color: colors.text }]}>{appSize}</Text>
-            {showMbLabel && <Text style={[st.infoBoxSub, { color: colors.textSecondary, fontFamily: fontAr("Regular") }]}>{t("mb")}</Text>}
+            {(() => {
+              const m = appSize.match(/^([\d.]+)\s*(GB|MB|KB)?$/i);
+              const num = m ? m[1] : appSize;
+              const unit = m ? (m[2] || (showMbLabel ? "MB" : "")) : (showMbLabel ? "MB" : "");
+              return <>
+                <Text style={[st.infoBoxValue, { color: colors.text }]}>{num}</Text>
+                {unit ? <Text style={[st.infoBoxSub, { color: colors.textSecondary, fontFamily: fontAr("Regular") }]}>{unit}</Text> : null}
+              </>;
+            })()}
           </View>
           <View style={[st.infoBoxDivider, { backgroundColor: colors.separator }]} />
           <Pressable
