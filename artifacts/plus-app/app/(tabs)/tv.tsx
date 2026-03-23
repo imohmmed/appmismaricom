@@ -21,6 +21,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import AccountPanel from "@/components/AccountPanel";
 import ProfileAvatar from "@/components/ProfileAvatar";
+import SignUrlModal from "@/components/SignUrlModal";
 import { useSettings } from "@/contexts/SettingsContext";
 
 const API_DOMAIN = process.env.EXPO_PUBLIC_DOMAIN || "";
@@ -200,7 +201,7 @@ function HistoryItem({ job, onReinstall, colors, fontAr, isArabic }: any) {
 
 // ── Main Screen ──────────────────────────────────────────────────────────────
 
-type Screen = "home" | "url-input" | "analyzing" | "customize" | "signing" | "result" | "history";
+type Screen = "home" | "customize" | "signing" | "result" | "history";
 
 export default function SignScreen() {
   const insets = useSafeAreaInsets();
@@ -211,6 +212,7 @@ export default function SignScreen() {
   const TINT = "#9fbcff";
 
   const [showAccount, setShowAccount] = useState(false);
+  const [showUrlModal, setShowUrlModal] = useState(false);
   const [screen, setScreen] = useState<Screen>("home");
 
   // URL flow state
@@ -218,7 +220,6 @@ export default function SignScreen() {
   const [ipaInfo, setIpaInfo] = useState<IpaInfo | null>(null);
   const [customName, setCustomName] = useState("");
   const [customBundle, setCustomBundle] = useState("");
-  const [analyzing, setAnalyzing] = useState(false);
 
   // Job polling
   const [currentJobId, setCurrentJobId] = useState<string | null>(null);
@@ -289,35 +290,14 @@ export default function SignScreen() {
     }, 3000);
   }, [subscriptionCode, stopPoll]);
 
-  // ── URL Analysis ───────────────────────────────────────────────────────────
-  const handleAnalyzeUrl = useCallback(async () => {
-    const url = urlInput.trim();
-    if (!url) return;
-    if (!subscriptionCode) {
-      Alert.alert(isArabic ? "يلزم الاشتراك" : "Subscription Required",
-        isArabic ? "أدخل كود الاشتراك أولاً" : "Please enter your subscription code first");
-      return;
-    }
-    setScreen("analyzing");
-    setAnalyzing(true);
-    try {
-      const r = await fetch(apiUrl("/sign/personal/analyze-url"), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url, code: subscriptionCode }),
-      });
-      const data = await r.json();
-      if (!r.ok) throw new Error(data.error || "Failed");
-      setIpaInfo(data);
-      setCustomName("");
-      setCustomBundle("");
-      setScreen("customize");
-    } catch (err: any) {
-      Alert.alert(isArabic ? "خطأ" : "Error", err.message);
-      setScreen("url-input");
-    }
-    setAnalyzing(false);
-  }, [urlInput, subscriptionCode, isArabic]);
+  // ── Called when SignUrlModal finishes analysis ─────────────────────────────
+  const handleAnalyzedFromModal = useCallback((info: IpaInfo, url: string) => {
+    setIpaInfo(info);
+    setUrlInput(url);
+    setCustomName("");
+    setCustomBundle("");
+    setScreen("customize");
+  }, []);
 
   // ── Start Signing from URL ─────────────────────────────────────────────────
   const handleStartSign = useCallback(async () => {
@@ -402,6 +382,7 @@ export default function SignScreen() {
   const resetToHome = useCallback(() => {
     stopPoll();
     setScreen("home");
+    setShowUrlModal(false);
     setUrlInput("");
     setIpaInfo(null);
     setCustomName("");
@@ -463,7 +444,7 @@ export default function SignScreen() {
             <View style={[styles.actionRow, isArabic && { flexDirection: "row-reverse" }]}>
               <TouchableOpacity
                 style={[styles.actionCard, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}
-                onPress={() => setScreen("url-input")}
+                onPress={() => setShowUrlModal(true)}
                 activeOpacity={0.75}
               >
                 <View style={[styles.actionIconWrap, { backgroundColor: `${TINT}18` }]}>
@@ -510,59 +491,6 @@ export default function SignScreen() {
                 <HistoryItem key={job.jobId} job={job} onReinstall={handleInstall} colors={colors} fontAr={fontAr} isArabic={isArabic} />
               ))
             )}
-          </>
-        )}
-
-        {/* ══ URL INPUT ═══════════════════════════════════════════════════════ */}
-        {(screen === "url-input" || screen === "analyzing") && (
-          <>
-            <SectionHeader
-              title={t("signViaUrl")}
-              sub={t("signViaUrlSub")}
-              colors={colors}
-              fontAr={fontAr}
-              isArabic={isArabic}
-            />
-
-            <View style={[styles.inputCard, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
-              <View style={[styles.inputRow, isArabic && { flexDirection: "row-reverse" }]}>
-                <Feather name="link" size={16} color={colors.textSecondary} style={{ flexShrink: 0 }} />
-                <TextInput
-                  style={[styles.urlInput, { color: colors.text, fontFamily: "Inter_400Regular", textAlign: isArabic ? "right" : "left" }]}
-                  placeholder={t("signUrlPlaceholder")}
-                  placeholderTextColor={colors.textSecondary + "60"}
-                  value={urlInput}
-                  onChangeText={setUrlInput}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  keyboardType="url"
-                  returnKeyType="done"
-                  onSubmitEditing={handleAnalyzeUrl}
-                  editable={!analyzing}
-                />
-                {urlInput.length > 0 && !analyzing && (
-                  <TouchableOpacity onPress={() => setUrlInput("")}>
-                    <Feather name="x" size={16} color={colors.textSecondary} />
-                  </TouchableOpacity>
-                )}
-              </View>
-            </View>
-
-            <TouchableOpacity
-              style={[styles.primaryBtn, { backgroundColor: analyzing ? colors.card : TINT, opacity: !urlInput.trim() ? 0.4 : 1 }]}
-              onPress={handleAnalyzeUrl}
-              disabled={!urlInput.trim() || analyzing}
-              activeOpacity={0.8}
-            >
-              {analyzing ? (
-                <ActivityIndicator size="small" color={TINT} />
-              ) : (
-                <Feather name="search" size={16} color="#000" />
-              )}
-              <Text style={[styles.primaryBtnText, { color: analyzing ? colors.text : "#000", fontFamily: fontAr("Bold") }]}>
-                {analyzing ? t("signAnalyzing") : t("signAnalyze")}
-              </Text>
-            </TouchableOpacity>
           </>
         )}
 
@@ -723,6 +651,11 @@ export default function SignScreen() {
       </ScrollView>
 
       <AccountPanel visible={showAccount} onClose={() => setShowAccount(false)} />
+      <SignUrlModal
+        visible={showUrlModal}
+        onClose={() => setShowUrlModal(false)}
+        onAnalyzed={handleAnalyzedFromModal}
+      />
     </View>
   );
 }
