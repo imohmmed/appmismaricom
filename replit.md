@@ -87,12 +87,21 @@ All admin pages are dark-themed (#1a1a2e bg, #22223a cards, #2a2a45 borders) wit
 
 ## Mobile App (plus-app)
 
-5 tabs: PLUS+ (home), TV, SMM, Numbers, Search
+3 tabs: PLUS+ (home/index), Sign (sign.tsx), Search
 - Uses Apple Liquid Glass tab bar (NativeTabs) on iOS 26+, BlurView fallback for older
 - Home tab has category pills, featured carousel, trending/most-downloaded/recently-added sections
 - Search is a separate tab with category browsing and app search
 - **Bundle ID**: `com.mismari.app`
 - **Deep Link Scheme**: `mismari://`
+
+### Push Notifications
+- `expo-notifications` installed and configured in app.json
+- `hooks/usePushNotifications.ts` — registers device token, posts to `/api/subscriber/push-token`
+- Hook called in `_layout.tsx` TabLayout after `onboardingDone` check
+- Backend: `lib/pushNotifications.ts` with `notifyAppAdded()`, `notifyAppUpdated()`, `sendBroadcast()`
+- Push notifications sent automatically when admin adds/updates an app
+- Admin can broadcast manual push notifications from `/admin/notifications` page
+- Push API: Expo Push API (`exp.host`), batches of 100, `ExponentPushToken[...]` format
 
 ### Onboarding Flow (`app/onboarding.tsx`)
 Multi-step animated onboarding:

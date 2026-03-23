@@ -86,6 +86,37 @@ export async function notifyAppAdded(appId: number): Promise<void> {
   }
 }
 
+export async function sendBroadcast(title: string, body: string, data?: Record<string, unknown>): Promise<number> {
+  try {
+    const tokens = await db
+      .select({ pushToken: subscriptionsTable.pushToken })
+      .from(subscriptionsTable)
+      .where(
+        and(
+          eq(subscriptionsTable.isActive, "true"),
+          isNotNull(subscriptionsTable.pushToken)
+        )
+      );
+
+    const messages: PushMessage[] = tokens
+      .filter((t) => t.pushToken?.startsWith("ExponentPushToken"))
+      .map((t) => ({
+        to: t.pushToken!,
+        title,
+        body,
+        sound: "default" as const,
+        data: data || {},
+      }));
+
+    await sendToExpo(messages);
+    console.log(`[push] Broadcast "${title}" sent to ${messages.length} devices`);
+    return messages.length;
+  } catch (err) {
+    console.error("[push] sendBroadcast error:", err);
+    return 0;
+  }
+}
+
 export async function notifyAppUpdated(appId: number): Promise<void> {
   try {
     const [appRow] = await db

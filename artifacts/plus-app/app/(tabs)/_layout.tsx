@@ -6,6 +6,7 @@ import React, { useEffect, useState, useRef } from "react";
 import MismariTabBar from "@/components/MismariTabBar";
 import ExpiredSubscriptionOverlay from "@/components/ExpiredSubscriptionOverlay";
 import { useSettings } from "@/contexts/SettingsContext";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 
 function NativeTabLayout() {
   const { t, isArabic } = useSettings();
@@ -53,6 +54,7 @@ function ClassicTabLayout() {
 
 export default function TabLayout() {
   const { onboardingDone, deviceUdid } = useSettings();
+  usePushNotifications();
   const [subscriptionExpired, setSubscriptionExpired] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 

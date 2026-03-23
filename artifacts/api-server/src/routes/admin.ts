@@ -22,7 +22,7 @@ import {
   AdminLoginResponse,
 } from "@workspace/api-zod";
 import { adminAuth, JWT_SECRET } from "../middleware/adminAuth";
-import { notifyAppAdded, notifyAppUpdated } from "../lib/pushNotifications";
+import { notifyAppAdded, notifyAppUpdated, sendBroadcast } from "../lib/pushNotifications";
 
 const router: IRouter = Router();
 
@@ -960,16 +960,12 @@ router.post("/admin/notifications", async (req, res): Promise<void> => {
     return;
   }
 
-  const [{ totalActive }] = await db
-    .select({ totalActive: sql<number>`count(*)::int` })
-    .from(subscriptionsTable)
-    .where(eq(subscriptionsTable.isActive, "true"));
-
-  const recipientCount = target === "all" ? totalActive : 0;
+  // Send actual push notifications and get count of devices reached
+  const pushCount = await sendBroadcast(title, body, { type: "broadcast" });
 
   const [notification] = await db
     .insert(notificationsTable)
-    .values({ title, body, target: target || "all", recipientCount })
+    .values({ title, body, target: target || "all", recipientCount: pushCount })
     .returning();
 
   res.status(201).json({ success: true, notification });
