@@ -106,7 +106,7 @@ export default function AdminLogin() {
                 autoComplete="username"
                 className="w-full bg-black border border-white/10 rounded-xl py-3 pr-10 pl-4 text-white text-sm focus:outline-none focus:border-[#9fbcff]/60 focus:ring-1 focus:ring-[#9fbcff]/30 transition-all"
                 dir="ltr"
-                placeholder="mohmmed"
+                placeholder="User"
               />
             </div>
           </div>
