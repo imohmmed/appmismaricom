@@ -34,7 +34,7 @@ const WHITE = "#ffffff";
 
 const API_BASE = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
 
-type Step = "landing" | "download" | "install" | "udid" | "checking" | "result";
+type Step = "language" | "theme" | "landing" | "download" | "install" | "udid" | "checking" | "result";
 
 const WORDS = [
   { text: "سريع", icon: "zap" as const, color: BLUE },
@@ -121,9 +121,11 @@ export default function OnboardingScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const params = useLocalSearchParams<{ udid?: string }>();
-  const { setOnboardingDone, setDeviceUdid, deviceUdid, fontAr, setSubscriptionCode } = useSettings();
+  const { setOnboardingDone, setDeviceUdid, deviceUdid, fontAr, setSubscriptionCode, language, setLanguage, themeMode, setThemeMode } = useSettings();
 
-  const [step, setStep] = useState<Step>("landing");
+  const [step, setStep] = useState<Step>("language");
+  const [selLang, setSelLang] = useState<"ar" | "en">(language || "ar");
+  const [selTheme, setSelTheme] = useState<"dark" | "light" | "system">(themeMode || "light");
   const [activeWord, setActiveWord] = useState(0);
   const [udid, setUdid] = useState(deviceUdid || "");
   const [checkResult, setCheckResult] = useState<{ success: boolean; message: string } | null>(null);
@@ -316,7 +318,9 @@ export default function OnboardingScreen() {
     router.replace("/(tabs)");
   }
 
-  const stepColors = {
+  const stepColors: Record<Step, string[]> = {
+    language: [BLUE, BLUE_DARK],
+    theme: [PURPLE, PURPLE_DARK],
     landing: [BLUE, BLUE_DARK],
     download: [BLUE, BLUE_DARK],
     install: [ORANGE, ORANGE_DARK],
@@ -325,7 +329,7 @@ export default function OnboardingScreen() {
     result: [GREEN, "#2DBE4E"],
   };
 
-  const gradColors = stepColors[step] || stepColors.landing;
+  const gradColors = stepColors[step] ?? stepColors.landing;
 
   const stepsList = [
     { key: "download", label: "تحميل ملف التعريف", icon: "file-text" as const },
@@ -355,6 +359,128 @@ export default function OnboardingScreen() {
       />
 
       <Animated.View style={[styles.content, { opacity: fadeAnim, paddingTop: insets.top + 20 }]}>
+
+        {/* ═══ LANGUAGE SELECTION ═══ */}
+        {step === "language" && (
+          <View style={[styles.setupStep, { paddingBottom: insets.bottom + 24 }]}>
+            <View style={styles.setupHeader}>
+              <Text style={[styles.setupTitle, { fontFamily: fontAr("Black") }]}>اختر لغتك</Text>
+              <Text style={[styles.setupSubtitle, { fontFamily: fontAr("Regular") }]}>
+                Choose your language
+              </Text>
+            </View>
+
+            <View style={styles.langCards}>
+              {/* Arabic card */}
+              <TouchableOpacity
+                activeOpacity={0.85}
+                style={[
+                  styles.langCard,
+                  selLang === "ar" && { borderColor: BLUE, borderWidth: 2, backgroundColor: BLUE + "0D" },
+                ]}
+                onPress={() => setSelLang("ar")}
+              >
+                {selLang === "ar" && (
+                  <View style={styles.cardCheckBadge}>
+                    <Feather name="check" size={12} color="#fff" />
+                  </View>
+                )}
+                <Text style={styles.langCardEmoji}>🇸🇦</Text>
+                <Text style={[styles.langCardTitle, { fontFamily: fontAr("Bold") }]}>العربية</Text>
+                <Text style={[styles.langCardSub, { fontFamily: "Inter_400Regular" }]}>Arabic</Text>
+              </TouchableOpacity>
+
+              {/* English card */}
+              <TouchableOpacity
+                activeOpacity={0.85}
+                style={[
+                  styles.langCard,
+                  selLang === "en" && { borderColor: BLUE, borderWidth: 2, backgroundColor: BLUE + "0D" },
+                ]}
+                onPress={() => setSelLang("en")}
+              >
+                {selLang === "en" && (
+                  <View style={styles.cardCheckBadge}>
+                    <Feather name="check" size={12} color="#fff" />
+                  </View>
+                )}
+                <Text style={styles.langCardEmoji}>🇬🇧</Text>
+                <Text style={[styles.langCardTitle, { fontFamily: "Inter_700Bold" }]}>English</Text>
+                <Text style={[styles.langCardSub, { fontFamily: fontAr("Regular") }]}>الإنجليزية</Text>
+              </TouchableOpacity>
+            </View>
+
+            <Text style={[styles.setupNote, { fontFamily: fontAr("Regular") }]}>
+              يمكنك تغيير الإعدادات مستقبلاً من الحساب › إعدادات
+            </Text>
+
+            <TouchableOpacity
+              style={[styles.setupNextBtn, { backgroundColor: BLUE }]}
+              activeOpacity={0.85}
+              onPress={() => {
+                setLanguage(selLang);
+                transition("theme");
+              }}
+            >
+              <Text style={[styles.setupNextText, { fontFamily: fontAr("Bold") }]}>التالي</Text>
+              <Feather name="arrow-left" size={18} color="#fff" style={{ marginRight: 6 }} />
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* ═══ THEME SELECTION ═══ */}
+        {step === "theme" && (
+          <View style={[styles.setupStep, { paddingBottom: insets.bottom + 24 }]}>
+            <View style={styles.setupHeader}>
+              <Text style={[styles.setupTitle, { fontFamily: fontAr("Black") }]}>اختر المظهر</Text>
+              <Text style={[styles.setupSubtitle, { fontFamily: fontAr("Regular") }]}>
+                كيف تحب أن يبدو التطبيق؟
+              </Text>
+            </View>
+
+            <View style={styles.themeCards}>
+              {[
+                { value: "dark" as const, icon: "moon" as const, label: "داكن", emoji: "🌙" },
+                { value: "light" as const, icon: "sun" as const, label: "فاتح", emoji: "☀️" },
+                { value: "system" as const, icon: "smartphone" as const, label: "تلقائي", emoji: "📱" },
+              ].map(opt => (
+                <TouchableOpacity
+                  key={opt.value}
+                  activeOpacity={0.85}
+                  style={[
+                    styles.themeCard,
+                    selTheme === opt.value && { borderColor: PURPLE, borderWidth: 2, backgroundColor: PURPLE + "0D" },
+                  ]}
+                  onPress={() => setSelTheme(opt.value)}
+                >
+                  {selTheme === opt.value && (
+                    <View style={[styles.cardCheckBadge, { backgroundColor: PURPLE }]}>
+                      <Feather name="check" size={12} color="#fff" />
+                    </View>
+                  )}
+                  <Text style={styles.themeCardEmoji}>{opt.emoji}</Text>
+                  <Text style={[styles.themeCardLabel, { fontFamily: fontAr("Bold") }]}>{opt.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <Text style={[styles.setupNote, { fontFamily: fontAr("Regular") }]}>
+              يمكنك تغيير الإعدادات مستقبلاً من الحساب › إعدادات
+            </Text>
+
+            <TouchableOpacity
+              style={[styles.setupNextBtn, { backgroundColor: PURPLE }]}
+              activeOpacity={0.85}
+              onPress={() => {
+                setThemeMode(selTheme);
+                transition("landing");
+              }}
+            >
+              <Text style={[styles.setupNextText, { fontFamily: fontAr("Bold") }]}>متابعة</Text>
+              <Feather name="arrow-left" size={18} color="#fff" style={{ marginRight: 6 }} />
+            </TouchableOpacity>
+          </View>
+        )}
 
         {/* ═══ LANDING ═══ */}
         {step === "landing" && (
@@ -954,5 +1080,140 @@ const styles = StyleSheet.create({
     color: DARK + "80",
     textAlign: "center",
     lineHeight: 22,
+  },
+
+  // ── Setup steps (language / theme) ─────────────────────────────────────────
+  setupStep: {
+    flex: 1,
+    paddingHorizontal: 24,
+    paddingTop: 16,
+    justifyContent: "space-between",
+  },
+  setupHeader: {
+    marginBottom: 8,
+    alignItems: "flex-end",
+  },
+  setupTitle: {
+    fontSize: 34,
+    color: DARK,
+    textAlign: "right",
+    marginBottom: 6,
+  },
+  setupSubtitle: {
+    fontSize: 15,
+    color: DARK + "60",
+    textAlign: "right",
+  },
+
+  // Language cards
+  langCards: {
+    flexDirection: "row",
+    gap: 14,
+    flex: 1,
+    alignItems: "center",
+    marginVertical: 8,
+  },
+  langCard: {
+    flex: 1,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: DARK + "15",
+    backgroundColor: WHITE,
+    paddingVertical: 28,
+    paddingHorizontal: 16,
+    alignItems: "center",
+    gap: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 3,
+    position: "relative",
+  },
+  langCardEmoji: {
+    fontSize: 44,
+  },
+  langCardTitle: {
+    fontSize: 22,
+    color: DARK,
+    textAlign: "center",
+  },
+  langCardSub: {
+    fontSize: 13,
+    color: DARK + "55",
+    textAlign: "center",
+  },
+
+  // Theme cards
+  themeCards: {
+    flexDirection: "row",
+    gap: 12,
+    flex: 1,
+    alignItems: "center",
+    marginVertical: 8,
+  },
+  themeCard: {
+    flex: 1,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: DARK + "15",
+    backgroundColor: WHITE,
+    paddingVertical: 24,
+    paddingHorizontal: 10,
+    alignItems: "center",
+    gap: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 3,
+    position: "relative",
+  },
+  themeCardEmoji: {
+    fontSize: 36,
+  },
+  themeCardLabel: {
+    fontSize: 16,
+    color: DARK,
+    textAlign: "center",
+  },
+
+  // Check badge (top-left of card)
+  cardCheckBadge: {
+    position: "absolute",
+    top: 12,
+    left: 12,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: BLUE,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  // Shared note and button
+  setupNote: {
+    fontSize: 12,
+    color: DARK + "45",
+    textAlign: "center",
+    marginBottom: 16,
+    lineHeight: 18,
+    paddingHorizontal: 8,
+  },
+  setupNextBtn: {
+    flexDirection: "row-reverse",
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: 50,
+    paddingVertical: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  setupNextText: {
+    fontSize: 17,
+    color: WHITE,
   },
 });
