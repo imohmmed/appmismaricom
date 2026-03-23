@@ -7,6 +7,7 @@ import {
   Animated,
   Dimensions,
   FlatList,
+  Linking,
   Platform,
   Pressable,
   ScrollView,
@@ -224,15 +225,22 @@ function FeaturedCard({ item, index }: { item: ApiBanner; index: number }) {
   const title = (isArabic ? item.title : item.titleEn) || item.title;
   const subtitle = (isArabic ? item.description : item.descriptionEn) || item.description || "";
   const color = BANNER_COLORS[index % BANNER_COLORS.length];
+  const handlePress = () => {
+    if (item.link) Linking.openURL(item.link);
+  };
   return (
-    <View style={[styles.featuredCard, { width: SCREEN_WIDTH - 48 }]}>
+    <Pressable
+      style={[styles.featuredCard, { width: SCREEN_WIDTH - 48 }]}
+      onPress={handlePress}
+      disabled={!item.link}
+    >
       <View style={[styles.featuredGradient, { backgroundColor: color }]}>
         <View style={styles.featuredContent}>
           <Text style={[styles.featuredTitle, { fontFamily: fontAr("Bold") }]}>{title}</Text>
           <Text style={[styles.featuredSubtitle, { fontFamily: fontAr("Regular") }]}>{subtitle}</Text>
         </View>
       </View>
-    </View>
+    </Pressable>
   );
 }
 
