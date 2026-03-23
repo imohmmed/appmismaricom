@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, desc, sql, ilike, or, and, ne } from "drizzle-orm";
+import { eq, desc, sql, ilike, or, and, ne, inArray } from "drizzle-orm";
 import fs from "fs";
 import path from "path";
 import crypto from "crypto";
@@ -435,6 +435,51 @@ router.delete("/admin/apps/:id", async (req, res): Promise<void> => {
   tryDelete(app.iconPath);
 
   res.sendStatus(204);
+});
+
+// ─── APPS BULK ACTIONS ─────────────────────────────────────────────────────
+
+router.post("/admin/apps/bulk-test-mode", async (req, res): Promise<void> => {
+  const { appIds, enable } = req.body as { appIds: number[]; enable: boolean };
+  if (!Array.isArray(appIds) || appIds.length === 0) {
+    res.status(400).json({ error: "appIds required" });
+    return;
+  }
+  await db.update(appsTable).set({ isTestMode: enable }).where(inArray(appsTable.id, appIds));
+  res.json({ updated: appIds.length });
+});
+
+router.post("/admin/apps/bulk-plans", async (req, res): Promise<void> => {
+  const { appIds, planIds, action } = req.body as {
+    appIds: number[];
+    planIds: number[];
+    action: "add" | "remove" | "replace";
+  };
+  if (!Array.isArray(appIds) || appIds.length === 0) {
+    res.status(400).json({ error: "appIds required" });
+    return;
+  }
+  if (!Array.isArray(planIds)) {
+    res.status(400).json({ error: "planIds required" });
+    return;
+  }
+  if (action === "remove") {
+    await db.delete(appPlansTable).where(
+      and(inArray(appPlansTable.appId, appIds), inArray(appPlansTable.planId, planIds))
+    );
+  } else if (action === "replace") {
+    await db.delete(appPlansTable).where(inArray(appPlansTable.appId, appIds));
+    if (planIds.length > 0) {
+      const rows = appIds.flatMap(appId => planIds.map(planId => ({ appId, planId })));
+      await db.insert(appPlansTable).values(rows).onConflictDoNothing();
+    }
+  } else {
+    if (planIds.length > 0) {
+      const rows = appIds.flatMap(appId => planIds.map(planId => ({ appId, planId })));
+      await db.insert(appPlansTable).values(rows).onConflictDoNothing();
+    }
+  }
+  res.json({ updated: appIds.length });
 });
 
 // ─── CATEGORIES ────────────────────────────────────────────────────────────

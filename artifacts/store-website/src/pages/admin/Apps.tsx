@@ -7,7 +7,8 @@ import {
   Plus, Search, X, Upload, Link2, MoreVertical,
   Copy, Edit2, EyeOff, FlaskConical, Trash2, CheckSquare, Square,
   Loader2, AlertCircle, CheckCircle2, RefreshCw, FileArchive, Globe, Bell,
-  Flame, ArrowUpCircle, Languages, GitFork, AlertTriangle, PackageCheck
+  Flame, ArrowUpCircle, Languages, GitFork, AlertTriangle, PackageCheck,
+  ArrowLeftRight, Lock
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { App } from "@workspace/api-client-react";
@@ -599,9 +600,31 @@ function EditAppModal({ app, onClose }: { app: App; onClose: () => void }) {
                 <Input dir="ltr" value={form.size} onChange={e => setForm({ ...form, size: e.target.value })} placeholder="MB 120" />
               </FieldGroup>
               <div className="col-span-2">
-                <FieldGroup label="رابط التحميل (IPA) على السيرفر">
-                  <Input dir="ltr" value={form.downloadUrl} onChange={e => setForm({ ...form, downloadUrl: e.target.value })} placeholder="https://domain/admin/FilesIPA/IpaApp/..." />
-                </FieldGroup>
+                <div className="space-y-1">
+                  <label className="text-xs font-medium flex items-center gap-1.5" style={{ color: `${ACCENT}99` }}>
+                    رابط التحميل (IPA) على السيرفر
+                    {(form.ipaPath || app.ipaPath) && (
+                      <span className="flex items-center gap-1 text-white/25 font-normal">
+                        <Lock className="w-3 h-3" /> محفوظ على سيرفرك
+                      </span>
+                    )}
+                  </label>
+                  {(form.ipaPath || app.ipaPath) ? (
+                    <div className="flex items-center gap-2 w-full bg-black border border-white/10 rounded-lg py-2 px-3">
+                      <span className="text-sm text-green-400/80 truncate flex-1 font-mono" dir="ltr">{form.downloadUrl || "—"}</span>
+                      <button
+                        type="button"
+                        onClick={() => { if (form.downloadUrl) { navigator.clipboard.writeText(form.downloadUrl); } }}
+                        className="text-white/30 hover:text-white shrink-0 transition-colors"
+                        title="نسخ الرابط"
+                      >
+                        <Copy className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ) : (
+                    <Input dir="ltr" value={form.downloadUrl} onChange={e => setForm({ ...form, downloadUrl: e.target.value })} placeholder="https://domain/admin/FilesIPA/IpaApp/..." />
+                  )}
+                </div>
               </div>
               <div className="col-span-2">
                 <FieldGroup label="رابط الأيقونة">
@@ -982,6 +1005,139 @@ function CloneModal({ app, onClose, onDone }: { app: App; onClose: () => void; o
   );
 }
 
+// ─── Bulk Move Plan Modal ──────────────────────────────────────────────────
+function BulkMovePlanModal({
+  count,
+  onClose,
+  onDone,
+}: {
+  count: number;
+  onClose: () => void;
+  onDone: (planIds: number[], action: "add" | "remove" | "replace") => Promise<void>;
+}) {
+  const plans = usePlans();
+  const [selectedPlanIds, setSelectedPlanIds] = useState<number[]>([]);
+  const [action, setAction] = useState<"add" | "remove" | "replace">("add");
+  const [loading, setLoading] = useState(false);
+
+  const toggle = (id: number) =>
+    setSelectedPlanIds(prev => prev.includes(id) ? prev.filter(p => p !== id) : [...prev, id]);
+
+  const handle = async () => {
+    setLoading(true);
+    try { await onDone(selectedPlanIds, action); } finally { setLoading(false); }
+  };
+
+  const actionOpts: { value: "add" | "remove" | "replace"; label: string; desc: string; color: string }[] = [
+    { value: "add",     label: "إضافة للباقة",    desc: "يضيف التطبيقات للباقات المحددة مع الحفاظ على الباقات الحالية", color: "text-green-400 bg-green-500/10 border-green-500/25" },
+    { value: "remove",  label: "إزالة من الباقة", desc: "يزيل التطبيقات من الباقات المحددة فقط",                         color: "text-red-400 bg-red-500/10 border-red-500/25" },
+    { value: "replace", label: "استبدال الباقات",  desc: "يستبدل جميع باقات التطبيقات بالباقات المحددة",                  color: "text-orange-400 bg-orange-500/10 border-orange-500/25" },
+  ];
+
+  return (
+    <div className="fixed inset-0 z-[70] flex items-center justify-center p-3 bg-black/85 backdrop-blur-sm" dir="rtl">
+      <div className="bg-[#0a0a0a] border border-white/10 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-white/5">
+          <div className="flex items-center gap-2.5">
+            <ArrowLeftRight className="w-4 h-4" style={{ color: ACCENT }} />
+            <div>
+              <h3 className="text-sm font-bold text-white">نقل بين الباقات</h3>
+              <p className="text-xs text-white/30 mt-0.5">{count} تطبيق محدد</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-lg text-white/30 hover:text-white hover:bg-white/5">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="p-5 space-y-5">
+          {/* Action selector */}
+          <div className="space-y-2">
+            <p className="text-xs font-medium text-white/40">نوع العملية</p>
+            <div className="space-y-2">
+              {actionOpts.map(opt => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setAction(opt.value)}
+                  className={cn(
+                    "w-full flex items-start gap-3 p-3 rounded-xl border text-right transition-all",
+                    action === opt.value ? opt.color : "border-white/5 text-white/30 hover:border-white/10"
+                  )}
+                >
+                  <div className={cn(
+                    "w-4 h-4 rounded-full border-2 mt-0.5 shrink-0 flex items-center justify-center transition-all",
+                    action === opt.value ? "border-current" : "border-white/20"
+                  )}>
+                    {action === opt.value && <div className="w-2 h-2 rounded-full bg-current" />}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium">{opt.label}</p>
+                    <p className="text-xs text-white/30 mt-0.5">{opt.desc}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Plan selector */}
+          <div className="space-y-2">
+            <p className="text-xs font-medium text-white/40">
+              {action === "remove" ? "إزالة من هذه الباقات" : "اختر الباقات"}
+              {action === "replace" && selectedPlanIds.length === 0 && (
+                <span className="text-orange-400/70 mr-2">(تحذير: سيُلغى التحديد من جميع الباقات)</span>
+              )}
+            </p>
+            {plans.length === 0 ? (
+              <p className="text-xs text-white/20 py-3 text-center">لا توجد باقات</p>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {plans.map(p => {
+                  const active = selectedPlanIds.includes(p.id);
+                  return (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => toggle(p.id)}
+                      className="flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-medium transition-all"
+                      style={active
+                        ? { background: `${ACCENT}15`, borderColor: `${ACCENT}40`, color: ACCENT }
+                        : { borderColor: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.4)" }}
+                    >
+                      <div className={cn(
+                        "w-3.5 h-3.5 rounded-sm border flex items-center justify-center transition-all",
+                        active ? "border-current bg-current" : "border-white/20"
+                      )}>
+                        {active && <CheckCircle2 className="w-2 h-2 text-black" />}
+                      </div>
+                      {p.nameAr || p.name}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="border-t border-white/5 px-5 py-4 flex gap-3">
+          <button onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-white/10 text-white/50 hover:text-white text-sm transition-colors">
+            إلغاء
+          </button>
+          <button
+            onClick={handle}
+            disabled={loading || (action !== "replace" && selectedPlanIds.length === 0)}
+            className="flex-1 py-2.5 rounded-xl text-sm font-bold text-black disabled:opacity-40 flex items-center justify-center gap-2"
+            style={{ background: ACCENT }}
+          >
+            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowLeftRight className="w-4 h-4" />}
+            تطبيق
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function AdminApps() {
   const [, navigate] = useLocation();
   const queryClient = useQueryClient();
@@ -1001,6 +1157,7 @@ export default function AdminApps() {
   const [editingApp, setEditingApp] = useState<App | null>(null);
   const [updatingApp, setUpdatingApp] = useState<App | null>(null);
   const [cloningApp, setCloningApp] = useState<App | null>(null);
+  const [showBulkPlan, setShowBulkPlan] = useState(false);
 
   const filteredApps = useMemo(() => {
     if (!search.trim()) return apps;
@@ -1038,10 +1195,45 @@ export default function AdminApps() {
 
   const handleBulkDelete = async () => {
     if (!confirm(`هل أنت متأكد من حذف ${selectedIds.size} تطبيق؟ سيتم حذف الملفات من السيرفر.`)) return;
+    const count = selectedIds.size;
     for (const id of selectedIds) { try { await deleteMutation.mutateAsync({ id }); } catch {} }
     queryClient.invalidateQueries({ queryKey: getAdminListAppsQueryKey() });
     setSelectedIds(new Set());
-    toast({ title: `تم حذف ${selectedIds.size} تطبيق` });
+    toast({ title: `تم حذف ${count} تطبيق` });
+  };
+
+  const handleBulkTestMode = async (enable: boolean) => {
+    const ids = Array.from(selectedIds);
+    try {
+      await callApi("/admin/apps/bulk-test-mode", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ appIds: ids, enable }),
+      });
+      queryClient.invalidateQueries({ queryKey: getAdminListAppsQueryKey() });
+      setSelectedIds(new Set());
+      toast({ title: enable ? `تم تفعيل وضع التجربة لـ ${ids.length} تطبيق` : `تم إلغاء وضع التجربة لـ ${ids.length} تطبيق` });
+    } catch {
+      toast({ title: "حدث خطأ", variant: "destructive" });
+    }
+  };
+
+  const handleBulkPlans = async (planIds: number[], action: "add" | "remove" | "replace") => {
+    const ids = Array.from(selectedIds);
+    try {
+      await callApi("/admin/apps/bulk-plans", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ appIds: ids, planIds, action }),
+      });
+      queryClient.invalidateQueries({ queryKey: getAdminListAppsQueryKey() });
+      setSelectedIds(new Set());
+      setShowBulkPlan(false);
+      const actionLabel = action === "add" ? "إضافة" : action === "remove" ? "إزالة" : "استبدال";
+      toast({ title: `تم ${actionLabel} باقات ${ids.length} تطبيق` });
+    } catch {
+      toast({ title: "حدث خطأ", variant: "destructive" });
+    }
   };
 
   const copyLink = (app: App) => {
@@ -1070,6 +1262,13 @@ export default function AdminApps() {
       {editingApp && <EditAppModal app={editingApp} onClose={() => setEditingApp(null)} />}
       {updatingApp && <UpdateAppModal app={updatingApp} onClose={() => setUpdatingApp(null)} onDone={() => { setUpdatingApp(null); queryClient.invalidateQueries({ queryKey: getAdminListAppsQueryKey() }); }} />}
       {cloningApp && <CloneModal app={cloningApp} onClose={() => setCloningApp(null)} onDone={() => { queryClient.invalidateQueries({ queryKey: getAdminListAppsQueryKey() }); }} />}
+      {showBulkPlan && (
+        <BulkMovePlanModal
+          count={selectedIds.size}
+          onClose={() => setShowBulkPlan(false)}
+          onDone={handleBulkPlans}
+        />
+      )}
 
       <div className="space-y-4" dir="rtl">
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -1092,21 +1291,45 @@ export default function AdminApps() {
         </div>
 
         {selectedIds.size > 0 && (
-          <div className="flex items-center gap-3 rounded-xl border border-white/10 px-4 py-2.5" style={{ background: `${ACCENT}08` }}>
-            <span className="text-sm font-medium" style={{ color: ACCENT }}>{selectedIds.size} محدد</span>
+          <div className="flex flex-wrap items-center gap-2 rounded-xl border border-white/10 px-4 py-2.5" style={{ background: `${ACCENT}08` }}>
+            <span className="text-sm font-bold shrink-0" style={{ color: ACCENT }}>{selectedIds.size} محدد</span>
             <div className="flex-1" />
-            <button onClick={handleBulkDelete} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs bg-red-500/10 text-red-400 hover:bg-red-500/20">
+            <button
+              onClick={async () => {
+                for (const id of selectedIds) {
+                  const app = apps.find(a => a.id === id);
+                  if (app) await updateMutation.mutateAsync({ id, data: { name: app.name, icon: app.icon, categoryId: app.categoryId, tag: app.tag, isHidden: true } });
+                }
+                queryClient.invalidateQueries({ queryKey: getAdminListAppsQueryKey() });
+                setSelectedIds(new Set());
+                toast({ title: `تم إخفاء ${selectedIds.size} تطبيق` });
+              }}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs bg-yellow-500/10 text-yellow-400 hover:bg-yellow-500/20 transition-colors"
+            >
+              <EyeOff className="w-3 h-3" /> إخفاء
+            </button>
+            <button
+              onClick={() => handleBulkTestMode(true)}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs bg-purple-500/10 text-purple-400 hover:bg-purple-500/20 transition-colors"
+            >
+              <FlaskConical className="w-3 h-3" /> وضع تجربة
+            </button>
+            <button
+              onClick={() => setShowBulkPlan(true)}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs transition-colors"
+              style={{ background: `${ACCENT}15`, color: ACCENT }}
+            >
+              <ArrowLeftRight className="w-3 h-3" /> نقل للباقات
+            </button>
+            <div className="w-px h-4 bg-white/10 mx-0.5" />
+            <button
+              onClick={handleBulkDelete}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors"
+            >
               <Trash2 className="w-3 h-3" /> حذف
             </button>
-            <button onClick={async () => {
-              for (const id of selectedIds) {
-                const app = apps.find(a => a.id === id);
-                if (app) await updateMutation.mutateAsync({ id, data: { name: app.name, icon: app.icon, categoryId: app.categoryId, tag: app.tag, isHidden: true } });
-              }
-              queryClient.invalidateQueries({ queryKey: getAdminListAppsQueryKey() });
-              setSelectedIds(new Set());
-            }} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs bg-yellow-500/10 text-yellow-400 hover:bg-yellow-500/20">
-              <EyeOff className="w-3 h-3" /> إخفاء
+            <button onClick={() => setSelectedIds(new Set())} className="p-1.5 rounded-lg text-white/25 hover:text-white hover:bg-white/5 transition-colors">
+              <X className="w-3.5 h-3.5" />
             </button>
           </div>
         )}
