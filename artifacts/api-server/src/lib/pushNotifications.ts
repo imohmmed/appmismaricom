@@ -117,6 +117,38 @@ export async function sendBroadcast(title: string, body: string, data?: Record<s
   }
 }
 
+export async function sendBroadcastToGroup(groupName: string, title: string, body: string, data?: Record<string, unknown>): Promise<number> {
+  try {
+    const tokens = await db
+      .select({ pushToken: subscriptionsTable.pushToken })
+      .from(subscriptionsTable)
+      .where(
+        and(
+          eq(subscriptionsTable.isActive, "true"),
+          eq(subscriptionsTable.groupName, groupName),
+          isNotNull(subscriptionsTable.pushToken)
+        )
+      );
+
+    const messages: PushMessage[] = tokens
+      .filter((t) => t.pushToken?.startsWith("ExponentPushToken"))
+      .map((t) => ({
+        to: t.pushToken!,
+        title,
+        body,
+        sound: "default" as const,
+        data: data || {},
+      }));
+
+    await sendToExpo(messages);
+    console.log(`[push] Group broadcast "${title}" → group "${groupName}" sent to ${messages.length} devices`);
+    return messages.length;
+  } catch (err) {
+    console.error("[push] sendBroadcastToGroup error:", err);
+    return 0;
+  }
+}
+
 export async function notifyAppUpdated(appId: number): Promise<void> {
   try {
     const [appRow] = await db
