@@ -1,6 +1,7 @@
 import { Feather } from "@expo/vector-icons";
 import React from "react";
 import {
+  Alert,
   Animated,
   Dimensions,
   PanResponder,
@@ -26,6 +27,31 @@ export default function SettingsPanel({ visible, onClose }: SettingsPanelProps) 
   const insets = useSafeAreaInsets();
   const { language, setLanguage, themeMode, setThemeMode, colors, t, fontAr, isArabic } = useSettings();
   const slideAnim = React.useRef(new Animated.Value(SCREEN_HEIGHT)).current;
+
+  function handleLanguageSelect(lang: Language) {
+    if (lang === language) return;
+    const isCurrentAr = language === "ar";
+    Alert.alert(
+      isCurrentAr ? "تغيير اللغة" : "Change Language",
+      isCurrentAr
+        ? "سوف يتم ترسيت التطبيق\nThe app will reset"
+        : "The app will reset\nسوف يتم ترسيت التطبيق",
+      [
+        {
+          text: isCurrentAr ? "إلغاء" : "Cancel",
+          style: "cancel",
+        },
+        {
+          text: isCurrentAr ? "موافق" : "OK",
+          onPress: () => {
+            setLanguage(lang);
+            onClose();
+          },
+        },
+      ],
+      { cancelable: true }
+    );
+  }
   const backdropAnim = React.useRef(new Animated.Value(0)).current;
   const panY = React.useRef(new Animated.Value(0)).current;
   const [mounted, setMounted] = React.useState(false);
@@ -135,7 +161,7 @@ export default function SettingsPanel({ visible, onClose }: SettingsPanelProps) 
                     idx < langOptions.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.cardBorder },
                   ]}
                   activeOpacity={0.6}
-                  onPress={() => setLanguage(opt.key)}
+                  onPress={() => handleLanguageSelect(opt.key)}
                 >
                   <View style={[styles.optionLeft, isArabic && { flexDirection: "row-reverse" }]}>
                     <View style={[styles.langIconWrap, { backgroundColor: `${colors.tint}15` }]}>
