@@ -902,8 +902,36 @@ router.post("/admin/groups", async (req, res): Promise<void> => {
   res.status(201).json({ ...group, privateKey: "••••••••" });
 });
 
+// ─── MUST be before PUT /admin/groups/:id to avoid being caught as id="ipa-url-all"
+router.put("/admin/groups/ipa-url-all", async (req, res): Promise<void> => {
+  const { ipaUrl } = req.body as { ipaUrl?: string };
+  if (!ipaUrl?.trim()) {
+    res.status(400).json({ error: "ipaUrl مطلوب" });
+    return;
+  }
+
+  const allGroups = await db.select({ id: groupsTable.id, downloadSlug: groupsTable.downloadSlug }).from(groupsTable);
+
+  let updatedCount = 0;
+  for (const g of allGroups) {
+    let slug = g.downloadSlug;
+    if (!slug) {
+      for (let attempt = 0; attempt < 5; attempt++) {
+        const candidate = crypto.randomBytes(4).toString("hex");
+        const [taken] = await db.select({ id: groupsTable.id }).from(groupsTable).where(eq(groupsTable.downloadSlug, candidate));
+        if (!taken) { slug = candidate; break; }
+      }
+    }
+    await db.update(groupsTable).set({ ipaUrl: ipaUrl.trim(), downloadSlug: slug }).where(eq(groupsTable.id, g.id));
+    updatedCount++;
+  }
+
+  res.json({ success: true, updatedCount });
+});
+
 router.put("/admin/groups/:id", async (req, res): Promise<void> => {
   const id = Number(req.params.id);
+  if (isNaN(id)) { res.status(404).json({ error: "Not found" }); return; }
   const { certName, issuerId, keyId, privateKey, email } = req.body;
   const updateData: Record<string, string> = {};
   if (certName !== undefined) updateData.certName = certName;
@@ -911,6 +939,10 @@ router.put("/admin/groups/:id", async (req, res): Promise<void> => {
   if (keyId !== undefined) updateData.keyId = keyId;
   if (privateKey && privateKey !== "••••••••") updateData.privateKey = privateKey;
   if (email !== undefined) updateData.email = email;
+  if (Object.keys(updateData).length === 0) {
+    res.status(400).json({ error: "لا توجد بيانات للتحديث" });
+    return;
+  }
   const [group] = await db.update(groupsTable).set(updateData).where(eq(groupsTable.id, id)).returning();
   if (!group) { res.status(404).json({ error: "Not found" }); return; }
   res.json({ ...group, privateKey: "••••••••" });
