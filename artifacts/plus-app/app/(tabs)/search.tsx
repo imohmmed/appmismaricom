@@ -36,6 +36,8 @@ function apiAppToDetail(app: ApiApp) {
     tag: app.tag,
     icon: app.icon || "box",
     catKey: app.categoryName?.toLowerCase(),
+    size: app.size ?? null,
+    createdAt: app.createdAt ?? null,
   };
 }
 

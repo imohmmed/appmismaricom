@@ -40,6 +40,8 @@ type AppData = {
   icon: string;
   catKey?: string;
   categoryId?: number;
+  size?: string | null;
+  createdAt?: string | null;
 };
 
 type Review = {
@@ -366,7 +368,10 @@ export default function AppDetailPanel({ app, onClose, onCategoryPress, relatedA
     setReviewText(""); setReviewRating(0);
   };
 
-  const appSize = APP_SIZES[app.catKey || ""] || APP_SIZES[app.category] || "100";
+  const appSize = app.size || APP_SIZES[app.catKey || ""] || APP_SIZES[app.category] || "—";
+  const updateDays = app.createdAt
+    ? Math.max(0, Math.floor((Date.now() - new Date(app.createdAt).getTime()) / 86400000))
+    : null;
 
   const stickyOpacity = scrollY.interpolate({
     inputRange: [HEADER_COLLAPSE_POINT - 20, HEADER_COLLAPSE_POINT + 10],
@@ -469,8 +474,8 @@ export default function AppDetailPanel({ app, onClose, onCategoryPress, relatedA
           <View style={[st.infoBoxDivider, { backgroundColor: colors.separator }]} />
           <View style={st.infoBox}>
             <Text style={[st.infoBoxLabel, { color: colors.textSecondary, fontFamily: fontAr("SemiBold") }]}>{t("update")}</Text>
-            <Text style={[st.infoBoxValue, { color: colors.text }]}>3</Text>
-            <Text style={[st.infoBoxSub, { color: colors.textSecondary, fontFamily: fontAr("Regular") }]}>{t("days")}</Text>
+            <Text style={[st.infoBoxValue, { color: colors.text }]}>{updateDays !== null ? updateDays : "—"}</Text>
+            <Text style={[st.infoBoxSub, { color: colors.textSecondary, fontFamily: fontAr("Regular") }]}>{updateDays !== null ? t("days") : ""}</Text>
           </View>
         </View>
 
