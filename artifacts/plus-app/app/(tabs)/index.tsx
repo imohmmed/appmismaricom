@@ -26,6 +26,11 @@ import GlassBackButton from "@/components/GlassBackButton";
 import AccountPanel from "@/components/AccountPanel";
 import { useCategories, useApps, useBanners, getCategoryColor, getTagColor, type ApiApp, type ApiCategory, type ApiBanner } from "@/hooks/useAppData";
 import { registerOpenCategoryHandler } from "@/utils/openCategorySignal";
+import { registerOpenAppHandler } from "@/utils/openAppSignal";
+import { consumePendingOpenApp, getUnreadCount } from "@/utils/notificationStorage";
+
+const API_DOMAIN = process.env.EXPO_PUBLIC_DOMAIN || "";
+const BASE_URL = API_DOMAIN ? `https://${API_DOMAIN}` : "";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const PAGE_WIDTH = SCREEN_WIDTH - 80;
@@ -248,11 +253,13 @@ function FeaturedCard({ item, index }: { item: ApiBanner; index: number }) {
 export default function PlusScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
+  const router = useRouter();
   const { colors, t, fontAr, isArabic } = useSettings();
   const [activeCat, setActiveCat] = useState<ApiCategory | null>(null);
   const [selectedApp, setSelectedApp] = useState<ApiApp | null>(null);
   const [catSelectedApp, setCatSelectedApp] = useState<ApiApp | null>(null);
   const [showAccount, setShowAccount] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const scrollX = useRef(new Animated.Value(0)).current;
   const catToAppTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const featuredRef = useRef<FlatList>(null);
@@ -298,6 +305,40 @@ export default function PlusScreen() {
     });
   }, [categories]);
 
+  // ── Load unread notification count ──────────────────────────────────────────
+  useEffect(() => {
+    getUnreadCount().then(setUnreadCount);
+  }, []);
+
+  // ── Open app from notification signal (in-app tap) ──────────────────────────
+  useEffect(() => {
+    return registerOpenAppHandler(async (appId) => {
+      if (!BASE_URL) return;
+      try {
+        const res = await fetch(`${BASE_URL}/api/apps/${appId}`);
+        if (!res.ok) return;
+        const app: ApiApp = await res.json();
+        setActiveCat(null);
+        setCatSelectedApp(null);
+        setSelectedApp(null);
+        setTimeout(() => setSelectedApp(app), 100);
+      } catch {}
+    });
+  }, []);
+
+  // ── Consume pending open app (from notification banner tap while app closed) ─
+  useEffect(() => {
+    consumePendingOpenApp().then(async (appId) => {
+      if (!appId || !BASE_URL) return;
+      try {
+        const res = await fetch(`${BASE_URL}/api/apps/${appId}`);
+        if (!res.ok) return;
+        const app: ApiApp = await res.json();
+        setTimeout(() => setSelectedApp(app), 500);
+      } catch {}
+    });
+  }, []);
+
   useEffect(() => {
     const interval = setInterval(() => {
       if (banners.length === 0) return;
@@ -326,9 +367,25 @@ export default function PlusScreen() {
             <>{"Mismari "}<Text style={{ fontFamily: "Inter_700Bold" }}>+</Text></>
           )}
         </Text>
-        <TouchableOpacity style={[styles.profileButton, { backgroundColor: colors.card, overflow: "hidden" }]} onPress={() => setShowAccount(true)} activeOpacity={0.6}>
-          <ProfileAvatar size={36} />
-        </TouchableOpacity>
+        <View style={[styles.headerActions, isArabic && { flexDirection: "row-reverse" }]}>
+          {/* Bell icon */}
+          <TouchableOpacity
+            style={styles.bellButton}
+            onPress={() => router.push("/notifications")}
+            activeOpacity={0.7}
+          >
+            <Feather name="bell" size={22} color={colors.text} />
+            {unreadCount > 0 && (
+              <View style={[styles.badge, { backgroundColor: colors.tint }]}>
+                <Text style={styles.badgeText}>{unreadCount > 9 ? "9+" : unreadCount}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+          {/* Profile */}
+          <TouchableOpacity style={[styles.profileButton, { backgroundColor: colors.card, overflow: "hidden" }]} onPress={() => setShowAccount(true)} activeOpacity={0.6}>
+            <ProfileAvatar size={36} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* ── Category Pills + Search (merged) ───────────────────────────────── */}
@@ -469,6 +526,28 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   headerTitle: { fontSize: 28 },
+  headerActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  bellButton: {
+    width: 36, height: 36,
+    alignItems: "center", justifyContent: "center",
+  },
+  badge: {
+    position: "absolute",
+    top: 2, right: 2,
+    minWidth: 16, height: 16,
+    borderRadius: 8,
+    alignItems: "center", justifyContent: "center",
+    paddingHorizontal: 3,
+  },
+  badgeText: {
+    color: "#000", fontSize: 10,
+    fontFamily: "Inter_700Bold",
+    lineHeight: 14,
+  },
   profileButton: {
     width: 36, height: 36, borderRadius: 18,
     alignItems: "center", justifyContent: "center",

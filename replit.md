@@ -103,6 +103,14 @@ All admin pages are dark-themed (#1a1a2e bg, #22223a cards, #2a2a45 borders) wit
 - Admin can broadcast manual push notifications from `/admin/notifications` page
 - Push API: Expo Push API (`exp.host`), batches of 100, `ExponentPushToken[...]` format
 
+### Notifications Inbox (`app/notifications.tsx`)
+- `utils/notificationStorage.ts` — AsyncStorage JSON array (max 100); methods: `saveNotification()`, `getNotifications()`, `markAllRead()`, `getUnreadCount()`, `clearAll()`, `setPendingOpenApp()`, `consumePendingOpenApp()`
+- `utils/openAppSignal.ts` — module-level signal; `registerOpenAppHandler()` / `emitOpenApp()`; used by home tab to open AppDetailPanel when notification is tapped
+- Inbox screen has 3 tabs: الكل (all) / رسائل (broadcast) / تطبيقات (app_added + app_updated)
+- Notification tap: if has `appId` → emits openApp signal + navigates home; if broadcast → navigates to notifications list
+- Bell icon in home tab header shows unread count badge; navigates to `/notifications`
+- `consumePendingOpenApp()` checked on home tab mount to open apps from killed-state notification taps
+
 ### Onboarding Flow (`app/onboarding.tsx`)
 Multi-step animated onboarding:
 1. **Landing**: Animated cycling words (سريع, آمن, موثوق, محدّث) with blue gradient blob, Continue button

@@ -1,7 +1,9 @@
 import { useEffect, useRef } from "react";
 import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
+import { router } from "expo-router";
 import { useSettings } from "@/contexts/SettingsContext";
+import { saveNotification, setPendingOpenApp, type NotifType } from "@/utils/notificationStorage";
 
 const API_DOMAIN = process.env.EXPO_PUBLIC_DOMAIN || "";
 const BASE_URL = API_DOMAIN ? `https://${API_DOMAIN}` : "";
@@ -46,6 +48,12 @@ async function registerToken(code: string): Promise<void> {
   }
 }
 
+function getNotifType(data: any): NotifType {
+  if (data?.type === "app_added") return "app_added";
+  if (data?.type === "app_updated") return "app_updated";
+  return "broadcast";
+}
+
 export function usePushNotifications() {
   const { subscriptionCode, onboardingDone } = useSettings();
   const registered = useRef(false);
@@ -57,13 +65,47 @@ export function usePushNotifications() {
     registered.current = true;
     registerToken(subscriptionCode);
 
-    notifListener.current = Notifications.addNotificationReceivedListener(() => {});
+    // When notification arrives while app is open → save it
+    notifListener.current = Notifications.addNotificationReceivedListener((notif) => {
+      const content = notif.request.content;
+      const data = content.data as any;
+      const type = getNotifType(data);
 
+      saveNotification({
+        type,
+        title: content.title || "",
+        body: content.body || "",
+        appId: data?.appId ? Number(data.appId) : undefined,
+        appIcon: data?.appIcon || undefined,
+      });
+    });
+
+    // When user taps a notification banner
     responseListener.current = Notifications.addNotificationResponseReceivedListener(
-      (response) => {
-        const data = response.notification.request.content.data as any;
+      async (response) => {
+        const content = response.notification.request.content;
+        const data = content.data as any;
+        const type = getNotifType(data);
+
+        // Save the notification if not already saved (came from background/killed state)
+        await saveNotification({
+          type,
+          title: content.title || "",
+          body: content.body || "",
+          appId: data?.appId ? Number(data.appId) : undefined,
+          appIcon: data?.appIcon || undefined,
+        });
+
         if (data?.appId) {
-          console.log("[push] User tapped notification for appId:", data.appId);
+          const appId = Number(data.appId);
+          // Store as pending so home tab opens it on focus
+          await setPendingOpenApp(appId);
+          // Navigate to home tab
+          router.navigate("/(tabs)/");
+        }
+        // For broadcast messages: just navigate to notifications screen
+        else {
+          router.navigate("/notifications");
         }
       }
     );
