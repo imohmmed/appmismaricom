@@ -1,9 +1,11 @@
 import { Feather } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker";
 import React from "react";
 import {
   ActivityIndicator,
   Animated,
   Dimensions,
+  Image,
   Linking,
   PanResponder,
   Platform,
@@ -17,6 +19,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useSettings } from "@/contexts/SettingsContext";
+import MyAccountModal from "@/components/MyAccountModal";
 import SettingsPanel from "@/components/SettingsPanel";
 import { useSign } from "@/hooks/useSign";
 
@@ -30,6 +33,19 @@ const DEFAULT_SOCIAL = [
 
 interface SocialLink { key: string; label: string; icon: "instagram" | "send" | "phone"; color: string; url: string; }
 
+interface SubscriberInfo {
+  subscriberName?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  udid?: string | null;
+  deviceType?: string | null;
+  groupName?: string | null;
+  activatedAt?: string | null;
+  expiresAt?: string | null;
+  isActive?: string | null;
+  createdAt?: string | null;
+}
+
 interface AccountPanelProps {
   visible: boolean;
   onClose: () => void;
@@ -37,14 +53,17 @@ interface AccountPanelProps {
 
 export default function AccountPanel({ visible, onClose }: AccountPanelProps) {
   const insets = useSafeAreaInsets();
-  const { colors, t, fontAr, isArabic, subscriptionCode } = useSettings();
+  const { colors, t, fontAr, isArabic, subscriptionCode, profilePhoto, setProfilePhoto } = useSettings();
   const { signStore, state: signState, error: signError, reset: resetSign } = useSign();
   const slideAnim = React.useRef(new Animated.Value(SCREEN_HEIGHT)).current;
   const backdropAnim = React.useRef(new Animated.Value(0)).current;
   const panY = React.useRef(new Animated.Value(0)).current;
   const [mounted, setMounted] = React.useState(false);
   const [showSettings, setShowSettings] = React.useState(false);
+  const [showMyAccount, setShowMyAccount] = React.useState(false);
   const [socialLinks, setSocialLinks] = React.useState<SocialLink[]>(DEFAULT_SOCIAL);
+  const [subscriber, setSubscriber] = React.useState<SubscriberInfo | null>(null);
+  const [subLoading, setSubLoading] = React.useState(false);
   const isClosing = React.useRef(false);
 
   const isSigningStore = signState === "signing" || signState === "opening";
@@ -54,6 +73,7 @@ export default function AccountPanel({ visible, onClose }: AccountPanelProps) {
     await signStore(subscriptionCode);
   }, [subscriptionCode, signStore, resetSign]);
 
+  // Fetch social links
   React.useEffect(() => {
     const domain = process.env.EXPO_PUBLIC_DOMAIN;
     if (!domain) return;
@@ -68,6 +88,19 @@ export default function AccountPanel({ visible, onClose }: AccountPanelProps) {
       })
       .catch(() => {});
   }, []);
+
+  // Fetch subscriber info when panel opens with a subscription code
+  React.useEffect(() => {
+    if (!visible || !subscriptionCode) { setSubscriber(null); return; }
+    const domain = process.env.EXPO_PUBLIC_DOMAIN;
+    if (!domain) return;
+    setSubLoading(true);
+    fetch(`https://${domain}/api/subscriber/me?code=${encodeURIComponent(subscriptionCode)}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => setSubscriber(data))
+      .catch(() => setSubscriber(null))
+      .finally(() => setSubLoading(false));
+  }, [visible, subscriptionCode]);
 
   const panResponder = React.useRef(
     PanResponder.create({
@@ -117,8 +150,30 @@ export default function AccountPanel({ visible, onClose }: AccountPanelProps) {
   if (!mounted) return null;
 
   const openLink = (url: string) => { if (url) Linking.openURL(url).catch(() => {}); };
-  const handleMenuPress = (key: string) => { if (key === "settings") setShowSettings(true); };
+  const handleMenuPress = (key: string) => {
+    if (key === "settings") setShowSettings(true);
+    if (key === "profile") setShowMyAccount(true);
+  };
   const activeSocial = socialLinks.filter(s => s.url);
+
+  const displayName = subscriber?.subscriberName || t("guestUser");
+  const displaySub = subscriber?.phone || (subscriptionCode ? subscriptionCode : t("signIn"));
+
+  const handlePickPhoto = async () => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== "granted") return;
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaType.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.7,
+      });
+      if (!result.canceled && result.assets[0]?.uri) {
+        setProfilePhoto(result.assets[0].uri);
+      }
+    } catch {}
+  };
 
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
@@ -151,23 +206,40 @@ export default function AccountPanel({ visible, onClose }: AccountPanelProps) {
         </View>
 
         <ScrollView showsVerticalScrollIndicator={false} bounces={true}>
-          <View style={[styles.profileCard, { backgroundColor: colors.card }, isArabic && { flexDirection: "row-reverse" }]}>
-            <View style={[styles.avatarCircle, { backgroundColor: colors.backgroundSecondary, borderColor: colors.cardBorder }]}>
-              <Feather name="user" size={32} color={colors.tint} />
+          {/* ─── Profile Card ─── */}
+          <Pressable
+            style={[styles.profileCard, { backgroundColor: colors.card }, isArabic && { flexDirection: "row-reverse" }]}
+            onPress={handlePickPhoto}
+            android_ripple={{ color: `${colors.tint}20` }}
+          >
+            <View style={styles.avatarWrap}>
+              <View style={[styles.avatarCircle, { backgroundColor: colors.backgroundSecondary, borderColor: colors.cardBorder }]}>
+                {profilePhoto ? (
+                  <Image source={{ uri: profilePhoto }} style={styles.avatarPhoto} />
+                ) : subLoading ? (
+                  <ActivityIndicator size="small" color={colors.tint} />
+                ) : (
+                  <Feather name="user" size={32} color={colors.tint} />
+                )}
+              </View>
+              <View style={[styles.cameraBtn, { backgroundColor: colors.tint }]}>
+                <Feather name="camera" size={10} color="#000" />
+              </View>
             </View>
             <View style={[styles.profileInfo, isArabic && { alignItems: "flex-end" }]}>
               <Text style={[styles.profileName, { color: colors.text, fontFamily: fontAr("Bold") }]}>
-                {t("guestUser")}
+                {displayName}
               </Text>
               <Text style={[styles.profileEmail, { color: colors.textSecondary, fontFamily: fontAr("Regular") }]}>
-                {t("signIn")}
+                {displaySub}
               </Text>
             </View>
-          </View>
+            <Feather name={isArabic ? "chevron-left" : "chevron-right"} size={16} color={colors.separator} />
+          </Pressable>
 
           {/* ─── Download Store Button ─── */}
           {subscriptionCode ? (
-            <View style={{ paddingHorizontal: 16, paddingBottom: 12 }}>
+            <View style={{ paddingHorizontal: 0, paddingBottom: 12 }}>
               <TouchableOpacity
                 style={[
                   styles.downloadStoreBtn,
@@ -201,6 +273,7 @@ export default function AccountPanel({ visible, onClose }: AccountPanelProps) {
             </View>
           ) : null}
 
+          {/* ─── Menu ─── */}
           <View style={[styles.menuSection, { backgroundColor: colors.card }]}>
             {MENU_ITEMS.map((item) => (
               <TouchableOpacity
@@ -234,6 +307,7 @@ export default function AccountPanel({ visible, onClose }: AccountPanelProps) {
             ))}
           </View>
 
+          {/* ─── Social Links ─── */}
           {activeSocial.length > 0 && (
             <View style={styles.socialSection}>
               <Text style={[styles.socialTitle, { color: colors.textSecondary, fontFamily: fontAr("SemiBold") }]}>
@@ -258,6 +332,14 @@ export default function AccountPanel({ visible, onClose }: AccountPanelProps) {
       </Animated.View>
 
       <SettingsPanel visible={showSettings} onClose={() => setShowSettings(false)} />
+
+      <MyAccountModal
+        visible={showMyAccount}
+        onClose={() => setShowMyAccount(false)}
+        subscriber={subscriber}
+        loading={subLoading}
+        profilePhoto={profilePhoto}
+      />
     </View>
   );
 }
@@ -306,6 +388,7 @@ const styles = StyleSheet.create({
     gap: 14,
     marginBottom: 16,
   },
+  avatarWrap: { position: "relative" },
   avatarCircle: {
     width: 60,
     height: 60,
@@ -313,6 +396,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 2,
+    overflow: "hidden",
+  },
+  avatarPhoto: { width: 60, height: 60, borderRadius: 30 },
+  cameraBtn: {
+    position: "absolute",
+    bottom: 0,
+    right: 0,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
   },
   profileInfo: { flex: 1, gap: 4 },
   profileName: { fontSize: 16 },
@@ -338,25 +433,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   menuLabel: { flex: 1, fontSize: 15 },
-  enrollBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderRadius: 16,
-    padding: 14,
-    gap: 12,
-    marginBottom: 16,
-    borderWidth: 1,
-  },
-  enrollIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  enrollText: { flex: 1, gap: 2 },
-  enrollTitle: { fontSize: 15 },
-  enrollSub: { fontSize: 12 },
   socialSection: { marginBottom: 10 },
   socialTitle: { fontSize: 13, textAlign: "center", marginBottom: 12 },
   socialRow: { flexDirection: "row", justifyContent: "center", gap: 10 },

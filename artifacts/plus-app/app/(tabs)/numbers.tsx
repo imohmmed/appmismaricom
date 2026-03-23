@@ -1,6 +1,7 @@
 import { Feather } from "@expo/vector-icons";
 import { useNavigation } from "expo-router";
 import React, { useState, useEffect, useRef } from "react";
+import ProfileAvatar from "@/components/ProfileAvatar";
 import {
   Platform,
   ScrollView,
@@ -55,8 +56,8 @@ export default function NumbersScreen() {
             <>{"Mismari "}<Text style={{ fontFamily: "Inter_700Bold" }}>NUM</Text></>
           )}
         </Text>
-        <TouchableOpacity style={[styles.profileButton, { backgroundColor: colors.card }]} onPress={() => setShowAccount(true)} activeOpacity={0.6}>
-          <Feather name="user" size={20} color={colors.textSecondary} />
+        <TouchableOpacity style={[styles.profileButton, { backgroundColor: colors.card, overflow: "hidden" }]} onPress={() => setShowAccount(true)} activeOpacity={0.6}>
+          <ProfileAvatar size={36} />
         </TouchableOpacity>
       </View>
       <ScrollView

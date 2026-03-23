@@ -1,6 +1,7 @@
 import { Feather } from "@expo/vector-icons";
 import { useNavigation, useRouter } from "expo-router";
 import AppIconImg from "@/components/AppIconImg";
+import ProfileAvatar from "@/components/ProfileAvatar";
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import {
   Animated,
@@ -315,8 +316,8 @@ export default function PlusScreen() {
             <>{"Mismari "}<Text style={{ fontFamily: "Inter_700Bold" }}>+</Text></>
           )}
         </Text>
-        <TouchableOpacity style={[styles.profileButton, { backgroundColor: colors.card }]} onPress={() => setShowAccount(true)} activeOpacity={0.6}>
-          <Feather name="user" size={20} color={colors.textSecondary} />
+        <TouchableOpacity style={[styles.profileButton, { backgroundColor: colors.card, overflow: "hidden" }]} onPress={() => setShowAccount(true)} activeOpacity={0.6}>
+          <ProfileAvatar size={36} />
         </TouchableOpacity>
       </View>
 

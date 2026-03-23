@@ -23,6 +23,8 @@ interface SettingsContextType {
   setOnboardingDone: (done: boolean) => void;
   deviceUdid: string;
   setDeviceUdid: (udid: string) => void;
+  profilePhoto: string;
+  setProfilePhoto: (uri: string) => void;
 }
 
 const SettingsContext = createContext<SettingsContextType | null>(null);
@@ -32,6 +34,7 @@ const THEME_KEY = "@mismari_theme";
 const CODE_KEY = "@mismari_subscription_code";
 const ONBOARDING_KEY = "@mismari_onboarding_done";
 const UDID_KEY = "@mismari_device_udid";
+const PHOTO_KEY = "@mismari_profile_photo";
 
 export function SettingsProvider({ children }: { children: React.ReactNode }) {
   const systemScheme = useColorScheme();
@@ -40,23 +43,26 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   const [subscriptionCode, setSubscriptionCodeState] = useState("");
   const [onboardingDone, setOnboardingDoneState] = useState(false);
   const [deviceUdid, setDeviceUdidState] = useState("");
+  const [profilePhoto, setProfilePhotoState] = useState("");
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     (async () => {
       try {
-        const [savedLang, savedTheme, savedCode, savedOnboarding, savedUdid] = await Promise.all([
+        const [savedLang, savedTheme, savedCode, savedOnboarding, savedUdid, savedPhoto] = await Promise.all([
           AsyncStorage.getItem(LANG_KEY),
           AsyncStorage.getItem(THEME_KEY),
           AsyncStorage.getItem(CODE_KEY),
           AsyncStorage.getItem(ONBOARDING_KEY),
           AsyncStorage.getItem(UDID_KEY),
+          AsyncStorage.getItem(PHOTO_KEY),
         ]);
         if (savedLang === "ar" || savedLang === "en") setLanguageState(savedLang);
         if (savedTheme === "light" || savedTheme === "dark" || savedTheme === "system") setThemeModeState(savedTheme);
         if (savedCode) setSubscriptionCodeState(savedCode);
         if (savedOnboarding === "true") setOnboardingDoneState(true);
         if (savedUdid) setDeviceUdidState(savedUdid);
+        if (savedPhoto) setProfilePhotoState(savedPhoto);
       } catch {}
       setLoaded(true);
     })();
@@ -101,6 +107,11 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   const setDeviceUdid = (udid: string) => {
     setDeviceUdidState(udid);
     AsyncStorage.setItem(UDID_KEY, udid).catch(() => {});
+  };
+
+  const setProfilePhoto = (uri: string) => {
+    setProfilePhotoState(uri);
+    AsyncStorage.setItem(PHOTO_KEY, uri).catch(() => {});
   };
 
   const resolvedTheme =
@@ -153,6 +164,8 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
         setOnboardingDone,
         deviceUdid,
         setDeviceUdid,
+        profilePhoto,
+        setProfilePhoto,
       }}
     >
       {children}

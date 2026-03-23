@@ -113,9 +113,13 @@ Colors per step: Blue (#9fbcff), Orange (#FF8A50), Purple (#B07DFF)
 - **Colors**: Light mode (white bg, dark text) and Dark mode (#2B283B bg, white text, #9FBCFF secondary)
 - **Translations**: Full AR/EN in `constants/translations.ts` with `t(key)` helper
 - **Font**: Arabic text → Mestika-{weight} via `fontAr()`, English → Inter
-- **Persistence**: AsyncStorage keys `@mismari_language`, `@mismari_theme`, `@mismari_onboarding_done`, `@mismari_device_udid`
+- **Persistence**: AsyncStorage keys `@mismari_language`, `@mismari_theme`, `@mismari_onboarding_done`, `@mismari_device_udid`, `@mismari_profile_photo`
 - **SettingsPanel**: Accessible from Account panel → Settings, with language & appearance togglers
+- **AccountPanel**: Bottom-sheet with subscriber name/phone (fetched from API by subscription code), profile photo picker (expo-image-picker, stored in context+AsyncStorage), download-store button, menu with "حسابي" opening MyAccountModal
+- **MyAccountModal**: Full subscriber details sheet (bilingual, read-only) — name, phone, email, UDID, device type, group, subscription/expiry dates, active status badge
+- **ProfileAvatar**: Shared component — shows profile photo or feather user icon; used in all 4 tab headers
 - All screens use `useSettings()` hook for dynamic colors, translations, and font selection
+- Public API endpoint `GET /api/subscriber/me?code=XXX` returns subscriber details (no auth required)
 
 ## Website (store-website)
 
