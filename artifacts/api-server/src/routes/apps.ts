@@ -38,15 +38,17 @@ router.get("/apps", async (req, res): Promise<void> => {
   const code = (req.query as any).code as string | undefined;
   const offset = (page - 1) * limit;
 
-  // Resolve subscriber's planId if code provided
+  // Resolve subscriber's planId if code provided — only for active, non-expired subscriptions
   let subscriberPlanId: number | null = null;
   if (code) {
     const [sub] = await db
-      .select({ planId: subscriptionsTable.planId })
+      .select({ planId: subscriptionsTable.planId, isActive: subscriptionsTable.isActive, expiresAt: subscriptionsTable.expiresAt })
       .from(subscriptionsTable)
       .where(eq(subscriptionsTable.code, code))
       .limit(1);
-    if (sub) subscriberPlanId = sub.planId;
+    if (sub && sub.isActive === "true" && (!sub.expiresAt || sub.expiresAt > new Date())) {
+      subscriberPlanId = sub.planId;
+    }
   }
 
   // If subscriber plan is known, filter: show apps that have no plan restriction OR have this plan

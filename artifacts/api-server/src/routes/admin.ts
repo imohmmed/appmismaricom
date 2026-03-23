@@ -401,7 +401,18 @@ router.put("/admin/apps/:id", async (req, res): Promise<void> => {
 router.patch("/admin/apps/:id", async (req, res): Promise<void> => {
   const id = Number(req.params.id);
   if (!id) { res.status(400).json({ error: "Invalid ID" }); return; }
-  const [app] = await db.update(appsTable).set(req.body).where(eq(appsTable.id, id)).returning();
+  // Allowlist only safe toggleable fields — never pass req.body directly to DB
+  const ALLOWED: Array<keyof typeof appsTable.$inferInsert> = [
+    "isFeatured", "isHot", "isHidden", "isTestMode", "status", "downloads",
+    "tag", "version", "size", "description", "descriptionAr", "descriptionEn",
+    "name", "icon", "iconPath", "categoryId", "bundleId",
+  ];
+  const patch: Record<string, unknown> = {};
+  for (const key of ALLOWED) {
+    if (key in req.body) patch[key] = (req.body as any)[key];
+  }
+  if (Object.keys(patch).length === 0) { res.status(400).json({ error: "No valid fields to update" }); return; }
+  const [app] = await db.update(appsTable).set(patch as any).where(eq(appsTable.id, id)).returning();
   if (!app) { res.status(404).json({ error: "App not found" }); return; }
   res.json(app);
 });
@@ -676,10 +687,10 @@ router.delete("/admin/subscriptions/:id", async (req, res): Promise<void> => {
 router.post("/admin/subscriptions/bulk-delete", async (req, res): Promise<void> => {
   const { ids } = req.body;
   if (!Array.isArray(ids) || ids.length === 0) { res.status(400).json({ error: "ids required" }); return; }
-  for (const id of ids) {
-    await db.delete(subscriptionsTable).where(eq(subscriptionsTable.id, Number(id)));
-  }
-  res.json({ deleted: ids.length });
+  const numIds = ids.map(Number).filter(n => n > 0);
+  if (numIds.length === 0) { res.status(400).json({ error: "invalid ids" }); return; }
+  await db.delete(subscriptionsTable).where(inArray(subscriptionsTable.id, numIds));
+  res.json({ deleted: numIds.length });
 });
 
 // ─── FEATURED BANNERS ──────────────────────────────────────────────────────
@@ -752,16 +763,42 @@ async function rebuildGroupStats(certName: string) {
   };
 }
 
-// GET /admin/groups — reads from local cache (fast, no Apple API call)
+// GET /admin/groups — single aggregated query for all group stats
 router.get("/admin/groups", async (_req, res): Promise<void> => {
   const groups = await db.select().from(groupsTable).orderBy(desc(groupsTable.createdAt));
-  const result = await Promise.all(groups.map(async (g) => {
-    const live = await rebuildGroupStats(g.certName);
-    return {
-      ...g,
-      privateKey: g.privateKey ? "••••••••" : "",
-      ...live,
+  if (groups.length === 0) { res.json({ groups: [] }); return; }
+
+  const certNames = groups.map(g => g.certName);
+  // Single query: aggregate stats for all groups at once
+  const statsResult = await db.execute(sql`
+    SELECT
+      group_name,
+      COUNT(*) FILTER (WHERE apple_platform = 'IOS')::int AS iphone_official_count,
+      COUNT(*) FILTER (WHERE apple_platform = 'MAC')::int AS iphone_mac_count,
+      COUNT(*) FILTER (WHERE apple_platform = 'IPAD_OS')::int AS ipad_count,
+      COUNT(*) FILTER (WHERE apple_status = 'PROCESSING')::int AS pending_count,
+      COUNT(*) FILTER (WHERE apple_status = 'ENABLED')::int AS active_count,
+      COUNT(*)::int AS total_devices
+    FROM subscriptions
+    WHERE group_name = ANY(${certNames})
+    GROUP BY group_name
+  `);
+  const statsMap: Record<string, any> = {};
+  for (const row of statsResult.rows as any[]) {
+    statsMap[row.group_name] = {
+      iphoneOfficialCount: row.iphone_official_count,
+      iphoneMacCount: row.iphone_mac_count,
+      ipadCount: row.ipad_count,
+      pendingCount: row.pending_count,
+      activeCount: row.active_count,
+      totalDevices: row.total_devices,
     };
+  }
+  const empty = { iphoneOfficialCount: 0, iphoneMacCount: 0, ipadCount: 0, pendingCount: 0, activeCount: 0, totalDevices: 0 };
+  const result = groups.map(g => ({
+    ...g,
+    privateKey: g.privateKey ? "••••••••" : "",
+    ...(statsMap[g.certName] ?? empty),
   }));
   res.json({ groups: result });
 });
@@ -1213,14 +1250,14 @@ router.get("/admin/settings", async (_req, res): Promise<void> => {
 
 router.put("/admin/settings", async (req, res): Promise<void> => {
   const { settings } = req.body;
-  if (!Array.isArray(settings)) { res.status(400).json({ error: "settings must be array" }); return; }
-  for (const s of settings) {
-    const existing = await db.select().from(settingsTable).where(eq(settingsTable.key, s.key));
-    if (existing.length > 0) {
-      await db.update(settingsTable).set({ value: s.value }).where(eq(settingsTable.key, s.key));
-    } else {
-      await db.insert(settingsTable).values({ key: s.key, value: s.value });
-    }
+  if (!Array.isArray(settings) || settings.length === 0) { res.status(400).json({ error: "settings must be non-empty array" }); return; }
+  const rows = settings
+    .filter((s: any) => typeof s.key === "string" && s.key.trim())
+    .map((s: any) => ({ key: s.key.trim(), value: String(s.value ?? "") }));
+  if (rows.length > 0) {
+    await db.insert(settingsTable)
+      .values(rows)
+      .onConflictDoUpdate({ target: settingsTable.key, set: { value: sql`excluded.value`, updatedAt: new Date() } });
   }
   const updated = await db.select().from(settingsTable);
   res.json({ settings: updated });
@@ -1361,44 +1398,51 @@ router.get("/admin/balances", async (req, res): Promise<void> => {
     `);
     const balanceStats = balanceStatsResult.rows[0] as any || {};
 
-    // Transactions list
-    const conditions: string[] = [];
+    // Transactions list — use parameterized sql`` to prevent SQL injection
+    const whereParts: any[] = [];
     if (typeFilter && ["credit", "debit", "purchase"].includes(typeFilter)) {
-      conditions.push(`bt.type = '${typeFilter}'`);
+      whereParts.push(sql`bt.type = ${typeFilter}`);
     }
     if (search) {
-      conditions.push(`(s.subscriber_name ILIKE '%${search.replace(/'/g, "''")}%' OR s.phone ILIKE '%${search.replace(/'/g, "''")}%' OR s.code ILIKE '%${search.replace(/'/g, "''")}%')`);
+      const pat = `%${search}%`;
+      whereParts.push(sql`(s.subscriber_name ILIKE ${pat} OR s.phone ILIKE ${pat} OR s.code ILIKE ${pat})`);
     }
-    const where = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+    const whereSql = whereParts.length > 0
+      ? sql`WHERE ${sql.join(whereParts, sql` AND `)}`
+      : sql``;
 
-    const rowsResult = await db.execute(sql.raw(`
-      SELECT
-        bt.id,
-        bt.type,
-        bt.amount,
-        bt.balance_after,
-        bt.note,
-        bt.created_at,
-        s.id AS subscription_id,
-        s.code,
-        s.subscriber_name,
-        s.phone,
-        a.username AS admin_username
-      FROM balance_transactions bt
-      JOIN subscriptions s ON s.id = bt.subscription_id
-      LEFT JOIN admins a ON a.id = bt.admin_id
-      ${where}
-      ORDER BY bt.created_at DESC
-      LIMIT ${limit} OFFSET ${offset}
-    `));
+    const rowsResult = await db.execute(
+      sql`
+        SELECT
+          bt.id,
+          bt.type,
+          bt.amount,
+          bt.balance_after,
+          bt.note,
+          bt.created_at,
+          s.id AS subscription_id,
+          s.code,
+          s.subscriber_name,
+          s.phone,
+          a.username AS admin_username
+        FROM balance_transactions bt
+        JOIN subscriptions s ON s.id = bt.subscription_id
+        LEFT JOIN admins a ON a.id = bt.admin_id
+        ${whereSql}
+        ORDER BY bt.created_at DESC
+        LIMIT ${limit} OFFSET ${offset}
+      `
+    );
     const rows = rowsResult.rows;
 
-    const countResult = await db.execute(sql.raw(`
-      SELECT COUNT(*)::int AS total
-      FROM balance_transactions bt
-      JOIN subscriptions s ON s.id = bt.subscription_id
-      ${where}
-    `));
+    const countResult = await db.execute(
+      sql`
+        SELECT COUNT(*)::int AS total
+        FROM balance_transactions bt
+        JOIN subscriptions s ON s.id = bt.subscription_id
+        ${whereSql}
+      `
+    );
     const countRow = countResult.rows[0] as any || {};
 
     res.json({
