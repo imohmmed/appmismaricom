@@ -27,6 +27,7 @@ import AdminBalances from "./pages/admin/Balances";
 import SubscriberProfile from "./pages/SubscriberProfile";
 import Enroll from "./pages/Enroll";
 import Activate from "./pages/Activate";
+import Download from "./pages/Download";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -68,6 +69,7 @@ function Router() {
       <Route path="/admin/reviews">{() => <AdminRoute component={AdminReviews} />}</Route>
       <Route path="/admin/balances">{() => <AdminRoute component={AdminBalances} />}</Route>
 
+      <Route path="/d/:slug" component={Download} />
       <Route path="/subscriber/:code" component={SubscriberProfile} />
       <Route path="/enroll" component={Enroll} />
       <Route path="/activate" component={Activate} />

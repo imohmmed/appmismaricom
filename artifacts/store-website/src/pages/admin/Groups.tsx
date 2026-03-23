@@ -63,8 +63,11 @@ interface GroupRecord {
   bundleId?: string | null;
   provisionName?: string | null;
   provisionedUdidCount?: number | null;
-  // Store IPA
+  // Store IPA (legacy file upload path — kept for backward compat)
   storeIpaPath?: string | null;
+  // New: direct HTTPS IPA URL + download page slug
+  ipaUrl?: string | null;
+  downloadSlug?: string | null;
 }
 
 interface AnalysisResult {
@@ -1032,9 +1035,10 @@ function GroupCard({ group, onDelete, onEdit, onViewDevices, onRefresh }: {
   const [expanded, setExpanded] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [uploadingIpa, setUploadingIpa] = useState(false);
-  const [localIpaPath, setLocalIpaPath] = useState<string | null>(group.storeIpaPath || null);
-  const storeIpaRef = useRef<HTMLInputElement>(null);
+  const [localIpaUrl, setLocalIpaUrl] = useState<string>(group.ipaUrl || "");
+  const [ipaUrlDraft, setIpaUrlDraft] = useState<string>(group.ipaUrl || "");
+  const [localSlug, setLocalSlug] = useState<string | null>(group.downloadSlug || null);
+  const [savingUrl, setSavingUrl] = useState(false);
 
   const ios = group.iphoneOfficialCount;
   const mac = group.iphoneMacCount;
@@ -1058,50 +1062,34 @@ function GroupCard({ group, onDelete, onEdit, onViewDevices, onRefresh }: {
     onDelete();
   };
 
-  const handleUploadStoreIpa = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploadingIpa(true);
-    const fd = new FormData();
-    fd.append("ipa", file);
+  const handleSaveIpaUrl = async () => {
+    setSavingUrl(true);
     try {
-      const res = await adminUpload(`/admin/groups/${group.id}/store-ipa`, fd);
+      const res = await adminFetch(`/admin/groups/${group.id}/ipa-url`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ipaUrl: ipaUrlDraft.trim() || null }),
+      });
       const data = await res.json();
-      if (data.success) {
-        setLocalIpaPath(data.storeIpaPath);
-        toast({ title: "✅ تم رفع IPA المتجر", description: "يمكنك نسخ رابط التحميل الآن" });
+      if (res.ok) {
+        setLocalIpaUrl(data.ipaUrl || "");
+        setIpaUrlDraft(data.ipaUrl || "");
+        setLocalSlug(data.downloadSlug || null);
+        toast({ title: "✅ تم حفظ رابط IPA", description: data.downloadSlug ? `رابط التحميل: /d/${data.downloadSlug}` : "" });
       } else {
-        toast({ title: "خطأ", description: data.error || "فشل الرفع", variant: "destructive" });
+        toast({ title: "خطأ", description: data.error || "فشل الحفظ", variant: "destructive" });
       }
     } catch {
-      toast({ title: "خطأ في الرفع", variant: "destructive" });
+      toast({ title: "خطأ في الحفظ", variant: "destructive" });
     }
-    setUploadingIpa(false);
-    if (storeIpaRef.current) storeIpaRef.current.value = "";
+    setSavingUrl(false);
   };
 
-  const handleRemoveStoreIpa = async () => {
-    if (!confirm("إزالة IPA المتجر من هذه المجموعة؟")) return;
-    const res = await adminFetch(`/admin/groups/${group.id}/store-ipa`, { method: "DELETE" });
-    if (res.ok) {
-      setLocalIpaPath(null);
-      toast({ title: "تم الحذف" });
-    }
-  };
-
-  const handleCopyDownloadLink = async () => {
-    try {
-      const res = await adminFetch(`/admin/groups/${encodeURIComponent(group.certName)}/download-link`);
-      const data = await res.json();
-      if (data.downloadLink) {
-        await navigator.clipboard.writeText(data.downloadLink);
-        toast({ title: "✅ تم نسخ رابط التحميل", description: "itms-services link" });
-      } else {
-        toast({ title: "لا يوجد IPA مرفوع لهذه المجموعة", variant: "destructive" });
-      }
-    } catch {
-      toast({ title: "خطأ في النسخ", variant: "destructive" });
-    }
+  const handleCopyDownloadPage = () => {
+    if (!localSlug) return;
+    const url = window.location.origin + "/d/" + localSlug;
+    navigator.clipboard.writeText(url);
+    toast({ title: "✅ تم نسخ رابط صفحة التحميل" });
   };
 
   const handleCopyActivationPage = () => {
@@ -1253,73 +1241,63 @@ function GroupCard({ group, onDelete, onEdit, onViewDevices, onRefresh }: {
           </>
         )}
 
-        {/* Store IPA Section */}
+        {/* IPA URL Section */}
         <div className="mb-3 p-3 rounded-xl border"
-          style={{ background: localIpaPath ? "#22c55e08" : "#9fbcff08", borderColor: localIpaPath ? "#22c55e20" : "rgba(255,255,255,0.06)" }}>
+          style={{ background: localIpaUrl ? "#22c55e08" : "#9fbcff08", borderColor: localIpaUrl ? "#22c55e20" : "rgba(255,255,255,0.06)" }}>
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
-              <Download className="w-3.5 h-3.5" style={{ color: localIpaPath ? "#22c55e" : A }} />
-              <span className="text-xs font-semibold" style={{ color: localIpaPath ? "#22c55e" : "rgba(255,255,255,0.5)" }}>
-                {localIpaPath ? "IPA المتجر محمّل" : "IPA المتجر (رابط التحميل)"}
+              <Download className="w-3.5 h-3.5" style={{ color: localIpaUrl ? "#22c55e" : A }} />
+              <span className="text-xs font-semibold" style={{ color: localIpaUrl ? "#22c55e" : "rgba(255,255,255,0.5)" }}>
+                {localIpaUrl ? "رابط IPA مُعيَّن" : "رابط IPA المتجر"}
               </span>
             </div>
-            <div className="flex items-center gap-1">
-              {localIpaPath && (
-                <>
-                  <button
-                    onClick={handleCopyDownloadLink}
-                    className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs transition-colors"
-                    style={{ background: `${A}15`, color: A }}
-                    title="نسخ رابط itms-services"
-                  >
-                    <Copy className="w-3 h-3" />نسخ الرابط
-                  </button>
-                  <button
-                    onClick={handleCopyActivationPage}
-                    className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs text-white/30 hover:text-white/60 hover:bg-white/5 transition-colors"
-                    title="نسخ رابط صفحة التفعيل"
-                  >
-                    <Globe className="w-3 h-3" />رابط التفعيل
-                  </button>
-                  <button
-                    onClick={handleRemoveStoreIpa}
-                    className="p-1 rounded-lg text-white/20 hover:text-red-400 hover:bg-red-400/10 transition-colors"
-                    title="حذف IPA"
-                  >
-                    <Trash2 className="w-3 h-3" />
-                  </button>
-                </>
-              )}
-              <button
-                onClick={() => storeIpaRef.current?.click()}
-                disabled={uploadingIpa}
-                className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs transition-colors disabled:opacity-40"
-                style={localIpaPath
-                  ? { background: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.4)" }
-                  : { background: `${A}20`, color: A }}
-              >
-                {uploadingIpa
-                  ? <Loader2 className="w-3 h-3 animate-spin" />
-                  : <Upload className="w-3 h-3" />}
-                {uploadingIpa ? "جاري الرفع..." : localIpaPath ? "تغيير" : "رفع IPA"}
-              </button>
-              <input
-                ref={storeIpaRef}
-                type="file"
-                accept=".ipa"
-                className="hidden"
-                onChange={handleUploadStoreIpa}
-              />
-            </div>
+            {localSlug && (
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={handleCopyDownloadPage}
+                  className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs transition-colors"
+                  style={{ background: `${A}15`, color: A }}
+                  title="نسخ رابط صفحة التحميل"
+                >
+                  <Copy className="w-3 h-3" />نسخ صفحة التحميل
+                </button>
+                <button
+                  onClick={handleCopyActivationPage}
+                  className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs text-white/30 hover:text-white/60 hover:bg-white/5 transition-colors"
+                  title="نسخ رابط صفحة التفعيل"
+                >
+                  <Globe className="w-3 h-3" />رابط التفعيل
+                </button>
+              </div>
+            )}
           </div>
-          {localIpaPath && (
-            <p className="text-white/20 text-xs font-mono truncate">
-              {localIpaPath.split("/").pop()}
+          <div className="flex gap-2 items-center">
+            <input
+              type="url"
+              value={ipaUrlDraft}
+              onChange={e => setIpaUrlDraft(e.target.value)}
+              placeholder="https://example.com/app.ipa"
+              className="flex-1 bg-white/5 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white/80 placeholder:text-white/20 font-mono outline-none focus:border-white/20"
+              dir="ltr"
+            />
+            <button
+              onClick={handleSaveIpaUrl}
+              disabled={savingUrl || ipaUrlDraft === localIpaUrl}
+              className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors disabled:opacity-40"
+              style={{ background: `${A}20`, color: A }}
+            >
+              {savingUrl ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
+              حفظ
+            </button>
+          </div>
+          {localSlug && (
+            <p className="text-white/30 text-xs mt-2 font-mono">
+              /d/{localSlug}
             </p>
           )}
-          {!localIpaPath && (
-            <p className="text-white/20 text-xs">
-              ارفع IPA المتجر الموقّع لتفعيل رابط التحميل للمشتركين
+          {!localIpaUrl && (
+            <p className="text-white/20 text-xs mt-1.5">
+              أدخل رابط HTTPS مباشر لملف IPA الموقّع
             </p>
           )}
         </div>

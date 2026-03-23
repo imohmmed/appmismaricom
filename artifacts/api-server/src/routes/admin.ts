@@ -683,6 +683,33 @@ router.get("/admin/groups", async (_req, res): Promise<void> => {
   res.json({ groups: result });
 });
 
+// PUT /admin/groups/:id/ipa-url — save direct IPA URL and auto-generate download slug
+router.put("/admin/groups/:id/ipa-url", async (req, res): Promise<void> => {
+  const id = Number(req.params.id);
+  const { ipaUrl } = req.body as { ipaUrl?: string };
+
+  const [existing] = await db.select({ downloadSlug: groupsTable.downloadSlug }).from(groupsTable).where(eq(groupsTable.id, id));
+  if (!existing) { res.status(404).json({ error: "Not found" }); return; }
+
+  let slug = existing.downloadSlug;
+  if (!slug) {
+    // Generate a unique short slug (8 hex chars)
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const candidate = crypto.randomBytes(4).toString("hex");
+      const [taken] = await db.select({ id: groupsTable.id }).from(groupsTable).where(eq(groupsTable.downloadSlug, candidate));
+      if (!taken) { slug = candidate; break; }
+    }
+  }
+
+  const [updated] = await db
+    .update(groupsTable)
+    .set({ ipaUrl: ipaUrl || null, downloadSlug: slug })
+    .where(eq(groupsTable.id, id))
+    .returning({ ipaUrl: groupsTable.ipaUrl, downloadSlug: groupsTable.downloadSlug });
+
+  res.json(updated);
+});
+
 // GET /admin/groups/:id/devices — full device list for a certificate
 router.get("/admin/groups/:id/devices", async (req, res): Promise<void> => {
   const id = Number(req.params.id);

@@ -137,30 +137,68 @@ router.post("/activate/validate", validateLimiter, async (req, res): Promise<voi
   });
 });
 
+// ─── GET /d/:slug — public download page info ─────────────────────────────────
+router.get("/d/:slug", async (req, res): Promise<void> => {
+  const { slug } = req.params;
+  const [group] = await db
+    .select({
+      id: groupsTable.id,
+      certName: groupsTable.certName,
+      bundleId: groupsTable.bundleId,
+      ipaUrl: groupsTable.ipaUrl,
+      storeIpaPath: groupsTable.storeIpaPath,
+      downloadSlug: groupsTable.downloadSlug,
+    })
+    .from(groupsTable)
+    .where(eq(groupsTable.downloadSlug, slug))
+    .limit(1);
+
+  if (!group) {
+    res.status(404).json({ error: "رابط التحميل غير موجود" });
+    return;
+  }
+
+  const effectiveIpaUrl = group.ipaUrl || group.storeIpaPath;
+  if (!effectiveIpaUrl) {
+    res.status(404).json({ error: "لم يتم إعداد رابط IPA لهذه المجموعة بعد" });
+    return;
+  }
+
+  const base = getBaseUrl(req);
+  const plistUrl = `${base}/api/groups/${encodeURIComponent(group.certName)}/manifest.plist`;
+  const downloadLink = `itms-services://?action=download-manifest&url=${encodeURIComponent(plistUrl)}`;
+
+  res.json({
+    certName: group.certName,
+    bundleId: group.bundleId || "com.mismari.app",
+    hasIpa: true,
+    plistUrl,
+    downloadLink,
+  });
+});
+
 // ─── GET /groups/:certName/manifest.plist — dynamic plist ────────────────────
 router.get("/groups/:certName/manifest.plist", async (req, res): Promise<void> => {
   const { certName } = req.params;
 
   const [group] = await db
-    .select({ storeIpaPath: groupsTable.storeIpaPath, certName: groupsTable.certName, bundleId: groupsTable.bundleId })
+    .select({ storeIpaPath: groupsTable.storeIpaPath, ipaUrl: groupsTable.ipaUrl, certName: groupsTable.certName, bundleId: groupsTable.bundleId })
     .from(groupsTable)
     .where(eq(groupsTable.certName, decodeURIComponent(certName)))
     .limit(1);
 
-  if (!group || !group.storeIpaPath) {
-    res.status(404).send("Group not found or no IPA uploaded");
+  const effectiveIpaUrl = group?.ipaUrl || group?.storeIpaPath;
+  if (!group || !effectiveIpaUrl) {
+    res.status(404).send("Group not found or no IPA configured");
     return;
   }
 
   const base = getBaseUrl(req);
 
   // Build a publicly accessible IPA URL.
-  // Old records may have been stored with /api/admin/FilesIPA/StoreIPA/... which is NOT publicly served.
-  // Static middleware in app.ts serves StoreIPA at /admin/FilesIPA/StoreIPA/ (no /api/ prefix).
-  let rawIpaUrl = group.storeIpaPath;
+  let rawIpaUrl = effectiveIpaUrl;
   let ipaUrl: string;
   if (rawIpaUrl.startsWith("http")) {
-    // Fix legacy URLs that accidentally contain /api/admin/FilesIPA/StoreIPA/
     ipaUrl = rawIpaUrl.replace(
       /\/api\/admin\/FilesIPA\/StoreIPA\//,
       "/admin/FilesIPA/StoreIPA/"
