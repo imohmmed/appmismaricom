@@ -747,7 +747,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   headerRtl: { flexDirection: "row-reverse" },
-  headerTitle: { fontSize: 26 },
+  headerTitle: { fontSize: 28 },
   profileButton: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center" },
   backBtn: { width: 34, height: 34, borderRadius: 17, alignItems: "center", justifyContent: "center", flexShrink: 0 },
 
