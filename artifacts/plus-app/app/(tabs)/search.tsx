@@ -1,5 +1,6 @@
 import { Feather } from "@expo/vector-icons";
 import { useNavigation, useRouter } from "expo-router";
+import AppIconImg from "@/components/AppIconImg";
 import React, { useState, useRef, useCallback, useEffect } from "react";
 import {
   Dimensions,
@@ -108,15 +109,11 @@ export default function SearchScreen() {
                 <Text style={[styles.appName, { color: colors.text, textAlign }]}>{app.name}</Text>
                 <Text style={[styles.appDesc, { color: colors.textSecondary, fontFamily: fontAr("Regular"), textAlign }]}>{desc}</Text>
               </View>
-              <View style={[styles.appIcon, { backgroundColor: `${tc}15` }]}>
-                <Feather name={(app.icon as any) || "box"} size={22} color={tc} />
-              </View>
+              <AppIconImg icon={app.icon} size={52} borderRadius={14} />
             </>
           ) : (
             <>
-              <View style={[styles.appIcon, { backgroundColor: `${tc}15` }]}>
-                <Feather name={(app.icon as any) || "box"} size={22} color={tc} />
-              </View>
+              <AppIconImg icon={app.icon} size={52} borderRadius={14} />
               <View style={[styles.appInfo, { alignItems: "flex-start" }]}>
                 <Text style={[styles.appName, { color: colors.text, textAlign }]}>{app.name}</Text>
                 <Text style={[styles.appDesc, { color: colors.textSecondary, fontFamily: fontAr("Regular"), textAlign }]}>{desc}</Text>

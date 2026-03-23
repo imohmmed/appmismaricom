@@ -1,5 +1,6 @@
 import { Feather } from "@expo/vector-icons";
 import React, { useState } from "react";
+import AppIconImg from "@/components/AppIconImg";
 import {
   ActivityIndicator,
   Platform,
@@ -104,15 +105,11 @@ export default function CategorySlideContent({
                           <Text style={[st.appName, { color: colors.text, textAlign }]}>{app.name}</Text>
                           <Text style={[st.appDesc, { color: colors.textSecondary, fontFamily: fontAr("Regular"), textAlign }]}>{desc}</Text>
                         </View>
-                        <View style={[st.appIcon, { backgroundColor: `${tc}15` }]}>
-                          <Feather name={(app.icon as any) || "box"} size={22} color={tc} />
-                        </View>
+                        <AppIconImg icon={app.icon} size={52} borderRadius={14} />
                       </>
                     ) : (
                       <>
-                        <View style={[st.appIcon, { backgroundColor: `${tc}15` }]}>
-                          <Feather name={(app.icon as any) || "box"} size={22} color={tc} />
-                        </View>
+                        <AppIconImg icon={app.icon} size={52} borderRadius={14} />
                         <View style={[st.appInfo, { alignItems: "flex-start" }]}>
                           <Text style={[st.appName, { color: colors.text, textAlign }]}>{app.name}</Text>
                           <Text style={[st.appDesc, { color: colors.textSecondary, fontFamily: fontAr("Regular"), textAlign }]}>{desc}</Text>

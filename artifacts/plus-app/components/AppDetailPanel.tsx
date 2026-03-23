@@ -5,6 +5,7 @@ import {
   Animated,
   Dimensions,
   FlatList,
+  Image,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -20,6 +21,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useSettings } from "@/contexts/SettingsContext";
 import type { ThemeColors } from "@/constants/colors";
 import GlassBackButton from "@/components/GlassBackButton";
+import AppIconImg from "@/components/AppIconImg";
 import { useSign } from "@/hooks/useSign";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
@@ -127,7 +129,8 @@ function chunkArray<T>(arr: T[], size: number): T[][] {
   return chunks;
 }
 
-function RelatedAppsRow({ apps, onPress }: { apps: AppData[]; onPress?: (app: AppData) => void }) {
+
+function RelatedAppsRow({ apps, onPress }: { apps: AppData[]; onPress: (app: AppData) => void }) {
   const { colors, t, fontAr, isArabic } = useSettings();
   const pages = chunkArray(apps.slice(0, 30), 3);
   const pageW = SCREEN_WIDTH - 80;
@@ -135,7 +138,6 @@ function RelatedAppsRow({ apps, onPress }: { apps: AppData[]; onPress?: (app: Ap
     <FlatList
       data={pages}
       horizontal
-      inverted={isArabic}
       pagingEnabled={false}
       snapToInterval={pageW + 16}
       decelerationRate="fast"
@@ -145,37 +147,35 @@ function RelatedAppsRow({ apps, onPress }: { apps: AppData[]; onPress?: (app: Ap
       renderItem={({ item: chunk }) => (
         <View style={{ width: pageW }}>
           {chunk.map((a, idx) => {
-            const tc = getTagColor(a.tag, colors);
             const desc = isArabic ? (a.descAr || a.desc || "") : (a.descEn || a.desc || "");
             return (
               <View key={a.id}>
-                <Pressable style={st.relatedRow} onPress={() => onPress?.(a)}>
+                <Pressable
+                  style={({ pressed }) => [st.relatedRow, pressed && { opacity: 0.7 }]}
+                  onPress={() => onPress(a)}
+                >
                   {isArabic ? (
+                    // RTL layout: [تحميل LEFT] [Name+Desc MIDDLE] [Icon RIGHT]
                     <>
-                      {/* Arabic RTL: Icon (right) → Download btn (middle) → Name+Desc (left) */}
-                      <View style={[st.relatedIcon, { backgroundColor: `${tc}15` }]}>
-                        <Feather name={a.icon as any} size={24} color={tc} />
-                      </View>
-                      <Pressable style={[st.relatedGetBtn, { backgroundColor: colors.card }]}>
+                      <Pressable style={[st.relatedGetBtn, { backgroundColor: colors.card }]} onPress={() => onPress(a)}>
                         <Text style={[st.relatedGetText, { color: colors.tint, fontFamily: fontAr("Bold") }]}>{t("download")}</Text>
                       </Pressable>
-                      <View style={{ flex: 1, gap: 2 }}>
-                        <Text style={[st.relatedName, { color: colors.text, textAlign: "right" }]} numberOfLines={1}>{a.name}</Text>
+                      <View style={{ flex: 1, gap: 3, alignItems: "flex-end" }}>
+                        <Text style={[st.relatedName, { color: colors.text, fontFamily: fontAr("SemiBold"), textAlign: "right" }]} numberOfLines={1}>{a.name}</Text>
                         <Text style={[st.relatedDesc, { color: colors.textSecondary, fontFamily: fontAr("Regular"), textAlign: "right" }]} numberOfLines={1}>{desc}</Text>
                       </View>
+                      <AppIconImg icon={a.icon} size={56} borderRadius={14} />
                     </>
                   ) : (
+                    // LTR layout: [Icon LEFT] [Name+Desc MIDDLE] [Get RIGHT]
                     <>
-                      {/* LTR: Icon → Name+Desc → Download btn */}
-                      <View style={[st.relatedIcon, { backgroundColor: `${tc}15` }]}>
-                        <Feather name={a.icon as any} size={24} color={tc} />
-                      </View>
-                      <View style={{ flex: 1, gap: 2 }}>
+                      <AppIconImg icon={a.icon} size={56} borderRadius={14} />
+                      <View style={{ flex: 1, gap: 3 }}>
                         <Text style={[st.relatedName, { color: colors.text }]} numberOfLines={1}>{a.name}</Text>
                         <Text style={[st.relatedDesc, { color: colors.textSecondary, fontFamily: fontAr("Regular") }]} numberOfLines={1}>{desc}</Text>
                       </View>
-                      <Pressable style={[st.relatedGetBtn, { backgroundColor: colors.card }]}>
-                        <Text style={[st.relatedGetText, { color: colors.tint, fontFamily: fontAr("Bold") }]}>{t("download")}</Text>
+                      <Pressable style={[st.relatedGetBtn, { backgroundColor: colors.card }]} onPress={() => onPress(a)}>
+                        <Text style={[st.relatedGetText, { color: colors.tint }]}>{t("download")}</Text>
                       </Pressable>
                     </>
                   )}
@@ -225,6 +225,8 @@ export default function AppDetailPanel({ app, onClose, onCategoryPress, relatedA
   const [codeInput, setCodeInput] = useState(subscriptionCode);
   const [cloneName, setCloneName] = useState("");
   const [pendingAction, setPendingAction] = useState<"download" | "clone" | null>(null);
+  // ─── Nested app panel (قد يعجبك أيضاً → opens inside without closing parent) ──
+  const [nestedApp, setNestedApp] = useState<AppData | null>(null);
 
   const handleDownload = () => {
     if (!subscriptionCode) {
@@ -318,8 +320,8 @@ export default function AppDetailPanel({ app, onClose, onCategoryPress, relatedA
       <View style={st.navBar}>
         <GlassBackButton onPress={onClose} />
         <Animated.View style={[st.stickyCenter, { opacity: stickyOpacity, transform: [{ translateY: stickyTranslate }] }]}>
-          <View style={[st.stickyIcon, { backgroundColor: `${tagColor}15` }]}>
-            <Feather name={app.icon as any} size={18} color={tagColor} />
+          <View style={[st.stickyIcon, { backgroundColor: `${tagColor}15`, overflow: "hidden" }]}>
+            <AppIconImg icon={app.icon} size={30} borderRadius={8} />
           </View>
         </Animated.View>
         <Animated.View style={{ opacity: stickyOpacity }}>
@@ -347,8 +349,8 @@ export default function AppDetailPanel({ app, onClose, onCategoryPress, relatedA
         scrollEventThrottle={16}
       >
         <View style={st.heroRow}>
-          <View style={[st.bigIcon, { backgroundColor: `${tagColor}12` }]}>
-            <Feather name={app.icon as any} size={48} color={tagColor} />
+          <View style={[st.bigIcon, { backgroundColor: `${tagColor}12`, overflow: "hidden" }]}>
+            <AppIconImg icon={app.icon} size={110} borderRadius={26} />
           </View>
           <View style={st.heroInfo}>
             <Text style={[st.appName, { color: colors.text }]} numberOfLines={2}>{app.name}</Text>
@@ -475,7 +477,10 @@ export default function AppDetailPanel({ app, onClose, onCategoryPress, relatedA
             <View style={[st.section, isArabic && { alignItems: "flex-end" }]}>
               <Text style={[st.sectionTitle, { color: colors.text, fontFamily: fontAr("Bold"), textAlign: isArabic ? "right" : "left", alignSelf: "stretch" }]}>{t("youMayLike")}</Text>
             </View>
-            <RelatedAppsRow apps={relatedApps} onPress={onRelatedAppPress} />
+            <RelatedAppsRow
+              apps={relatedApps}
+              onPress={(a) => setNestedApp(a)}
+            />
           </>
         )}
       </Animated.ScrollView>
@@ -548,6 +553,23 @@ export default function AppDetailPanel({ app, onClose, onCategoryPress, relatedA
             </View>
           </View>
         </KeyboardAvoidingView>
+      </Modal>
+
+      {/* ── Nested app panel: Modal so it covers full screen with proper safe area ── */}
+      <Modal
+        visible={!!nestedApp}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setNestedApp(null)}
+      >
+        {nestedApp && (
+          <AppDetailPanel
+            app={nestedApp}
+            onClose={() => setNestedApp(null)}
+            relatedApps={relatedApps.filter((a) => a.id !== nestedApp.id)}
+            onRelatedAppPress={(a) => setNestedApp(a)}
+          />
+        )}
       </Modal>
     </View>
   );
