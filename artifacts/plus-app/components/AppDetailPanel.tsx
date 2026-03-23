@@ -52,6 +52,7 @@ type Review = {
   rating: number;
   text: string;
   date: string;
+  isHidden?: boolean;
 };
 
 type AppDetailProps = {
@@ -197,17 +198,29 @@ function RelatedAppsRow({ apps, onPress }: { apps: AppData[]; onPress: (app: App
   );
 }
 
-const MOCK_USER_AR = { name: "أحمد المسماري", phone: "+964 770 123 4567" };
-const MOCK_USER_EN = { name: "Ahmed Al-Mismari", phone: "+964 770 123 4567" };
-
-const MOCK_REVIEWS_AR: Review[] = [
-  { id: 1, name: "أحمد", phone: "+964 770 123 4567", rating: 5, text: "تطبيق ممتاز! يعمل بشكل مثالي بدون أي مشاكل.", date: "قبل يومين" },
-  { id: 2, name: "سارة", phone: "+964 771 234 5678", rating: 4, text: "ميزات رائعة، تجربة سلسة جداً.", date: "قبل أسبوع" },
-];
-const MOCK_REVIEWS_EN: Review[] = [
-  { id: 1, name: "Ahmed", phone: "+964 770 123 4567", rating: 5, text: "Excellent app! Works perfectly without any issues.", date: "2 days ago" },
-  { id: 2, name: "Sara", phone: "+964 771 234 5678", rating: 4, text: "Great features, very smooth experience.", date: "1 week ago" },
-];
+function relativeDate(dateStr: string, isArabic: boolean): string {
+  const ms = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(ms / 60000);
+  const hours = Math.floor(ms / 3600000);
+  const days = Math.floor(ms / 86400000);
+  const weeks = Math.floor(days / 7);
+  const months = Math.floor(days / 30);
+  if (isArabic) {
+    if (mins < 1) return "الآن";
+    if (mins < 60) return `قبل ${mins} دقيقة`;
+    if (hours < 24) return `قبل ${hours} ساعة`;
+    if (days < 7) return `قبل ${days} يوم`;
+    if (weeks < 4) return `قبل ${weeks} أسبوع`;
+    return `قبل ${months} شهر`;
+  } else {
+    if (mins < 1) return "Just now";
+    if (mins < 60) return `${mins}m ago`;
+    if (hours < 24) return `${hours}h ago`;
+    if (days < 7) return `${days}d ago`;
+    if (weeks < 4) return `${weeks}w ago`;
+    return `${months}mo ago`;
+  }
+}
 
 const APP_SIZES: Record<string, string> = {
   social: "85", ai: "142", edit: "210",
@@ -222,11 +235,34 @@ export default function AppDetailPanel({ app, onClose, onCategoryPress, relatedA
   const scrollY = useRef(new Animated.Value(0)).current;
   const { signAndInstall, cloneAndInstall, isLoading, error: signError, state: signState, reset: resetSign, queuePosition } = useSign();
 
-  const mockUser = isArabic ? MOCK_USER_AR : MOCK_USER_EN;
   const [descExpanded, setDescExpanded] = useState(false);
-  const [reviews, setReviews] = useState<Review[]>(isArabic ? MOCK_REVIEWS_AR : MOCK_REVIEWS_EN);
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
   const [reviewText, setReviewText] = useState("");
   const [reviewRating, setReviewRating] = useState(0);
+
+  useEffect(() => {
+    const domain = process.env.EXPO_PUBLIC_DOMAIN;
+    if (!domain || !app.id) return;
+    setReviewsLoading(true);
+    fetch(`https://${domain}/api/reviews?appId=${app.id}`)
+      .then(r => r.json())
+      .then(data => {
+        const apiReviews: Review[] = (data.reviews || [])
+          .filter((r: any) => !r.isHidden)
+          .map((r: any) => ({
+            id: r.id,
+            name: r.subscriberName || (isArabic ? "مجهول" : "Anonymous"),
+            phone: r.phone || "",
+            rating: r.rating,
+            text: r.text,
+            date: relativeDate(r.createdAt, isArabic),
+          }));
+        setReviews(apiReviews);
+      })
+      .catch(() => setReviews([]))
+      .finally(() => setReviewsLoading(false));
+  }, [app.id]);
   const [showCodeModal, setShowCodeModal] = useState(false);
   const [showCloneModal, setShowCloneModal] = useState(false);
   const [codeInput, setCodeInput] = useState(subscriptionCode);
@@ -366,13 +402,28 @@ export default function AppDetailPanel({ app, onClose, onCategoryPress, relatedA
     ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
     : "0.0";
 
-  const submitReview = () => {
+  const submitReview = async () => {
     if (!reviewText.trim() || reviewRating === 0) return;
-    setReviews([{
-      id: Date.now(), name: mockUser.name, phone: mockUser.phone,
-      rating: reviewRating, text: reviewText, date: t("now"),
-    }, ...reviews]);
+    const domain = process.env.EXPO_PUBLIC_DOMAIN;
+    const newReview: Review = {
+      id: Date.now(),
+      name: isArabic ? "مجهول" : "Anonymous",
+      phone: "",
+      rating: reviewRating,
+      text: reviewText,
+      date: isArabic ? "الآن" : "Just now",
+    };
+    setReviews(prev => [newReview, ...prev]);
     setReviewText(""); setReviewRating(0);
+    if (domain) {
+      try {
+        await fetch(`https://${domain}/api/reviews`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ appId: app.id, code: subscriptionCode, rating: reviewRating, text: reviewText }),
+        });
+      } catch { /* silent */ }
+    }
   };
 
   const rawSize = APP_SIZES[app.catKey || ""] || APP_SIZES[app.category] || null;

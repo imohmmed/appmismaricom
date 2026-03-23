@@ -8,3 +8,4 @@ export * from "./groups";
 export * from "./notifications";
 export * from "./enrollment_requests";
 export * from "./admins";
+export * from "./reviews";

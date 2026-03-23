@@ -5,7 +5,7 @@ import path from "path";
 import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import rateLimit from "express-rate-limit";
-import { db, appsTable, categoriesTable, plansTable, subscriptionsTable, featuredBannersTable, settingsTable, groupsTable, notificationsTable, adminsTable } from "@workspace/db";
+import { db, appsTable, categoriesTable, plansTable, subscriptionsTable, featuredBannersTable, settingsTable, groupsTable, notificationsTable, adminsTable, reviewsTable } from "@workspace/db";
 import {
   AdminListAppsQueryParams,
   AdminListAppsResponse,
@@ -203,6 +203,43 @@ router.get("/subscriber/me", async (req, res): Promise<void> => {
     console.error("[subscriber/me] error:", err);
     res.status(500).json({ error: "server error" });
   }
+});
+
+// ─── GET /api/reviews?appId=X (public — fetch reviews for app) ──────────────
+router.get("/reviews", async (req, res): Promise<void> => {
+  const appId = req.query.appId ? Number(req.query.appId) : undefined;
+  if (!appId) { res.status(400).json({ error: "appId required" }); return; }
+  const rows = await db
+    .select({
+      id: reviewsTable.id,
+      subscriberName: reviewsTable.subscriberName,
+      phone: reviewsTable.phone,
+      rating: reviewsTable.rating,
+      text: reviewsTable.text,
+      createdAt: reviewsTable.createdAt,
+    })
+    .from(reviewsTable)
+    .where(and(eq(reviewsTable.appId, appId), eq(reviewsTable.isHidden, false)))
+    .orderBy(desc(reviewsTable.createdAt));
+  res.json({ reviews: rows });
+});
+
+// ─── POST /api/reviews (public — submit review from app) ────────────────────
+router.post("/reviews", async (req, res): Promise<void> => {
+  const { appId, code, rating, text } = req.body;
+  if (!appId || !rating || !text?.trim()) { res.status(400).json({ error: "بيانات ناقصة" }); return; }
+  let subscriptionId: number | null = null;
+  let subscriberName: string | null = null;
+  let phone: string | null = null;
+  if (code) {
+    const [sub] = await db.select().from(subscriptionsTable).where(eq(subscriptionsTable.code, code));
+    if (sub) { subscriptionId = sub.id; subscriberName = sub.subscriberName; phone = sub.phone; }
+  }
+  const [review] = await db.insert(reviewsTable).values({
+    appId: Number(appId), subscriptionId, subscriberName, phone,
+    rating: Number(rating), text: text.trim(),
+  }).returning();
+  res.status(201).json({ review });
 });
 
 // ─── PROTECT all routes below this line ─────────────────────────────────────
@@ -970,6 +1007,52 @@ router.delete("/admin/notifications/:id", async (req, res): Promise<void> => {
   const id = Number(req.params.id);
   if (!id) { res.status(400).json({ error: "Invalid ID" }); return; }
   await db.delete(notificationsTable).where(eq(notificationsTable.id, id));
+  res.sendStatus(204);
+});
+
+// ─── REVIEWS ────────────────────────────────────────────────────────────────
+
+router.get("/admin/reviews", async (req, res): Promise<void> => {
+  const appId = req.query.appId ? Number(req.query.appId) : undefined;
+  const rows = await db
+    .select({
+      id: reviewsTable.id,
+      appId: reviewsTable.appId,
+      appName: appsTable.name,
+      subscriptionId: reviewsTable.subscriptionId,
+      subscriberName: reviewsTable.subscriberName,
+      phone: reviewsTable.phone,
+      rating: reviewsTable.rating,
+      text: reviewsTable.text,
+      isHidden: reviewsTable.isHidden,
+      createdAt: reviewsTable.createdAt,
+      subCode: subscriptionsTable.code,
+    })
+    .from(reviewsTable)
+    .leftJoin(appsTable, eq(reviewsTable.appId, appsTable.id))
+    .leftJoin(subscriptionsTable, eq(reviewsTable.subscriptionId, subscriptionsTable.id))
+    .where(appId ? eq(reviewsTable.appId, appId) : undefined)
+    .orderBy(desc(reviewsTable.createdAt));
+  res.json({ reviews: rows });
+});
+
+router.patch("/admin/reviews/:id/toggle-hidden", async (req, res): Promise<void> => {
+  const id = Number(req.params.id);
+  if (!id) { res.status(400).json({ error: "Invalid ID" }); return; }
+  const [current] = await db.select().from(reviewsTable).where(eq(reviewsTable.id, id));
+  if (!current) { res.status(404).json({ error: "Not found" }); return; }
+  const [updated] = await db
+    .update(reviewsTable)
+    .set({ isHidden: !current.isHidden })
+    .where(eq(reviewsTable.id, id))
+    .returning();
+  res.json({ review: updated });
+});
+
+router.delete("/admin/reviews/:id", async (req, res): Promise<void> => {
+  const id = Number(req.params.id);
+  if (!id) { res.status(400).json({ error: "Invalid ID" }); return; }
+  await db.delete(reviewsTable).where(eq(reviewsTable.id, id));
   res.sendStatus(204);
 });
 
