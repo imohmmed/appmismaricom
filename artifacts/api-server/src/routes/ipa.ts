@@ -10,6 +10,7 @@ import fs from "fs";
 import crypto from "crypto";
 import { eq } from "drizzle-orm";
 import { db, appsTable } from "@workspace/db";
+import { adminAuth } from "../middleware/adminAuth";
 
 const execFileAsync = promisify(execFile);
 const router = Router();
@@ -180,7 +181,7 @@ function extractIconFromZip(zip: AdmZip, appFolder: string): Buffer | null {
 
 // ─── POST /admin/ipa/parse-url ───────────────────────────────────────────────
 // Reads only central directory + plist + icon (no full download). Does NOT save to disk.
-router.post("/admin/ipa/parse-url", async (req, res): Promise<void> => {
+router.post("/admin/ipa/parse-url", adminAuth, async (req, res): Promise<void> => {
   const { url } = req.body;
   if (!url || typeof url !== "string") { res.status(400).json({ error: "الرابط مطلوب" }); return; }
   if (!url.toLowerCase().endsWith(".ipa")) { res.status(400).json({ error: "الرابط يجب أن ينتهي بـ .ipa" }); return; }
@@ -212,7 +213,7 @@ router.post("/admin/ipa/parse-url", async (req, res): Promise<void> => {
 
 // ─── POST /admin/ipa/upload-file ─────────────────────────────────────────────
 // Full file upload: saves IPA + icon to disk. Returns server URLs.
-router.post("/admin/ipa/upload-file", memUpload.single("file"), async (req: any, res): Promise<void> => {
+router.post("/admin/ipa/upload-file", adminAuth, memUpload.single("file"), async (req: any, res): Promise<void> => {
   if (!req.file) { res.status(400).json({ error: "الملف مطلوب" }); return; }
   try {
     const buf = req.file.buffer;
@@ -260,7 +261,7 @@ router.post("/admin/ipa/upload-file", memUpload.single("file"), async (req: any,
 
 // ─── POST /admin/ipa/save-from-url ───────────────────────────────────────────
 // Download IPA from external URL, save it + icon to disk, return server URLs.
-router.post("/admin/ipa/save-from-url", async (req: any, res): Promise<void> => {
+router.post("/admin/ipa/save-from-url", adminAuth, async (req: any, res): Promise<void> => {
   const { url } = req.body;
   if (!url || typeof url !== "string") { res.status(400).json({ error: "الرابط مطلوب" }); return; }
   if (!url.toLowerCase().endsWith(".ipa")) { res.status(400).json({ error: "الرابط يجب أن ينتهي بـ .ipa" }); return; }
@@ -313,7 +314,7 @@ router.post("/admin/ipa/save-from-url", async (req: any, res): Promise<void> => 
 });
 
 // ─── Legacy parse-file (parse only, no disk save) ────────────────────────────
-router.post("/admin/ipa/parse-file", memUpload.single("file"), async (req, res): Promise<void> => {
+router.post("/admin/ipa/parse-file", adminAuth, memUpload.single("file"), async (req, res): Promise<void> => {
   if (!req.file) { res.status(400).json({ error: "الملف مطلوب" }); return; }
   try {
     const zip = new AdmZip(req.file.buffer);
@@ -338,7 +339,7 @@ router.post("/admin/ipa/parse-file", memUpload.single("file"), async (req, res):
 });
 
 // ─── POST /admin/translate ───────────────────────────────────────────────────
-router.post("/admin/translate", async (req, res): Promise<void> => {
+router.post("/admin/translate", adminAuth, async (req, res): Promise<void> => {
   const { text, from, to } = req.body;
   if (!text || !from || !to) { res.status(400).json({ error: "text, from, to are required" }); return; }
   try {
@@ -356,7 +357,7 @@ router.post("/admin/translate", async (req, res): Promise<void> => {
 });
 
 // ─── POST /admin/apps/:id/clone ─────────────────────────────────────────────
-router.post("/admin/apps/:id/clone", async (req: any, res): Promise<void> => {
+router.post("/admin/apps/:id/clone", adminAuth, async (req: any, res): Promise<void> => {
   const id = parseInt(req.params.id, 10);
   if (isNaN(id)) { res.status(400).json({ error: "معرّف غير صالح" }); return; }
 

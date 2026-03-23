@@ -45,6 +45,15 @@ const loginLimiter = rateLimit({
   message: { error: "محاولات دخول كثيرة جداً — انتظر 15 دقيقة" },
 });
 
+// ─── Rate Limiter: reviews ────────────────────────────────────────────────────
+const reviewsLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "طلبات كثيرة جداً — حاول بعد قليل" },
+});
+
 // ─── CAPTCHA Generator ───────────────────────────────────────────────────────
 const CAPTCHA_SECRET = JWT_SECRET + "_captcha";
 const CAPTCHA_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -172,6 +181,7 @@ router.post("/admin/login", loginLimiter, async (req, res): Promise<void> => {
 });
 
 // ─── GET /api/reviews?appId=X (public — fetch reviews for app) ──────────────
+// Note: phone is intentionally excluded from public response (PII protection)
 router.get("/reviews", async (req, res): Promise<void> => {
   const appId = req.query.appId ? Number(req.query.appId) : undefined;
   if (!appId) { res.status(400).json({ error: "appId required" }); return; }
@@ -179,7 +189,6 @@ router.get("/reviews", async (req, res): Promise<void> => {
     .select({
       id: reviewsTable.id,
       subscriberName: reviewsTable.subscriberName,
-      phone: reviewsTable.phone,
       rating: reviewsTable.rating,
       text: reviewsTable.text,
       createdAt: reviewsTable.createdAt,
@@ -191,7 +200,7 @@ router.get("/reviews", async (req, res): Promise<void> => {
 });
 
 // ─── POST /api/reviews (public — submit review from app) ────────────────────
-router.post("/reviews", async (req, res): Promise<void> => {
+router.post("/reviews", reviewsLimiter, async (req, res): Promise<void> => {
   const { appId, code, rating, text } = req.body;
   if (!appId || !rating || !text?.trim()) { res.status(400).json({ error: "بيانات ناقصة" }); return; }
   let subscriptionId: number | null = null;

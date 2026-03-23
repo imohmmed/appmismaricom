@@ -6,6 +6,7 @@ import multer from "multer";
 import rateLimit from "express-rate-limit";
 import { db, subscriptionsTable, groupsTable, plansTable } from "@workspace/db";
 import { registerDeviceWithApple } from "../apple-connect";
+import { adminAuth } from "../middleware/adminAuth";
 
 const router: IRouter = Router();
 
@@ -282,6 +283,19 @@ router.post("/activate/complete", completeLimiter, async (req, res): Promise<voi
     return;
   }
 
+  // ── Block re-activation of a fully registered subscription ─────────────────
+  // If both subscriberName AND udid are already set, this subscription has been
+  // fully activated. Reject to prevent data overwrite attacks.
+  if (sub.subscriberName && sub.udid) {
+    res.status(409).json({
+      error: "هذا الاشتراك مُفعَّل بالفعل",
+      alreadyActivated: true,
+      subscriberId: sub.id,
+      code: sub.code,
+    });
+    return;
+  }
+
   const now = new Date();
   // Never overwrite an existing UDID — only bind on first activation
   const finalUdid = sub.udid ? sub.udid : (udid?.trim() || null);
@@ -388,6 +402,7 @@ router.post("/activate/complete", completeLimiter, async (req, res): Promise<voi
 // ─── Admin: Upload store IPA for a group ──────────────────────────────────────
 router.post(
   "/admin/groups/:id/store-ipa",
+  adminAuth,
   storeIpaUpload.single("ipa"),
   async (req, res): Promise<void> => {
     const id = Number(req.params.id);
@@ -420,7 +435,7 @@ router.post(
 );
 
 // ─── Admin: Remove store IPA from a group ────────────────────────────────────
-router.delete("/admin/groups/:id/store-ipa", async (req, res): Promise<void> => {
+router.delete("/admin/groups/:id/store-ipa", adminAuth, async (req, res): Promise<void> => {
   const id = Number(req.params.id);
 
   const [group] = await db
@@ -434,7 +449,7 @@ router.delete("/admin/groups/:id/store-ipa", async (req, res): Promise<void> => 
 });
 
 // ─── Admin: Get download link for a group ────────────────────────────────────
-router.get("/admin/groups/:certName/download-link", async (req, res): Promise<void> => {
+router.get("/admin/groups/:certName/download-link", adminAuth, async (req, res): Promise<void> => {
   const { certName } = req.params;
 
   const [group] = await db
@@ -457,7 +472,7 @@ router.get("/admin/groups/:certName/download-link", async (req, res): Promise<vo
 
 // ─── Admin: Set IPA URL for ALL groups ───────────────────────────────────────
 // One URL → assign ipaUrl to every group + generate slugs for those missing one
-router.put("/admin/groups/ipa-url-all", async (req, res): Promise<void> => {
+router.put("/admin/groups/ipa-url-all", adminAuth, async (req, res): Promise<void> => {
   const { ipaUrl } = req.body as { ipaUrl?: string };
   if (!ipaUrl?.trim()) {
     res.status(400).json({ error: "ipaUrl مطلوب" });
@@ -487,6 +502,7 @@ router.put("/admin/groups/ipa-url-all", async (req, res): Promise<void> => {
 // One upload → assign same storeIpaPath to every group
 router.post(
   "/admin/groups/store-ipa-all",
+  adminAuth,
   storeIpaUpload.single("ipa"),
   async (req, res): Promise<void> => {
     if (!req.file) {

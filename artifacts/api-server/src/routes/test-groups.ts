@@ -11,6 +11,7 @@ import os from "os";
 import path from "path";
 import plist from "plist";
 import { db, groupsTable } from "@workspace/db";
+import { adminAuth } from "../middleware/adminAuth";
 
 const router: IRouter = Router();
 const memUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 * 1024 * 1024 } });
@@ -85,6 +86,7 @@ function parseP12(buf: Buffer, password: string): { commonName: string; issuer: 
 // Does NOT save to DB — for preview before saving
 router.post(
   "/admin/groups/test-analyze",
+  adminAuth,
   memUpload.fields([
     { name: "p12", maxCount: 1 },
     { name: "mobileprovision", maxCount: 1 },
@@ -151,6 +153,7 @@ router.post(
 // Saves a test certificate group to the database
 router.post(
   "/admin/groups/test-create",
+  adminAuth,
   memUpload.fields([
     { name: "p12", maxCount: 1 },
     { name: "mobileprovision", maxCount: 1 },
@@ -215,7 +218,7 @@ router.post(
 
 // ─── GET /admin/groups/:id/provision-udids ────────────────────────────────────
 // Returns list of UDIDs from the saved mobileprovision
-router.get("/admin/groups/:id/provision-udids", async (req, res): Promise<void> => {
+router.get("/admin/groups/:id/provision-udids", adminAuth, async (req, res): Promise<void> => {
   const id = parseInt(req.params.id, 10);
   try {
     const [group] = await db.select({ provisionedUdids: groupsTable.provisionedUdids }).from(groupsTable).where(eq(groupsTable.id, id));
