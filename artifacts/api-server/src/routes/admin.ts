@@ -1297,7 +1297,7 @@ router.get("/admin/balances", async (req, res): Promise<void> => {
     const search = ((req.query.search as string) || "").trim();
 
     // Stats
-    const [stats] = await db.execute(sql`
+    const statsResult = await db.execute(sql`
       SELECT
         COUNT(*)::int AS total_transactions,
         COALESCE(SUM(CASE WHEN type = 'credit' THEN amount ELSE 0 END), 0)::int AS total_credited,
@@ -1306,13 +1306,15 @@ router.get("/admin/balances", async (req, res): Promise<void> => {
         COUNT(DISTINCT subscription_id)::int AS subscribers_with_tx
       FROM balance_transactions
     `);
+    const stats = statsResult.rows[0] as any || {};
 
-    const [balanceStats] = await db.execute(sql`
+    const balanceStatsResult = await db.execute(sql`
       SELECT
         COALESCE(SUM(balance), 0)::int AS total_balance_in_system,
         COUNT(*)::int AS subscribers_count
       FROM subscriptions
     `);
+    const balanceStats = balanceStatsResult.rows[0] as any || {};
 
     // Transactions list
     const conditions: string[] = [];
@@ -1324,7 +1326,7 @@ router.get("/admin/balances", async (req, res): Promise<void> => {
     }
     const where = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
 
-    const rows = await db.execute(sql.raw(`
+    const rowsResult = await db.execute(sql.raw(`
       SELECT
         bt.id,
         bt.type,
@@ -1344,26 +1346,28 @@ router.get("/admin/balances", async (req, res): Promise<void> => {
       ORDER BY bt.created_at DESC
       LIMIT ${limit} OFFSET ${offset}
     `));
+    const rows = rowsResult.rows;
 
-    const [countRow] = await db.execute(sql.raw(`
+    const countResult = await db.execute(sql.raw(`
       SELECT COUNT(*)::int AS total
       FROM balance_transactions bt
       JOIN subscriptions s ON s.id = bt.subscription_id
       ${where}
     `));
+    const countRow = countResult.rows[0] as any || {};
 
     res.json({
       stats: {
-        totalTransactions: (stats as any).total_transactions || 0,
-        totalCredited: (stats as any).total_credited || 0,
-        totalDebited: (stats as any).total_debited || 0,
-        totalPurchased: (stats as any).total_purchased || 0,
-        subscribersWithTx: (stats as any).subscribers_with_tx || 0,
-        totalBalanceInSystem: (balanceStats as any).total_balance_in_system || 0,
-        subscribersCount: (balanceStats as any).subscribers_count || 0,
+        totalTransactions: stats.total_transactions || 0,
+        totalCredited: stats.total_credited || 0,
+        totalDebited: stats.total_debited || 0,
+        totalPurchased: stats.total_purchased || 0,
+        subscribersWithTx: stats.subscribers_with_tx || 0,
+        totalBalanceInSystem: balanceStats.total_balance_in_system || 0,
+        subscribersCount: balanceStats.subscribers_count || 0,
       },
       transactions: rows,
-      total: (countRow as any).total || 0,
+      total: countRow.total || 0,
       page,
       limit,
     });

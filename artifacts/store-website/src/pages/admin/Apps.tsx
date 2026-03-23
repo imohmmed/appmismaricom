@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { useLocation } from "wouter";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { useAdminListApps, useAdminCreateApp, useAdminUpdateApp, useAdminDeleteApp, useAdminListCategories, getAdminListAppsQueryKey } from "@workspace/api-client-react";
