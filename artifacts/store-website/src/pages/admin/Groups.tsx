@@ -527,6 +527,11 @@ function TestGroupModal({ onClose, onSaved }: { onClose: () => void; onSaved: ()
 
     try {
       const res = await adminUpload("/admin/groups/test-analyze", fd);
+      if (res.status === 401) {
+        setError("انتهت صلاحية الجلسة — يرجى تسجيل الدخول مجدداً");
+        setStep("upload");
+        return;
+      }
       const data: AnalysisResult = await res.json();
       setResult(data);
       if (data.mobileprovision) setCertName(data.mobileprovision.name || "");
@@ -1464,6 +1469,11 @@ export default function AdminGroups() {
   const fetchGroups = async () => {
     setLoading(true);
     const res = await adminFetch("/admin/groups");
+    if (res.status === 401) {
+      localStorage.removeItem("adminToken");
+      window.location.href = "/admin/login";
+      return;
+    }
     const d = await res.json();
     setGroups(d?.groups || []);
     setLoading(false);
