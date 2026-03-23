@@ -236,6 +236,11 @@ export default function Home() {
         body: JSON.stringify({ code: trimmed }),
       });
       const data: ActivateResult = await res.json();
+      if (data.valid) {
+        // Redirect to full activation flow — profile download + form + Apple registration
+        window.location.href = `${BASE}activate?code=${encodeURIComponent(trimmed)}`;
+        return;
+      }
       setActivateResult(data);
     } catch {
       setActivateResult({ valid: false, error: "تعذّر الاتصال بالخادم" });

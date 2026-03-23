@@ -56,7 +56,9 @@ export default function Activate() {
   const [errorMsg, setErrorMsg] = useState("");
   const [token] = useState(() => getOrCreateToken());
 
-  const [codeInput, setCodeInput] = useState("");
+  // Read code from URL query param (e.g. /activate?code=MSM-XXXX)
+  const urlCode = new URLSearchParams(window.location.search).get("code") || "";
+  const [codeInput, setCodeInput] = useState(urlCode);
   const [codeLoading, setCodeLoading] = useState(false);
   const [validated, setValidated] = useState<ValidateResult | null>(null);
 
@@ -103,6 +105,10 @@ export default function Activate() {
       setUdid(savedUdid);
       setUdidFound(true);
       foundRef.current = true;
+    }
+    // Auto-validate if code came from URL query param
+    if (urlCode) {
+      doValidateCode(urlCode);
     }
   }, []);
 

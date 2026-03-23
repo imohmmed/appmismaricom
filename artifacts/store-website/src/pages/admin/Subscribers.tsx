@@ -435,9 +435,11 @@ export default function AdminSubscribers() {
   useEffect(() => { fetchData(); }, [search]);
 
   const filtered = useMemo(() => {
-    if (!search.trim()) return subs;
+    // Only show activated subscriptions (those with a real subscriber name)
+    const activated = subs.filter(s => !!s.subscriberName);
+    if (!search.trim()) return activated;
     const q = search.toLowerCase();
-    return subs.filter(s =>
+    return activated.filter(s =>
       (s.subscriberName || "").toLowerCase().includes(q) ||
       (s.phone || "").includes(q) ||
       (s.email || "").toLowerCase().includes(q) ||
