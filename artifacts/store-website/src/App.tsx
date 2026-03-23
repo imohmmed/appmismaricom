@@ -2,6 +2,7 @@ import { Switch, Route, Router as WouterRouter, Redirect } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { setAuthTokenGetter } from "@workspace/api-client-react";
 import NotFound from "@/pages/not-found";
 
 import Home from "./pages/Home";
@@ -28,6 +29,10 @@ import SubscriberProfile from "./pages/SubscriberProfile";
 import Enroll from "./pages/Enroll";
 import Activate from "./pages/Activate";
 import Download from "./pages/Download";
+
+// Configure customFetch to send admin JWT as Bearer token
+// (admin middleware accepts both x-admin-token and Authorization: Bearer)
+setAuthTokenGetter(() => localStorage.getItem("adminToken"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
