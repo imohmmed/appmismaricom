@@ -108,17 +108,17 @@ router.post("/activate/validate", validateLimiter, async (req, res): Promise<voi
     return;
   }
 
-  // Get group info + store IPA path
+  // Get group info + IPA link (prefer ipaUrl over legacy storeIpaPath)
   let downloadLink: string | null = null;
   let groupBundleId: string | null = null;
   if (sub.groupName) {
     const [group] = await db
-      .select({ storeIpaPath: groupsTable.storeIpaPath, bundleId: groupsTable.bundleId, certName: groupsTable.certName })
+      .select({ storeIpaPath: groupsTable.storeIpaPath, ipaUrl: groupsTable.ipaUrl, bundleId: groupsTable.bundleId, certName: groupsTable.certName })
       .from(groupsTable)
       .where(eq(groupsTable.certName, sub.groupName))
       .limit(1);
 
-    if (group?.storeIpaPath) {
+    if (group && (group.ipaUrl || group.storeIpaPath)) {
       const base = getBaseUrl(req);
       downloadLink = `itms-services://?action=download-manifest&url=${encodeURIComponent(`${base}/api/groups/${encodeURIComponent(group.certName)}/manifest.plist`)}`;
     }
@@ -347,15 +347,15 @@ router.post("/activate/complete", completeLimiter, async (req, res): Promise<voi
     }
   }
 
-  // ─── Get group store IPA link ───────────────────────────────────────────────
+  // ─── Get group store IPA link (prefer ipaUrl over legacy storeIpaPath) ────────
   let storeDownloadLink: string | null = null;
   if (updated.groupName) {
     const [group] = await db
-      .select({ storeIpaPath: groupsTable.storeIpaPath, certName: groupsTable.certName })
+      .select({ storeIpaPath: groupsTable.storeIpaPath, ipaUrl: groupsTable.ipaUrl, certName: groupsTable.certName })
       .from(groupsTable)
       .where(eq(groupsTable.certName, updated.groupName))
       .limit(1);
-    if (group?.storeIpaPath) {
+    if (group && (group.ipaUrl || group.storeIpaPath)) {
       const base = getBaseUrl(req);
       storeDownloadLink = `itms-services://?action=download-manifest&url=${encodeURIComponent(`${base}/api/groups/${encodeURIComponent(group.certName)}/manifest.plist`)}`;
     }

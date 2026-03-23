@@ -84,10 +84,10 @@ router.get("/profile/enroll", (req, res): void => {
   const callbackParams = `source=${encodeURIComponent(source)}${token ? `&amp;token=${encodeURIComponent(token)}` : ""}`;
   const callbackUrl = `${base}/api/profile/callback?${callbackParams}`;
 
-  // Two modes:
-  // 1. "app" source = activation (تفعيل اشتراك) — from Mismari+ app onboarding
-  // 2. "web" source = enrollment request (طلب اشتراك) — from website
-  const isActivation = source === "app";
+  // Three modes:
+  // 1. "app" / "activate" = subscription activation — from app or website activate page
+  // 2. "web" = enrollment request (طلب اشتراك) — from enroll page
+  const isActivation = source === "app" || source === "activate";
 
   const displayName = "Mismari App";
   const subtitle = isActivation

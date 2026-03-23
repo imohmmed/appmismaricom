@@ -82,7 +82,7 @@ export default function Activate() {
   const foundRef = useRef(false);
   const autoTriggeredRef = useRef(false);
 
-  const profileUrl = `${API}/api/profile/enroll?source=web&token=${encodeURIComponent(token)}`;
+  const profileUrl = `${API}/api/profile/enroll?source=activate&token=${encodeURIComponent(token)}`;
 
   const pollOnce = useCallback(async () => {
     if (foundRef.current) return;
