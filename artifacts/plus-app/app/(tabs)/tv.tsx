@@ -233,6 +233,24 @@ export default function SignScreen() {
   const [currentJob, setCurrentJob] = useState<SignJob | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // Progress bar
+  const progressAnim = useRef(new Animated.Value(0)).current;
+  const [signingStage, setSigningStage] = useState<"upload" | "pending" | "processing" | "done">("upload");
+  const slowAnimRef = useRef<Animated.CompositeAnimation | null>(null);
+
+  const animateProgress = useCallback((toValue: number, duration = 800) => {
+    if (slowAnimRef.current) { slowAnimRef.current.stop(); slowAnimRef.current = null; }
+    Animated.timing(progressAnim, { toValue, duration, useNativeDriver: false }).start();
+  }, [progressAnim]);
+
+  const startSlowProgress = useCallback((from: number, to: number, durationMs: number) => {
+    if (slowAnimRef.current) { slowAnimRef.current.stop(); }
+    progressAnim.setValue(from);
+    const anim = Animated.timing(progressAnim, { toValue: to, duration: durationMs, useNativeDriver: false });
+    slowAnimRef.current = anim;
+    anim.start();
+  }, [progressAnim]);
+
   // History
   const [history, setHistory] = useState<SignJob[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
@@ -324,21 +342,33 @@ export default function SignScreen() {
     if (screen === "home" || screen === "history") loadHistory();
   }, [screen]);
 
-  const startPoll = useCallback((jobId: string) => {
+  const startPoll = useCallback((jobId: string, startProgress = 0.5) => {
     if (!subscriptionCode) return;
     stopPoll();
+    // Start slow crawl from current progress to 90% over ~3 minutes
+    animateProgress(startProgress, 600);
+    setTimeout(() => {
+      startSlowProgress(startProgress, 0.9, 180_000);
+    }, 700);
     pollRef.current = setInterval(async () => {
       try {
         const r = await fetch(apiUrl(`/sign/personal/job/${jobId}?code=${encodeURIComponent(subscriptionCode!)}`));
         const data: SignJob = await r.json();
         setCurrentJob(data);
+        if (data.status === "processing") {
+          setSigningStage("processing");
+        } else if (data.status === "pending") {
+          setSigningStage("pending");
+        }
         if (data.status === "done" || data.status === "error") {
           stopPoll();
+          if (slowAnimRef.current) { slowAnimRef.current.stop(); slowAnimRef.current = null; }
+          if (data.status === "done") animateProgress(1.0, 400);
           setScreen("result");
         }
       } catch { /* silent */ }
     }, 3000);
-  }, [subscriptionCode, stopPoll]);
+  }, [subscriptionCode, stopPoll, animateProgress, startSlowProgress]);
 
   // ── Called when SignUrlModal finishes analysis ─────────────────────────────
   const handleAnalyzedFromModal = useCallback((info: IpaInfo, url: string) => {
@@ -352,7 +382,10 @@ export default function SignScreen() {
   // ── Start Signing from URL ─────────────────────────────────────────────────
   const handleStartSign = useCallback(async () => {
     if (!subscriptionCode || !urlInput.trim()) return;
+    progressAnim.setValue(0);
+    setSigningStage("pending");
     setScreen("signing");
+    animateProgress(0.15, 600);
     try {
       const r = await fetch(apiUrl("/sign/personal/start-url"), {
         method: "POST",
@@ -369,12 +402,12 @@ export default function SignScreen() {
       if (!r.ok) throw new Error(data.error || "Failed");
       setCurrentJobId(data.jobId);
       setCurrentJob({ jobId: data.jobId, status: "pending", createdAt: new Date().toISOString() });
-      startPoll(data.jobId);
+      startPoll(data.jobId, 0.45);
     } catch (err: any) {
       setCurrentJob({ jobId: "", status: "error", errorMessage: err.message, createdAt: new Date().toISOString() });
       setScreen("result");
     }
-  }, [subscriptionCode, urlInput, customName, customBundle, ipaInfo, startPoll]);
+  }, [subscriptionCode, urlInput, customName, customBundle, ipaInfo, startPoll, animateProgress, progressAnim]);
 
   // ── Upload IPA ─────────────────────────────────────────────────────────────
   const handleUploadIpa = useCallback(async () => {
@@ -392,21 +425,40 @@ export default function SignScreen() {
         return;
       }
 
+      progressAnim.setValue(0);
+      setSigningStage("upload");
       setScreen("signing");
+      animateProgress(0.05, 400);
+
       const formData = new FormData();
       formData.append("code", subscriptionCode);
       formData.append("file", { uri: asset.uri, name: asset.name, type: "application/octet-stream" } as any);
 
-      const r = await fetch(apiUrl("/sign/personal/upload"), {
-        method: "POST",
-        body: formData,
-        headers: { "Accept": "application/json" },
+      // Use XHR for real upload progress
+      const data = await new Promise<any>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open("POST", apiUrl("/sign/personal/upload"));
+        xhr.setRequestHeader("Accept", "application/json");
+        xhr.upload.onprogress = (e) => {
+          if (e.lengthComputable) {
+            const pct = e.loaded / e.total;
+            // Upload maps to 5% → 45%
+            animateProgress(0.05 + pct * 0.40, 200);
+          }
+        };
+        xhr.onload = () => {
+          try { resolve(JSON.parse(xhr.responseText)); }
+          catch { reject(new Error("Invalid response")); }
+        };
+        xhr.onerror = () => reject(new Error(isArabic ? "فشل رفع الملف" : "Upload failed"));
+        xhr.send(formData);
       });
-      const data = await r.json();
-      if (!r.ok) throw new Error(data.error || "Failed");
+
+      if (data.error) throw new Error(data.error);
+      setSigningStage("pending");
       setCurrentJobId(data.jobId);
       setCurrentJob({ jobId: data.jobId, status: "pending", createdAt: new Date().toISOString() });
-      startPoll(data.jobId);
+      startPoll(data.jobId, 0.50);
     } catch (err: any) {
       if (!err.message?.includes("canceled")) {
         setCurrentJob({ jobId: "", status: "error", errorMessage: err.message, createdAt: new Date().toISOString() });
@@ -415,7 +467,7 @@ export default function SignScreen() {
         setScreen("home");
       }
     }
-  }, [subscriptionCode, isArabic, startPoll]);
+  }, [subscriptionCode, isArabic, startPoll, progressAnim, animateProgress]);
 
   const handleInstall = useCallback((url: string) => {
     Linking.openURL(url).catch(() => {
@@ -445,6 +497,9 @@ export default function SignScreen() {
 
   const resetToHome = useCallback(() => {
     stopPoll();
+    if (slowAnimRef.current) { slowAnimRef.current.stop(); slowAnimRef.current = null; }
+    progressAnim.setValue(0);
+    setSigningStage("upload");
     setScreen("home");
     setShowUrlModal(false);
     setUrlInput("");
@@ -455,7 +510,7 @@ export default function SignScreen() {
     setCurrentJobId(null);
     panelOpenRef.current = false;
     setPanelVisible(false);
-  }, [stopPoll]);
+  }, [stopPoll, progressAnim]);
 
   const closePanel = useCallback(() => {
     const endX = isArabicRef.current ? -SCREEN_WIDTH : SCREEN_WIDTH;
@@ -470,6 +525,13 @@ export default function SignScreen() {
   const paddingTop = isWeb ? 67 : insets.top;
 
   const hasArabic = (s: string) => /[\u0600-\u06FF]/.test(s);
+
+  // Track progress value for percentage label
+  const [progressPct, setProgressPct] = React.useState(0);
+  React.useEffect(() => {
+    const id = progressAnim.addListener(({ value }) => setProgressPct(Math.round(value * 100)));
+    return () => progressAnim.removeListener(id);
+  }, [progressAnim]);
 
   const signTitle = (
     <Text style={[styles.headerTitle, { color: colors.text, textAlign: isArabic ? "right" : "left" }]}>
@@ -652,12 +714,43 @@ export default function SignScreen() {
                   <PulsingPen color={TINT} />
                 </View>
                 <Text style={[styles.signingTitle, { color: colors.text, fontFamily: fontAr("Bold") }]}>
-                  {currentJob?.status === "pending" ? t("signJobPending") : t("signJobProcessing")}
+                  {signingStage === "upload"
+                    ? (isArabic ? "جاري رفع الملف..." : "Uploading file...")
+                    : signingStage === "pending"
+                    ? t("signJobPending")
+                    : t("signJobProcessing")}
                 </Text>
                 <Text style={[styles.signingHint, { color: colors.textSecondary, fontFamily: fontAr("Regular") }]}>
                   {isArabic ? "قد يستغرق هذا بضع دقائق..." : "This may take a few minutes..."}
                 </Text>
-                <ActivityIndicator size="large" color={TINT} style={{ marginTop: 24 }} />
+
+                {/* Progress bar */}
+                <View style={[styles.progressTrack, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
+                  <Animated.View
+                    style={[styles.progressFill, {
+                      backgroundColor: TINT,
+                      width: progressAnim.interpolate({ inputRange: [0, 1], outputRange: ["0%", "100%"] }),
+                    }]}
+                  />
+                </View>
+
+                {/* Percentage label */}
+                <Text style={[styles.progressPct, { color: TINT, fontFamily: "Inter_700Bold" }]}>
+                  {progressPct}%
+                </Text>
+
+                {/* Stage dots */}
+                <View style={styles.stageDots}>
+                  {(["upload", "pending", "processing"] as const).map((s) => (
+                    <View
+                      key={s}
+                      style={[
+                        styles.stageDot,
+                        { backgroundColor: signingStage === s ? TINT : colors.card, borderColor: TINT },
+                      ]}
+                    />
+                  ))}
+                </View>
               </View>
             )}
 
@@ -887,4 +980,17 @@ const styles = StyleSheet.create({
   resultIcon: { width: 100, height: 100, borderRadius: 32, alignItems: "center", justifyContent: "center", marginBottom: 8 },
   errorCard: { borderRadius: 14, borderWidth: 1, padding: 14, marginTop: 8, alignSelf: "stretch" },
   errorText: { fontSize: 13, textAlign: "center", lineHeight: 20 },
+
+  progressTrack: {
+    alignSelf: "stretch",
+    height: 10,
+    borderRadius: 10,
+    borderWidth: StyleSheet.hairlineWidth,
+    overflow: "hidden",
+    marginTop: 8,
+  },
+  progressFill: { height: "100%", borderRadius: 10 },
+  progressPct: { fontSize: 15, marginTop: 2 },
+  stageDots: { flexDirection: "row", gap: 8, marginTop: 4 },
+  stageDot: { width: 8, height: 8, borderRadius: 4, borderWidth: 1.5 },
 });
