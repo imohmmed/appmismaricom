@@ -99,7 +99,7 @@ export default function CategoryDetailScreen() {
   return (
     <View style={[styles.container, { backgroundColor: colors.background, paddingTop: isWeb ? 20 : insets.top }]}>
       {/* Back button */}
-      <View style={styles.header}>
+      <View style={[styles.header, isArabic && { justifyContent: "flex-end" }]}>
         <Pressable onPress={() => router.back()} style={[styles.backButton, { backgroundColor: colors.card }]}>
           <Feather name={isArabic ? "chevron-right" : "chevron-left"} size={22} color={colors.text} />
         </Pressable>
