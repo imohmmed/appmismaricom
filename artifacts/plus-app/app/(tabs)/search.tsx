@@ -275,7 +275,7 @@ const styles = StyleSheet.create({
   resultsContainer: { paddingHorizontal: 20 },
   appRow: { flexDirection: "row", alignItems: "center", paddingVertical: 12, gap: 14 },
   appIcon: { width: 52, height: 52, borderRadius: 14, alignItems: "center", justifyContent: "center" },
-  appInfo: { flex: 1, gap: 3 },
+  appInfo: { flex: 1, gap: 3, justifyContent: "center" },
   appName: { fontSize: 16, fontFamily: "Inter_600SemiBold" },
   appCategory: { fontSize: 12, marginTop: 1 },
   appDesc: { fontSize: 12 },
